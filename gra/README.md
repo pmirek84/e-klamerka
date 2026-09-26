@@ -1,21 +1,18 @@
-# E-Klamerka — prototyp PWA
+# E-Klamerka — prototyp gry PWA
 
-Mobilny prototyp pierwszej farmy z lokalnym zapisem postępu. Zakładka „Wioska” przedstawia koncepcję przyszłych interakcji wieloosobowych, ale nie łączy jeszcze graczy.
+Mobilna, dotykowa gra o rozwijaniu własnej farmy. Kod źródłowy znajduje się w `src/`, a grafiki środowiska w `public/`.
 
-W repozytorium e-klamerka gra znajduje się w podkatalogu `gra/`, aby nie zastępować strony głównej. Można ją hostować pod ścieżką `https://e-klamerka.pl/gra/`.
+## Build i publikacja
 
-## Uruchomienie
+GitHub Actions buduje aplikację po zmianach w `gra/` i zapisuje gotową wersję w katalogu `gra/` repozytorium: `index.html`, `assets/` oraz pliki statyczne. Build nie publikuje strony automatycznie na OVH.
 
-```bash
-npm install
-npm run dev
-```
+Aby zaktualizować OVH, wgraj do katalogu serwera `/gra/` wygenerowane pliki: `index.html`, cały katalog `assets/`, `cottage.webp`, `farm-day1.webp`, `rabbit-yard.webp`, `raised-garden.webp`, `icon.svg`, `manifest.webmanifest` i `sw.js`. Nie wgrywaj katalogów źródłowych `src/` ani `public/`. Postacie są osadzone w skrypcie buildu.
 
-Do instalacji jako PWA potrzebne jest połączenie HTTPS (poza `localhost`). Zbuduj produkcyjną wersję poleceniem `npm run build`. W hostingu ustaw katalog publikacji na `gra/dist` albo uruchom budowanie z `gra/` i publikuj jego `dist/`.
+Build lokalny: w katalogu `gra/` uruchom `npm ci`, a potem `npm run build`.
 
 ## Stan prototypu
 
-- farma i postęp zapisują się w `localStorage` przeglądarki;
-- brak kont, serwera, synchronizacji między urządzeniami i rzeczywistego multiplayer;
-- wioska, sąsiedzi i wspólny most są makietą UX;
-- karta testowa znajduje się w `docs/testy-kaja-tola.md`.
+- postęp farmy zapisuje się lokalnie w przeglądarce;
+- sąsiedzkie farmy, wizyty i zaproszenia do wioski są demonstracją interfejsu — nie synchronizują się między graczami;
+- logowanie, konta, serwer i prawdziwy multiplayer wymagają osobnego backendu;
+- karta testowa: `docs/testy-kaja-tola.md`.
