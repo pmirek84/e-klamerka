@@ -1,4 +1,4 @@
-const CACHE = 'eklamerka-gra-v6';
+const CACHE = 'eklamerka-gra-v8';
 const SHELL = ['./', './index.html'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
