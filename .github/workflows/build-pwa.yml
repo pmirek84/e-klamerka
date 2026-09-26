@@ -1,7 +1,7 @@
 name: Build E-Klamerka for OVH
 on:
   push:
-    branches: [codex/e-klamerka-pwa-prototype]
+    branches: [main, codex/e-klamerka-pwa-prototype]
     paths:
       - 'gra/**'
       - '.github/workflows/build-pwa.yml'
