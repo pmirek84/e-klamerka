@@ -503,3 +503,196 @@ input { width: 100%; border: 1px solid #d7ddc8; border-radius: 12px; padding: 12
   .toast { bottom: 180px; font-size: 12px; padding: 9px 14px; }
   .place-label { font-size: 10px; padding: 5px 8px; }
 }
+
+/* World Map Atlas & Nodes */
+.world-map-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.map-intro {
+  font-size: 13px;
+  color: #64816c;
+  margin: 0 0 2px;
+  line-height: 1.45;
+}
+.atlas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  min-height: 240px;
+  max-height: 320px;
+  background: radial-gradient(circle at center, #f4faee 0%, #e2efe0 60%, #cde5cc 100%);
+  border-radius: 20px;
+  border: 2px solid #b7d6af;
+  box-shadow: inset 0 2px 8px rgba(90, 130, 80, 0.1), 0 4px 16px rgba(0,0,0,0.06);
+  overflow: hidden;
+  margin: 4px 0;
+}
+.atlas-routes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.map-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid var(--island-color, #9ab787);
+  border-radius: 14px;
+  padding: 4px 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+  white-space: nowrap;
+  z-index: 2;
+}
+.map-node:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  z-index: 5;
+}
+.map-node.here {
+  border-color: #e67e22;
+  box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.4), 0 6px 18px rgba(0,0,0,0.15);
+}
+.map-island {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  margin-bottom: 3px;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.45), 0 2px 6px rgba(0,0,0,0.15);
+  position: relative;
+}
+.map-node.locked .map-island {
+  filter: grayscale(0.35) opacity(0.88);
+}
+.player-beacon {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #e67e22;
+  border: 2px solid #fff;
+  animation: pulse-beacon 1.5s infinite;
+}
+@keyframes pulse-beacon {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(230, 126, 34, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(230, 126, 34, 0); }
+}
+.map-node strong {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2b4534;
+  line-height: 1.2;
+}
+.map-node small {
+  font-size: 9px;
+  color: #617e69;
+  font-weight: 600;
+}
+.map-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #3b5f46;
+  padding: 4px 2px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.overview-btn {
+  background: #e4eedc;
+  color: #31583c;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.overview-btn:hover {
+  background: #d4e5c8;
+}
+.region-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+.region-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fbf5;
+  border: 1.5px solid #d8e6d2;
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.region-mark {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4);
+}
+.region-info {
+  flex: 1;
+  min-width: 0;
+}
+.region-info h3 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  color: #274b34;
+}
+.region-info p {
+  margin: 0;
+  font-size: 11px;
+  color: #668370;
+  line-height: 1.3;
+}
+.map-price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+.price-label {
+  font-weight: 700;
+  color: #8c6a38;
+}
+.price-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #fbf5e6;
+  border: 1px solid #ebd9b1;
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-weight: bold;
+  color: #6b5329;
+}
+.modal-footnote {
+  font-size: 11px;
+  color: #7b9684;
+  text-align: center;
+  margin: 8px 0 0;
+}
+

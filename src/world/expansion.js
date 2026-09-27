@@ -32,14 +32,47 @@ export function buildRegions(scene){
       for(let i=0;i<42;i++){const a=i*2.4,x=Math.cos(a)*(5+i%4),z=Math.sin(a)*(5+i%3);if(Math.abs(z+2)<1)continue;const stem=cylinder(g,.025,.03,.35,'#769b4b',x,.25,z);ball(g,.11,i%3?'#f7df9c':'#e4b2b3',stem.position.x,.46,z,1,.5,1);}
       tree(g,-6,5,1.1,2);tree(g,6,4,1.2,2);tree(g,-5,-5,1,2);
     }
+    if(id==='lake'){
+      path(0,-2,1.4,12);path(-2,2,8,1.4);
+      // Azure water pond
+      cylinder(g,6.5,6.5,.12,'#4fa5c9',0,.08,2,32);
+      cylinder(g,6.8,6.8,.08,'#88c4d8',0,.06,2,32);
+      // Wooden dock/pier
+      const dock=group(g,0,.15,-1);
+      for(let i=0;i<8;i++)box(dock,1.8,.1,.38,C.lightWood,0,.08,i*.42);
+      for(const side of [-1,1]){for(let i=0;i<4;i++)cylinder(dock,.07,.09,.8,C.wood,side*.9,.2,i*.9);}
+      // Little rowing boat
+      const boat=group(g,1.8,.2,1.6);boat.rotation.y=.4;
+      box(boat,1.8,.35,.9,'#b67b4c',0,.1,0);box(boat,1.5,.3,.6,'#d8ab79',0,.14,0);
+      for(let i=0;i<8;i++){const a=i*.8;ball(g,.6,'#90aab6',Math.cos(a)*7.2,-.1,Math.sin(a)*6.2+2,1,1.1,1);}
+      for(let i=0;i<14;i++){const x=Math.sin(i*3.1)*6,z=Math.cos(i*2.3)*5+2;if(Math.hypot(x,z-2)<4.5)continue;cylinder(g,.04,.05,.6,'#588950',x,.3,z);ball(g,.14,'#a8d594',x,.65,z,1,.4,1);}
+    }
+    if(id==='clouds'){
+      path(-2,2,10,1.4);path(0,0,1.4,8);
+      // Observatory tower & celestial dome
+      const obs=group(g,0,0,0);
+      cylinder(obs,2.2,2.5,2.4,'#ded8eb',0,1.2,0,16);
+      ball(obs,2.1,'#9581bf',0,2.4,0,1,.8,1);
+      // Brass telescope pointing up
+      const scope=cylinder(obs,.16,.24,2.2,'#d8ab48',.6,3.6,-.4);
+      scope.rotation.x=Math.PI*0.35;scope.rotation.z=-Math.PI*0.15;
+      // Floating stardust crystals
+      for(let i=0;i<8;i++){
+        const a=i*0.8,x=Math.cos(a)*5.5,z=Math.sin(a)*4.8,h=1.4+(i%3)*.6;
+        cylinder(g,.18,.25,h,'#b39ddb',x,h/2+.2,z,6);
+        ball(g,.3,'#d1c4e9',x,h+.4,z,1,1.4,1);
+      }
+    }
     bake(g);
   }
   return roots;
 }
 export function buildWorldChanges(parent,state){
   const g=group(parent),w=state.world||{};
-  function bridge(x,z,length,vertical,built){
-    const b=group(g,x,0,z);if(vertical)b.rotation.y=Math.PI/2;
+  function bridge(x,z,length,vertical,built,rotY=0){
+    const b=group(g,x,0,z);
+    if(rotY) b.rotation.y=rotY;
+    else if(vertical) b.rotation.y=Math.PI/2;
     if(built){
       for(let i=0;i<Math.ceil(length/.42);i++)box(b,.39,.15,2.25,C.lightWood,-length/2+i*.42,.01,0);
       for(const side of [-1,1]){
@@ -54,7 +87,11 @@ export function buildWorldChanges(parent,state){
       }
     }
   }
-  bridge(-16.4,0,9.6,false,true);bridge(0,-15.7,10.8,true,w.quarry);bridge(16.8,-3,10.2,false,w.meadow);
+  bridge(-16.4,0,9.6,false,true);
+  bridge(0,-15.7,10.8,true,w.quarry);
+  bridge(16.8,-3,10.2,false,w.meadow);
+  bridge(0,16.2,10.8,true,w.lake);
+  bridge(14.5,-14.5,12.5,false,w.clouds,-Math.PI*0.25);
   // Chest lid visibly opens and stays open after the one-time reward.
   const chest=group(g,-33,0,4);box(chest,1.05,.55,.75,C.wood,0,.36,0);for(const x of [-.38,.38])box(chest,.08,.58,.8,'#e6c67c',x,.36,0);
   const hinge=group(chest,0,.65,-.36);const lid=box(hinge,1.1,.18,.8,'#c89a5e',0,.02,.35);hinge.rotation.x=w.chest?-1.2:0;box(chest,.15,.16,.08,'#f6d785',0,.58,.4);

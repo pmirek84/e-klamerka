@@ -215,7 +215,9 @@ export const COSTS = {
   helper: { coins: 12, wood: 6, carrots: 4 },
   stall: { wood: 8, stone: 4, coins: 6 },
   orchard: { wood: 10, stone: 4, coins: 8 },
-  orchardUpgrade: { wood: 12, seeds: 2, coins: 10 }
+  orchardUpgrade: { wood: 12, seeds: 2, coins: 10 },
+  lake: { wood: 16, stone: 12, crystals: 3 },
+  clouds: { wood: 20, stone: 15, crystals: 6 }
 };
 
 export function houseCost(level) {
@@ -236,14 +238,14 @@ export function transact(state, action, now = Date.now()) {
 
   let message;
   switch (action) {
-    case 'visit:woodland': case 'visit:quarry': case 'visit:meadow': {
+    case 'visit:woodland': case 'visit:quarry': case 'visit:meadow': case 'visit:lake': case 'visit:clouds': {
       const id = action.split(':')[1];
       if (!unlocked(id, s) || s.world.visited.includes(id)) return { state, ok: false };
       s.world.visited = [...s.world.visited, id];
       message = `Odkryto: ${REGIONS[id].name}`;
       break;
     }
-    case 'unlock:quarry': case 'unlock:meadow': {
+    case 'unlock:quarry': case 'unlock:meadow': case 'unlock:lake': case 'unlock:clouds': {
       const id = action.split(':')[1];
       if (s.world[id]) return fail('Ten most jest już gotowy.');
       if (!s.houseLevel) return fail('Zbuduj najpierw dom, żeby mieć dokąd wracać.');
@@ -252,6 +254,27 @@ export function transact(state, action, now = Date.now()) {
       message = `Most gotowy! ${REGIONS[id].name} czekają na odkrycie.`;
       break;
     }
+    case 'fish':
+      if (now - (s.world.lastLake || 0) < 10000) return fail('Rybki pływają w głębinach. Zarzuć wędkę za chwilkę.');
+      s.coins += 8;
+      s.seeds = (s.seeds || 0) + 1;
+      s.world.lastLake = now;
+      message = 'Złowiono 2 lśniące złote rybki z pomostu! +8 monet i +1 nasionko.';
+      break;
+    case 'pearls':
+      if (now - (s.world.lastLake || 0) < 12000) return fail('Woda musi się uspokoić. Spróbuj zanurkować za chwilkę.');
+      s.crystals = (s.crystals || 0) + 1;
+      s.coins += 6;
+      s.world.lastLake = now;
+      message = 'Wyłowiono lśniącą perłę z dna jeziora! +1 błękitny kryształ i +6 monet.';
+      break;
+    case 'stargaze':
+      if (now - (s.world.lastObservatory || 0) < 15000) return fail('Czekamy na przejrzyste gwieździste niebo.');
+      s.crystals = (s.crystals || 0) + 2;
+      s.coins += 15;
+      s.world.lastObservatory = now;
+      message = 'Spojrzano w gwiazdy przez kryształowy teleskop! Odkryto tajemnice nieba (+15 monet, +2 kryształy)!';
+      break;
     case 'grove':
       if (now - s.world.lastGrove < 12000) return fail('Las odpoczywa. Wróć za chwilkę.');
       s.wood += 5;
@@ -603,12 +626,19 @@ export const PLACES = {
 
 export function actionFor(place, s) {
   switch (place) {
-    case 'quarryGate': case 'meadowGate': {
-      const id = place === 'quarryGate' ? 'quarry' : 'meadow', r = REGIONS[id];
+    case 'quarryGate': case 'meadowGate': case 'lakeGate': case 'cloudsGate': {
+      const id = place === 'quarryGate' ? 'quarry' : place === 'meadowGate' ? 'meadow' : place === 'lakeGate' ? 'lake' : 'clouds';
+      const r = REGIONS[id];
       return s.world?.[id]
         ? { label: 'Wyrusz na wyprawę', hint: r.name, action: `travel:${r.destination}`, icon: r.icon }
-        : { label: 'Napraw most', hint: 'Połącz farmę z nową wyspą.', cost: r.cost, action: `unlock:${id}`, disabled: !s.houseLevel, icon: 'land' };
+        : { label: 'Napraw most / ścieżkę', hint: `Połącz farmę z: ${r.name}`, cost: r.cost, action: `unlock:${id}`, disabled: !s.houseLevel, icon: 'land' };
     }
+    case 'lakeDock':
+      return { label: 'Złów złote rybki', hint: 'Złów 2 lśniące rybki na obiad dla turystów lub na sprzedaż.', action: 'fish', icon: 'coins' };
+    case 'lakePearls':
+      return { label: 'Zanurkuj po perłę', hint: 'Wyłów lśniącą błękitną perłę z dna jeziora.', action: 'pearls', icon: 'crystal' };
+    case 'observatory':
+      return { label: 'Spójrz w gwiazdy', hint: 'Odkryj tajemnice nieba przez kryształowy teleskop.', action: 'stargaze', icon: 'star' };
     case 'grove':
       return { label: 'Zbierz drewno', hint: '5 drewna ze starych dębów.', action: 'grove', icon: 'wood' };
     case 'crystals':
