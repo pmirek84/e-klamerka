@@ -1,18 +1,29 @@
-# E-Klamerka — prototyp gry PWA
+# E-Klamerka — Polana 3D
 
-Mobilna, dotykowa gra o rozwijaniu własnej farmy. Kod źródłowy znajduje się w `src/`, a grafiki środowiska w `public/`.
+Mobilna gra PWA: prawdziwa scena 3D, animowana postać i króliki, budowa i rozbudowa,
+ogród oraz sklep z zapisem transakcji. Postęp jest lokalny, bez serwerowych kont.
 
-## Build i publikacja
+## Praca nad grą
 
-GitHub Actions buduje aplikację po zmianach w `gra/` i zapisuje gotową wersję w katalogu `gra/` repozytorium: `index.html`, `assets/` oraz pliki statyczne. Build nie publikuje strony automatycznie na OVH.
+W folderze `gra`: `npm ci`, `npm run dev`. Build: `npm run build`.
+Testy ekonomii: `npm test`. Testy w przeglądarce: `npx playwright install chromium`,
+a następnie `npm run test:browser` (uruchamia własny lokalny serwer).
 
-Aby zaktualizować OVH, wgraj do katalogu serwera `/gra/` wygenerowane pliki: `index.html`, cały katalog `assets/`, `cottage.webp`, `farm-day1.webp`, `rabbit-yard.webp`, `raised-garden.webp`, `icon.svg`, `manifest.webmanifest` i `sw.js`. Nie wgrywaj katalogów źródłowych `src/` ani `public/`. Postacie są osadzone w skrypcie buildu.
+Opis sterowania i migracji zapisu: `docs/3d-redesign.md`.
 
-Build lokalny: w katalogu `gra/` uruchom `npm ci`, a potem `npm run build`.
+## Wdrożenie przez istniejące repozytorium
 
-## Stan prototypu
+Ta paczka zawiera folder `gra` z kodem i gotową kompilacją. Skopiuj go do swojego
+lokalnego repozytorium `e-klamerka`, zastępując pliki. W GitHub Desktop sprawdź
+zmiany, zrób commit i Push. Po pojawieniu się zmian na gałęzi wdrażanej przez OVH
+uruchom wdrożenie. Samo skopiowanie plików na komputer nie zmienia strony.
 
-- postęp farmy zapisuje się lokalnie w przeglądarce;
-- sąsiedzkie farmy, wizyty i zaproszenia do wioski są demonstracją interfejsu — nie synchronizują się między graczami;
-- logowanie, konta, serwer i prawdziwy multiplayer wymagają osobnego backendu;
-- karta testowa: `docs/testy-kaja-tola.md`.
+Bieżąca wersja: 0.2.0, pamięć aplikacji `eklamerka-world-3d-v1`.
+Zapis poprzedniej gry nie jest usuwany. Grafika wymaga WebGL2.
+
+## Sprawdzone
+
+7 testów logiki gry; automatyczna próba zbierania, budowy trzech poziomów domu,
+ogrodu, narodzin, sprzedaży, zapisu po odświeżeniu, powiększenia terenu i joysticka.
+Testy przeglądarkowe odbyły się w Chromium z emulacją ekranu telefonu.
+Wydajność na fizycznym telefonie nie została potwierdzona.
