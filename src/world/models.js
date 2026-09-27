@@ -261,7 +261,7 @@ export function visitor(p,index=0) {
   return {root,body,head,update,phase:index*1.8};
 }
 
-export function owl(p, x = -4.5, z = -2.8) {
+export function owl(p, x = 1.6, z = -5.0) {
   const root=group(p,x,0,z);root.userData.place='owl';shadow(root,0,0,.5,.4);
   // Carved wooden post with base and crossbar
   cylinder(root,.14,.18,.3,palette.wood,0,.15,0);
