@@ -2,11 +2,16 @@ name: Build and Deploy E-Klamerka PWA
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  build-and-deploy:
+  build:
+    name: Build PWA & Trigger Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -16,19 +21,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build PWA bundle
-        run: npm run build:ovh
+        run: npm run build
 
       - name: Trigger OVH Deploy Webhook
-        if: ${{ secrets.OVH_WEBHOOK_URL != '' }}
         env:
           WEBHOOK_URL: ${{ secrets.OVH_WEBHOOK_URL }}
         run: |
-          echo "Triggering OVH deployment webhook..."
-          curl -X POST "$WEBHOOK_URL"
+          if [ -n "$WEBHOOK_URL" ]; then
+            echo "Triggering OVH deployment webhook..."
+            curl -X POST "$WEBHOOK_URL"
+          else
+            echo "No OVH_WEBHOOK_URL secret configured. Skipping webhook trigger."
+          fi
