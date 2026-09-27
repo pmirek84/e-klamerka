@@ -1,4 +1,4 @@
-const CACHE='eklamerka-world-3d-v1';
+const CACHE='eklamerka-world-3d-v2';
 self.addEventListener('install',event=>{event.waitUntil((async()=>{
   const cache=await caches.open(CACHE);
   const response=await fetch('./index.html',{cache:'reload'});
