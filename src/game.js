@@ -439,7 +439,6 @@ export const PLACES = {
   helper: { title: 'Pomocnik Franek', short: 'Pomocnik', x: -3.8, z: 6.8, approach: [-3.5, 6.2], label: [-3.8, 1.9, 6.8] },
   pen: { title: 'Bezuch i Karmelka', short: 'Króliki', x: 5.3, z: 2.3, approach: [3, 4.8], label: [5.3, 2.8, 2.3] },
   stall: { title: 'Stragan wędrowców', short: 'Stragan', x: -1.2, z: 8.5, approach: [-1.2, 7.2], label: [-1.2, 2.6, 8.5] },
-  owl: { title: 'Mądra Sowa Klara', short: 'Sowa', x: -4.5, z: -2.8, approach: [-3.8, -1.8], label: [-4.5, 3.0, -2.8] },
   shop: { title: 'Sklepik pod klamerką', short: 'Sklepik', x: -9, z: 3.8, approach: [-7, 2.6], label: [-9, 3.5, 3.8] },
   land: { title: 'Nowa polana', short: 'Rozbudowa', x: 11, z: 5, approach: [9, 5.8], label: [10.8, 1.6, 5] },
 };

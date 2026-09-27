@@ -1,12 +1,13 @@
 // One source of truth for terrain, map, gates and save migration.
 export const REGIONS = {
   farm: { name: 'Twoja farma', subtitle: 'Dom, ogród i królicza rodzinka', x: 0, z: 0, rx: 13.1, rz: 11, icon: 'house', destination: 'house', color: '#a3bb76' },
-  woodland: { name: 'Szumiący Las', subtitle: 'Stare dęby i skrzynka odkrywcy', x: -29, z: 0, rx: 9.7, rz: 8.7, icon: 'wood', destination: 'grove', color: '#73995f' },
+  woodland: { name: 'Szumiący Las', subtitle: 'Stare dęby, Mądra Sowa i skarb lasu', x: -29, z: 0, rx: 9.7, rz: 8.7, icon: 'wood', destination: 'grove', color: '#73995f' },
   quarry: { name: 'Kryształowe Wzgórza', subtitle: 'Kamień i niebieskie kryształy', x: 0, z: -29, rx: 9.7, rz: 8.7, icon: 'crystal', destination: 'crystals', gate: 'quarryGate', cost: { wood: 10, stone: 6 }, color: '#aaa5bf' },
   meadow: { name: 'Słoneczna Łąka', subtitle: 'Nowy sad, wiatrak i większe zbiory', x: 31, z: -1, rx: 10.2, rz: 8.7, icon: 'leaf', destination: 'orchard', gate: 'meadowGate', cost: { wood: 14, stone: 10, crystals: 3 }, color: '#d4c683' },
 };
 export const WORLD_PLACES = {
   grove: { title: 'Dębowy zakątek', short: 'Stare dęby', region: 'woodland', x: -31, z: -2, approach: [-29, 1], label: [-31, 4, -2] },
+  owl: { title: 'Mądra Sowa Klara', short: 'Sowa', region: 'woodland', x: -28, z: -3.5, approach: [-27, -2.5], label: [-28, 4, -3.5] },
   chest: { title: 'Skrzynka odkrywcy', short: 'Skarb lasu', region: 'woodland', x: -33, z: 4, approach: [-32, 3], label: [-33, 1.8, 4] },
   quarryGate: { title: 'Most do wzgórz', short: 'Most do wzgórz', x: 0, z: -10.7, approach: [0, -9.6], label: [0, 1.9, -11] },
   crystals: { title: 'Błękitna żyła', short: 'Kryształy', region: 'quarry', x: 1, z: -30, approach: [0, -27], label: [1, 4.5, -30] },

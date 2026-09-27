@@ -127,7 +127,7 @@ export function createWorld(host, callbacks) {
     if(!gardenObj||prev.planted!==next.planted||prev.watered!==next.watered||prev.landLevel!==next.landLevel){disposeObject(gardenObj);gardenObj=garden(dynamic,next);targets.push(gardenObj);}
     if(!stallObj||prev.stall!==next.stall){disposeObject(stallObj);stallObj=stall(dynamic,next.stall);targets.push(stallObj);}
     if(!helperObj||prev.helper!==next.helper){if(helperObj?.root)disposeObject(helperObj.root);helperObj=helper(dynamic,next.helper);if(helperObj?.root)targets.push(helperObj.root);}
-    if(!owlObj){owlObj=owl(dynamic,-4.5,-2.8);targets.push(owlObj.root);}
+    if(!owlObj){owlObj=owl(dynamic,-28,-3.5);targets.push(owlObj.root);}
     if(!landObj||prev.landLevel!==next.landLevel){
       disposeObject(landObj);landObj=group(dynamic);
       for(let i=0;i<next.landLevel;i++)island(landObj,13+i*2.8,4.8,3,4);
