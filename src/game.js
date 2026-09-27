@@ -6,7 +6,7 @@ export const MAX_BABIES_PER_LEVEL = 6;
 export const DEFAULT_VISITORS = [
   { id: 'v1', name: 'Leśny Wędrowiec', desc: 'Szuka chrupiących jabłek na drogę przez las.', wants: { apples: 3 }, gives: { coins: 12 }, icon: 'apple' },
   { id: 'v2', name: 'Kupiec z Wzgórz', desc: 'Potrzebuje marchewek i drewna do kopalni.', wants: { carrots: 5, wood: 2 }, gives: { coins: 15, seeds: 1 }, icon: 'carrot' },
-  { id: 'v3', name: 'Podróżnik z Łąki', desc: 'Chętnie przyjmie małego króliczka i jabłka.', wants: { apples: 4, babies: 1 }, gives: { coins: 24, crystals: 1 }, icon: 'rabbit' }
+  { id: 'v3', name: 'Podróżnik z Łąki', desc: 'Chętnie kupi świeżą mąkę z wiatraka i małego króliczka.', wants: { flour: 2, babies: 1 }, gives: { coins: 28, crystals: 1 }, icon: 'rabbit' }
 ];
 
 export const OWL_RIDDLES = [
@@ -80,11 +80,55 @@ export function getAvailableVisitors(s) {
   return list.length ? list : [s.visitors?.[0] || DEFAULT_VISITORS[0]];
 }
 
+export const TOURIST_GUESTS = [
+  {
+    id: 't1',
+    name: 'Mikołaj Podróżnik',
+    origin: 'Kryształowe Wzgórza',
+    avatar: 'hat',
+    greeting: '„Witajcie! Po całym dniu wspinaczki przez most marzę o ciepłym posiłku i miękkim łóżku. Wasza rezydencja jest słynna w całych Wzgórzach!”',
+    favorite: 'chleb',
+    wantsHint: 'Najbardziej ucieszy się ze świeżego bochenka chleba z mąki wiatracznej.',
+    review: '„⭐⭐⭐⭐⭐ Wspaniały pobyt! Zapach świeżo pieczonego chleba obudził mnie o poranku!”'
+  },
+  {
+    id: 't2',
+    name: 'Łucja Zielarka',
+    origin: 'Słoneczna Łąka',
+    avatar: 'ribbon',
+    greeting: '„Dzień dobry! Przyszłam zbierać rzadkie zioła. Wasz sad pachnie tak cudownie! Czy znajdzie się dla mnie wolny pokój z widokiem na jabłonie?”',
+    favorite: 'jablka',
+    wantsHint: 'Uwielbia soczyste czerwone jabłka z sadu.',
+    review: '„⭐⭐⭐⭐⭐ Najbardziej uroczy dom w dolinie! Jabłka były niesamowicie słodkie i orzeźwiające.”'
+  },
+  {
+    id: 't3',
+    name: 'Kacper Wędrowny Bard',
+    origin: 'Szumiący Las',
+    avatar: 'cap',
+    greeting: '„Witajcie przyjaciele! Piszę pieśń o wiatraku i pracowitych króliczkach. Czy mogę przenocować w Waszych gościnnych progach?”',
+    favorite: 'marchewki',
+    wantsHint: 'Chętnie schrupie świeże słodkie marchewki z ogrodu.',
+    review: '„⭐⭐⭐⭐⭐ Cisza, spokój i wspaniała gościnność. Skomponowałem tu nową balladę o farmie!”'
+  },
+  {
+    id: 't4',
+    name: 'Zuzia Odkrywczyni',
+    origin: 'Tajemnicze Jaskinie',
+    avatar: 'crown',
+    greeting: '„Cześć! Badałam jaskinie w poszukiwaniu skarbów. Wasza rezydencja to najprzytulniejsze miejsce na całej mapie!”',
+    favorite: 'chleb',
+    wantsHint: 'Chętnie skosztuje ciepłego chleba z mąki lub soczystych owoców.',
+    review: '„⭐⭐⭐⭐⭐ Przytulne łóżko i serdeczni gospodarze. Na pewno wrócę z kolejnej wyprawy!”'
+  }
+];
+
 export const INITIAL = {
   version: 2,
   world: NEW_WORLD,
   crystals: 0,
   apples: 0,
+  flour: 0,
   name: '',
   avatar: 'girl',
   wood: 4,
@@ -106,6 +150,9 @@ export const INITIAL = {
   orchardLevel: 0,
   lastOrchard: 0,
   lastTouristIncome: 0,
+  guestIndex: 0,
+  hostedGuestsCount: 0,
+  guestReviews: [],
   solvedRiddles: [],
   visitors: DEFAULT_VISITORS
 };
@@ -114,7 +161,7 @@ const count = (value, max = 999999) => Math.min(max, Math.max(0, Math.floor(Numb
 
 export function normalize(raw = {}) {
   const s = { ...INITIAL };
-  for (const k of ['wood', 'stone', 'carrots', 'apples', 'coins', 'seeds', 'babies', 'crystals']) s[k] = count(raw[k] ?? s[k]);
+  for (const k of ['wood', 'stone', 'carrots', 'apples', 'flour', 'coins', 'seeds', 'babies', 'crystals']) s[k] = count(raw[k] ?? s[k]);
   s.world = normalizeWorld(raw.world);
   s.houseLevel = count(raw.houseLevel || (raw.house ? 1 : 0), 3);
   s.landLevel = count(raw.landLevel, 3);
@@ -126,6 +173,9 @@ export function normalize(raw = {}) {
   s.nextBirthAt = Number.isFinite(raw.nextBirthAt) && raw.nextBirthAt > 0 ? raw.nextBirthAt : null;
   s.lastOrchard = Number.isFinite(raw.lastOrchard) ? raw.lastOrchard : 0;
   s.lastTouristIncome = Number.isFinite(raw.lastTouristIncome) ? raw.lastTouristIncome : 0;
+  s.guestIndex = Number.isInteger(raw.guestIndex) ? raw.guestIndex : 0;
+  s.hostedGuestsCount = Number.isInteger(raw.hostedGuestsCount) ? raw.hostedGuestsCount : 0;
+  s.guestReviews = Array.isArray(raw.guestReviews) ? raw.guestReviews : [];
   s.solvedRiddles = Array.isArray(raw.solvedRiddles) ? raw.solvedRiddles : [];
   s.visitors = Array.isArray(raw.visitors) && raw.visitors.length ? raw.visitors : DEFAULT_VISITORS;
   return s;
@@ -251,12 +301,116 @@ export function transact(state, action, now = Date.now()) {
       message = `Sad rozbudowany do poziomu ${s.orchardLevel}! Więcej jabłoni i większe zbiory.`;
       break;
     case 'windmill':
-      if (!s.world.meadow) return fail('Najpierw otwórz drogę na łąkę.');
+      if (!s.world.meadow) return fail('Najpierw otwórz drogę na Słoneczną Łąkę.');
       if (s.world.windmill) return fail('Wiatrak już pracuje dla farmy.');
       if (!pay({ wood: 14, stone: 8, crystals: 2 })) return fail('Na wiatrak potrzeba 14 drewna, 8 kamieni i 2 kryształów.');
       s.world.windmill = true;
-      message = 'Wiatrak gotowy! Skrzydła mielą mąkę i zwiększają zbiory na całej farmie.';
+      message = 'Wiatrak gotowy! Skrzydła mielą mąkę, nawadniają grządki i przyspieszają hodowlę króliczków!';
       break;
+    case 'mill-flour':
+      if (!s.world?.windmill) return fail('Najpierw wybuduj wiatrak na łące.');
+      if (!pay({ seeds: 1 })) return fail('Do zmielenia mąki potrzebujesz paczuszki nasion.');
+      s.flour = (s.flour || 0) + 2;
+      message = 'Skrzydła wiatraka zmieliły ziarna! Otrzymano 2 worki mąki (+2 mąka).';
+      break;
+    case 'sell-flour':
+      if (!pay({ flour: 1 })) return fail('Przynieś worek mąki.');
+      s.coins += 4;
+      message = 'Sprzedano mąkę · +4 monety';
+      break;
+    case 'host-guest:bread': {
+      if (s.houseLevel < 3) return fail('Rozbuduj dom na 3. poziom (Rezydencja), by przyjmować turystów!');
+      if (!hasConnectedWorld(s)) return fail('Połącz farmę z inną krainą, by turyści mogli Cię odwiedzać!');
+      if (now - (s.lastTouristIncome || 0) < 12000) {
+        const waitSec = Math.ceil((12000 - (now - (s.lastTouristIncome || 0))) / 1000);
+        return fail(`Pokoje są sprzątane i wietrzone. Kolejny gość przybędzie za ${waitSec}s.`);
+      }
+      if (!pay({ flour: 1 })) return fail('Do upieczenia chleba potrzebujesz 1 worka mąki z wiatraka.');
+      s.coins += 25;
+      s.crystals = (s.crystals || 0) + 1;
+      s.hostedGuestsCount = (s.hostedGuestsCount || 0) + 1;
+      const guest = TOURIST_GUESTS[(s.guestIndex || 0) % TOURIST_GUESTS.length];
+      s.guestReviews = [{ name: guest.name, origin: guest.origin, text: guest.review, stars: 5, date: 'przed chwilą' }, ...(s.guestReviews || []).slice(0, 4)];
+      s.guestIndex = ((s.guestIndex || 0) + 1) % TOURIST_GUESTS.length;
+      s.lastTouristIncome = now;
+      message = `Ugoszczono turystę (${guest.name}) ciepłym chlebem! +25 monet, +1 błękitny kryształ i 5 gwiazdek w księdze gości! ⭐⭐⭐⭐⭐`;
+      break;
+    }
+    case 'host-guest:apples': {
+      if (s.houseLevel < 3) return fail('Rozbuduj dom na 3. poziom (Rezydencja), by przyjmować turystów!');
+      if (!hasConnectedWorld(s)) return fail('Połącz farmę z inną krainą, by turyści mogli Cię odwiedzać!');
+      if (now - (s.lastTouristIncome || 0) < 12000) {
+        const waitSec = Math.ceil((12000 - (now - (s.lastTouristIncome || 0))) / 1000);
+        return fail(`Pokoje są sprzątane i wietrzone. Kolejny gość przybędzie za ${waitSec}s.`);
+      }
+      if (!pay({ apples: 2 })) return fail('Potrzebujesz 2 soczystych jabłek ze swojego sadu.');
+      s.coins += 20;
+      s.seeds = (s.seeds || 0) + 3;
+      s.hostedGuestsCount = (s.hostedGuestsCount || 0) + 1;
+      const guest = TOURIST_GUESTS[(s.guestIndex || 0) % TOURIST_GUESTS.length];
+      s.guestReviews = [{ name: guest.name, origin: guest.origin, text: `„⭐⭐⭐⭐⭐ Cudowny wypoczynek i przepyszne słodkie jabłka!”`, stars: 5, date: 'przed chwilą' }, ...(s.guestReviews || []).slice(0, 4)];
+      s.guestIndex = ((s.guestIndex || 0) + 1) % TOURIST_GUESTS.length;
+      s.lastTouristIncome = now;
+      message = `Ugoszczono turystę (${guest.name}) jabłkami z sadu! +20 monet, +3 nasionka i wspaniała opinia! ⭐⭐⭐⭐⭐`;
+      break;
+    }
+    case 'host-guest:carrots': {
+      if (s.houseLevel < 3) return fail('Rozbuduj dom na 3. poziom (Rezydencja), by przyjmować turystów!');
+      if (!hasConnectedWorld(s)) return fail('Połącz farmę z inną krainą, by turyści mogli Cię odwiedzać!');
+      if (now - (s.lastTouristIncome || 0) < 12000) {
+        const waitSec = Math.ceil((12000 - (now - (s.lastTouristIncome || 0))) / 1000);
+        return fail(`Pokoje są sprzątane i wietrzone. Kolejny gość przybędzie za ${waitSec}s.`);
+      }
+      if (!pay({ carrots: 3 })) return fail('Potrzebujesz 3 marchewek z ogrodu.');
+      s.coins += 15;
+      s.seeds = (s.seeds || 0) + 2;
+      s.hostedGuestsCount = (s.hostedGuestsCount || 0) + 1;
+      const guest = TOURIST_GUESTS[(s.guestIndex || 0) % TOURIST_GUESTS.length];
+      s.guestReviews = [{ name: guest.name, origin: guest.origin, text: `„⭐⭐⭐⭐⭐ Bardzo przytulny pokój i chrupiące marchewki!”`, stars: 5, date: 'przed chwilą' }, ...(s.guestReviews || []).slice(0, 4)];
+      s.guestIndex = ((s.guestIndex || 0) + 1) % TOURIST_GUESTS.length;
+      s.lastTouristIncome = now;
+      message = `Ugoszczono turystę (${guest.name}) marchewkami! +15 monet, +2 nasionka i uśmiech gościa! ⭐⭐⭐⭐⭐`;
+      break;
+    }
+    case 'host-guest:rest': {
+      if (s.houseLevel < 3) return fail('Rozbuduj dom na 3. poziom (Rezydencja), by przyjmować turystów!');
+      if (!hasConnectedWorld(s)) return fail('Połącz farmę z inną krainą, by turyści mogli Cię odwiedzać!');
+      if (now - (s.lastTouristIncome || 0) < 12000) {
+        const waitSec = Math.ceil((12000 - (now - (s.lastTouristIncome || 0))) / 1000);
+        return fail(`Pokoje są sprzątane i wietrzone. Kolejny gość przybędzie za ${waitSec}s.`);
+      }
+      s.coins += 10;
+      s.hostedGuestsCount = (s.hostedGuestsCount || 0) + 1;
+      const guest = TOURIST_GUESTS[(s.guestIndex || 0) % TOURIST_GUESTS.length];
+      s.guestReviews = [{ name: guest.name, origin: guest.origin, text: `„⭐⭐⭐⭐ Miły i cichy nocleg na pięknej farmie.”`, stars: 4, date: 'przed chwilą' }, ...(s.guestReviews || []).slice(0, 4)];
+      s.guestIndex = ((s.guestIndex || 0) + 1) % TOURIST_GUESTS.length;
+      s.lastTouristIncome = now;
+      message = `Przyjęto wędrowca (${guest.name}) na nocleg! +10 monet za pokój gościnny! ⭐⭐⭐⭐`;
+      break;
+    }
+    case 'host-tourist': {
+      if (s.houseLevel < 3) return fail('Rozbuduj dom na 3. poziom (Rezydencja), by przyjmować turystów na nocleg!');
+      if (!hasConnectedWorld(s)) return fail('Połącz farmę z inną krainą, by turyści mogli Cię odwiedzać!');
+      if (now - (s.lastTouristIncome || 0) < 12000) {
+        const waitSec = Math.ceil((12000 - (now - (s.lastTouristIncome || 0))) / 1000);
+        return fail(`Pokoje gościnne są wietrzone po wizycie. Kolejny gość przybędzie za ${waitSec}s.`);
+      }
+      let treated = false;
+      if (s.flour >= 1) { s.flour -= 1; treated = 'świeżym chlebkiem z mąki'; s.crystals = (s.crystals || 0) + 1; s.coins += 25; }
+      else if (s.apples >= 2) { s.apples -= 2; treated = 'soczystymi jabłkami z sadu'; s.seeds = (s.seeds || 0) + 3; s.coins += 20; }
+      else if (s.carrots >= 3) { s.carrots -= 3; treated = 'chrupiącymi marchewkami'; s.seeds = (s.seeds || 0) + 2; s.coins += 15; }
+      else {
+        s.coins += 10;
+        treated = 'miłym odpoczynkiem i herbatką';
+      }
+      s.hostedGuestsCount = (s.hostedGuestsCount || 0) + 1;
+      const guest = TOURIST_GUESTS[(s.guestIndex || 0) % TOURIST_GUESTS.length];
+      s.guestReviews = [{ name: guest.name, origin: guest.origin, text: guest.review, stars: 5, date: 'przed chwilą' }, ...(s.guestReviews || []).slice(0, 4)];
+      s.guestIndex = ((s.guestIndex || 0) + 1) % TOURIST_GUESTS.length;
+      s.lastTouristIncome = now;
+      message = `Ugoszczono turystę (${guest.name}) ${treated}! Otrzymano zapłatę za nocleg i recenzję!`;
+      break;
+    }
     case 'helper':
       if (s.helper) return fail('Pomocnik Franek już pracuje w Twoim ogrodzie!');
       if (s.houseLevel < 2) return fail('Rozbuduj dom na 2. poziom, aby stworzyć pokój dla pomocnika!');
@@ -338,15 +492,19 @@ export function transact(state, action, now = Date.now()) {
         return fail('Zagroda ma już maksymalny poziom.');
       }
       break;
-    case 'feed':
+    case 'feed': {
       if (!s.pen || !s.rabbits) return fail('Najpierw przygotuj zagrodę dla królików.');
       if (s.nextBirthAt) return fail('Królicza rodzinka już czeka na maluszka.');
       if (s.babies >= maxBabies(s)) return fail('Zagroda jest pełna. Rozbuduj zagrodę lub znajdź maluszkom dom.');
       if (!pay({ carrots: 2 })) return fail('Przynieś 2 marchewki z ogródka lub sklepu.');
-      s.nextBirthAt = now + BREED_TIME;
-      message = 'Króliki nakarmione. Maluszek pojawi się za 45 sekund.';
+      const breedDuration = s.world?.windmill ? 20_000 : BREED_TIME;
+      s.nextBirthAt = now + breedDuration;
+      message = s.world?.windmill
+        ? 'Króliki nakarmione i posilone otrębami z wiatraka! Maluszek pojawi się za 20 sekund.'
+        : 'Króliki nakarmione. Maluszek pojawi się za 45 sekund.';
       break;
-    case 'tick':
+    }
+    case 'tick': {
       let updated = false;
       if (s.nextBirthAt && now >= s.nextBirthAt) {
         s.nextBirthAt = null;
@@ -366,15 +524,14 @@ export function transact(state, action, now = Date.now()) {
         s.watered = true;
         updated = true;
       }
-      // Level 3 house passive tourist income
-      if (s.houseLevel >= 3 && now - (s.lastTouristIncome || 0) > 30000) {
-        s.coins += 8;
-        s.lastTouristIncome = now;
-        message = 'Turyści w Rezydencji zapłacili za pobyt · +8 monet!';
+      // Windmill automated watering pump
+      if (s.world?.windmill && s.planted && !s.watered) {
+        s.watered = true;
         updated = true;
       }
       if (!updated && !message) return { state, ok: false };
       break;
+    }
     case 'garden':
       if (!s.planted) {
         if (!pay({ seeds: 1 })) return fail('Kup nasionka w sklepiku za 2 monety.');
@@ -463,7 +620,9 @@ export function actionFor(place, s) {
         ? { label: 'Zbierz jabłka', hint: `Sad poziomu ${s.orchardLevel} · soczyste czerwone owoce.`, action: 'orchard', icon: 'apple' }
         : { label: 'Zasadź sad jabłoni', hint: 'Soczyste jabłka i bonus do wszystkich zbiorów.', cost: COSTS.orchard, action: 'orchard', disabled: !s.world?.meadow, icon: 'apple' };
     case 'windmill':
-      return { label: s.world?.windmill ? 'Wiatrak pracuje' : 'Zbuduj wiatrak', hint: 'Mąka i dodatkowe plony dla farmy.', cost: { wood: 14, stone: 8, crystals: 2 }, action: 'windmill', disabled: s.world?.windmill, icon: 'house' };
+      return s.world?.windmill
+        ? { label: 'Zmiel mąkę', hint: `Młyn zbożowy · zmiel 1 nasionko na 2 worki mąki (masz: ${s.flour || 0} mąki).`, cost: { seeds: 1 }, action: 'mill-flour', icon: 'flour' }
+        : { label: 'Zbuduj wiatrak', hint: 'Mielenie mąki, automatyczne nawadnianie grządek i 2x szybsza hodowla królików.', cost: { wood: 14, stone: 8, crystals: 2 }, action: 'windmill', disabled: !s.world?.meadow, icon: 'windmill' };
     case 'forest':
       return { label: 'Zbierz drewno', hint: 'Dwa kawałki drewna do plecaka.', action: 'forest', icon: 'wood' };
     case 'mine':
@@ -471,9 +630,21 @@ export function actionFor(place, s) {
     case 'house': {
       const hLvl = s.houseLevel || 0;
       const hCost = houseCost(hLvl);
-      const hint = hLvl === 0 ? 'Budowa chatki odblokuje zagrodę dla zwierząt.' : hLvl === 1 ? 'Poziom 2 (Piętro): Pokoje pomocnika i otwarcie straganu.' : hLvl === 2 ? 'Poziom 3 (Rezydencja): Pokoje gościnne dla turystów (+8 monet czynszu)!' : 'Wielka Rezydencja Gościnna ukończona!';
-      const label = hLvl === 0 ? 'Zbuduj chatkę' : hLvl === 1 ? 'Rozbuduj o piętro' : hLvl === 2 ? 'Stwórz Rezydencję' : 'Dom ukończony';
-      return { label, hint, cost: hLvl >= 3 ? null : hCost, action: 'house', disabled: hLvl >= 3, icon: 'house' };
+      if (hLvl >= 3) {
+        const connected = hasConnectedWorld(s);
+        return {
+          label: 'Pokoje gościnne · Turyści',
+          hint: !connected
+            ? 'Połącz farmę z inną krainą, by przybyli turyści szukający noclegu.'
+            : 'Otwórz pokoje gościnne, porozmawiaj z turystą i przygotuj poczęstunek!',
+          action: 'house-modal',
+          disabled: false,
+          icon: 'house'
+        };
+      }
+      const hint = hLvl === 0 ? 'Budowa chatki odblokuje zagrodę dla zwierząt.' : hLvl === 1 ? 'Poziom 2 (Piętro): Pokoje pomocnika i otwarcie straganu.' : 'Poziom 3 (Rezydencja): Pokoje gościnne i noclegi dla turystów!';
+      const label = hLvl === 0 ? 'Zbuduj chatkę' : hLvl === 1 ? 'Rozbuduj o piętro' : 'Stwórz Rezydencję';
+      return { label, hint, cost: hCost, action: 'house', icon: 'house' };
     }
     case 'pen':
       return s.pen

@@ -19,7 +19,7 @@ export function createWorld(host, callbacks) {
   const camera=new T.PerspectiveCamera(38,1,.1,260);let yaw=.35,zoom=1,overview=true,worldOverview=false;
   const look=new T.Vector3(0,0,1), desiredLook=new T.Vector3(), offset=new T.Vector3();
   let width=1,height=1, state={}, raf=0, disposed=false, last=performance.now(),time=0,lastUi=0;
-  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,landObj,stallObj,helperObj,owlObj,player,worldChanges;let lastRegion=null;
+  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,landObj,stallObj,helperObj,owlObj,guestTourist,player,worldChanges;let lastRegion=null;
   const obstacles=[...[[ -35,-4],[-31,-4],[-26,-5],[-23,-2],[-36,1],[-34,6],[-29,6],[-24,5],[25,4],[37,3],[26,-6]].map(([x,z])=>({x,z,w:.8,d:.8}))];let rabbits=[],visitors=[],selected=null,path=[],keys=new Set(),busyUntil=0,fx=[];
   const raycaster=new T.Raycaster(),pointer=new T.Vector2(),ground=new T.Plane(new T.Vector3(0,1,0),0),hitPoint=new T.Vector3();
   let seed=43;const random=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};
@@ -162,6 +162,17 @@ export function createWorld(host, callbacks) {
       else if (idx === 1) v.root.position.set(-2.3, 0, 8.1);
       else v.root.position.set(0.9, 0, 8.7);
       visitors.push(v);
+    }
+
+    if (next.houseLevel >= 3 && isConnected) {
+      if (!guestTourist) {
+        guestTourist = visitor(scene, 3);
+        guestTourist.root.position.set(-0.6, 0, 0.2);
+        guestTourist.root.rotation.y = Math.PI * 0.25;
+      }
+    } else if (guestTourist) {
+      guestTourist.root.removeFromParent();
+      guestTourist = null;
     }
   }
   function inside(x,z){return insideWorld(x,z,state);}
@@ -325,6 +336,7 @@ export function createWorld(host, callbacks) {
 
     if(helperObj?.update) helperObj.update(time);
     if(owlObj?.update) owlObj.update(time);
+    if(guestTourist?.update) guestTourist.update(time, 1.8);
     for(const v of visitors){
       if(v.update) v.update(time, v.phase);
     }

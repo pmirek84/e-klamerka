@@ -10,6 +10,8 @@ const paths={
  helper:<><circle cx="12" cy="7" r="4" fill="#edd6b8"/><path d="M5 21v-2a5 5 0 0 1 10 0v2M18 14l3 3m0 0 2-2m-2 2-2-2" stroke="#689373"/></>,
  stall:<><path d="M3 8h18l-1 4H4Z" fill="#db7b5c"/><path d="M4 12v9h16v-9M3 4h18l-1 4H4ZM7 12v9m10-9v9" stroke="#7e543e"/></>,
  owl:<><ellipse cx="12" cy="13" rx="7" ry="8" fill="#a4724b"/><circle cx="9" cy="10" r="3.5" fill="#f8eed9"/><circle cx="15" cy="10" r="3.5" fill="#f8eed9"/><circle cx="9" cy="10" r="1.8" fill="#322a24"/><circle cx="15" cy="10" r="1.8" fill="#322a24"/><path d="m11 12 1 2 1-2Z" fill="#e5983b"/><path d="m6 4 3 3M18 4l-3 3" stroke="#875836" strokeWidth="2"/></>,
+ flour:<><path d="M6 7c0-2 2-3 6-3s6 1 6 3l1 13c0 2-2 3-7 3s-7-1-7-3Z" fill="#fbf7ec"/><path d="M6 7c0 2 2 3 6 3s6-1 6-3M12 13v6m-2-4 2 2 2-2" stroke="#cca671"/></>,
+ windmill:<><path d="m7 21 2-12h6l2 12Z" fill="#e7d4b5"/><circle cx="12" cy="9" r="2" fill="#9e6e45"/><path d="m12 9 6-6M12 9l-6-6M12 9l6 6M12 9l-6 6" stroke="#805634" strokeWidth="2"/></>,
  star:<><path d="m12 2 3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z" fill="#f7d45f"/></>,
  coins:<><circle cx="12" cy="12" r="9" fill="#f2cd70"/><circle cx="12" cy="12" r="6"/><path d="M12 8v8m-2-7h3m-3 6h3"/></>,
  seeds:<><path d="M6 5h12l2 15H4Z" fill="#dfc291"/><path d="M6 5V2h12v3M12 17v-5m0 2c-4 0-5-4-5-4 4 0 5 2 5 4Zm0-2c0-3 4-4 4-4s0 4-4 4Z"/></>,

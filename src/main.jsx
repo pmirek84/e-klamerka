@@ -1,19 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createWorld } from './world/scene.js';
-import { loadGame, SAVE_KEY, transact, PLACES, actionFor, maxBabies, OWL_RIDDLES, getAvailableVisitors, hasConnectedWorld } from './game.js';
+import { loadGame, SAVE_KEY, transact, PLACES, actionFor, maxBabies, OWL_RIDDLES, getAvailableVisitors, hasConnectedWorld, TOURIST_GUESTS } from './game.js';
 import { Icon } from './icons.jsx';
 import './style.css';
 import { WorldMap } from './WorldMap.jsx';
 import { REGIONS, visiblePlace } from './world/regions.js';
 
-const resourceNames = { wood: 'drewno', stone: 'kamień', carrots: 'marchewki', apples: 'jabłka', coins: 'monety', seeds: 'nasionka', crystals: 'kryształy' };
-const resourceIcons = { wood: 'wood', stone: 'stone', carrots: 'carrot', apples: 'apple', coins: 'coins', seeds: 'seeds', crystals: 'crystal', helper: 'helper', stall: 'stall' };
+const resourceNames = { wood: 'drewno', stone: 'kamień', carrots: 'marchewki', apples: 'jabłka', flour: 'mąka', coins: 'monety', seeds: 'nasionka', crystals: 'kryształy' };
+const resourceIcons = { wood: 'wood', stone: 'stone', carrots: 'carrot', apples: 'apple', flour: 'flour', coins: 'coins', seeds: 'seeds', crystals: 'crystal', helper: 'helper', stall: 'stall', windmill: 'windmill' };
 
 function Resources({ state, all = false }) {
   const keys = all
-    ? ['wood', 'stone', 'carrots', 'apples', 'coins', 'seeds', 'crystals']
-    : ['wood', 'stone', 'carrots', ...(state.apples > 0 || state.orchardLevel > 0 ? ['apples'] : []), 'coins', ...(state.world?.quarry || state.crystals ? ['crystals'] : [])];
+    ? ['wood', 'stone', 'carrots', 'apples', 'flour', 'coins', 'seeds', 'crystals']
+    : ['wood', 'stone', 'carrots', ...(state.apples > 0 || state.orchardLevel > 0 ? ['apples'] : []), ...(state.flour > 0 || state.world?.windmill ? ['flour'] : []), 'coins', ...(state.world?.quarry || state.crystals ? ['crystals'] : [])];
 
   return (
     <div className="resources" aria-label="Zasoby">
@@ -196,6 +196,10 @@ function App() {
     }
     if (task.action === 'helper-status') {
       setModal('helper');
+      return;
+    }
+    if (task.action === 'house-modal') {
+      setModal('house');
       return;
     }
     if (task.action === 'owl-modal') {
@@ -381,6 +385,9 @@ function App() {
               ...(game.apples > 0 || game.orchardLevel > 0 ? [
                 { action: 'sell-apples', icon: 'apple', title: 'Sprzedaj 2 jabłka', desc: 'Soczyste owoce z Twojego sadu', label: 'Sprzedaj · +3', available: game.apples >= 2 }
               ] : []),
+              ...(game.flour > 0 || game.world?.windmill ? [
+                { action: 'sell-flour', icon: 'flour', title: 'Sprzedaj mąkę', desc: 'Świeża mąka ze skrzydlatego wiatraka', label: 'Sprzedaj · +4', available: game.flour >= 1 }
+              ] : []),
               { action: 'sell-crystal', icon: 'crystal', title: 'Kryształ ze wzgórz', desc: 'Rzadki minerał o wysokiej wartości', label: 'Sprzedaj · +4', available: game.crystals > 0 },
               { action: 'sell-wood', icon: 'wood', title: 'Sprzedaj 2 drewna', desc: 'Las zawsze ma coś w zapasie', label: 'Sprzedaj · +2', available: game.wood >= 2 },
               { action: 'sell-stone', icon: 'stone', title: 'Sprzedaj 2 kamienie', desc: 'Zamień zapasy na nowe możliwości', label: 'Sprzedaj · +2', available: game.stone >= 2 },
@@ -466,6 +473,158 @@ function App() {
           </div>
         </Modal>
       )}
+
+      {modal === 'house' && (() => {
+        const connected = hasConnectedWorld(game);
+        const isResting = Date.now() - (game.lastTouristIncome || 0) < 12000;
+        const waitSec = Math.max(1, Math.ceil((12000 - (Date.now() - (game.lastTouristIncome || 0))) / 1000));
+        const currentGuest = TOURIST_GUESTS[(game.guestIndex || 0) % TOURIST_GUESTS.length];
+
+        const hostWith = (optionAction) => {
+          perform(optionAction);
+          worldRef.current?.animateAction?.('host-tourist');
+        };
+
+        return (
+          <Modal title="Rezydencja Gościnna" subtitle="POKOJE DLA TURYSTÓW I GOŚCINNOŚĆ" onClose={closeModal}>
+            <Resources state={game} all />
+
+            {!connected ? (
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <div style={{ width: '60px', height: '60px', background: '#fdf3e7', borderRadius: '50%', margin: '0 auto 12px', display: 'grid', placeItems: 'center' }}>
+                  <Icon name="map" size={32} />
+                </div>
+                <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#825021' }}>Otwórz drogę do innych krain!</h3>
+                <p style={{ fontSize: '13px', color: '#688071', maxWidth: '420px', margin: '0 auto 16px', lineHeight: '1.5' }}>
+                  Twoja Rezydencja ma wspaniałe pokoje gościnne, ale turyści nie mogą jeszcze do Ciebie dotrzeć. Odbuduj most do Kryształowych Wzgórz lub Słonecznej Łąki na mapie świata!
+                </p>
+                <button className="primary" onClick={() => { closeModal(); setModal('map'); }}>
+                  Otwórz mapę świata <Icon name="map" size={16} />
+                </button>
+              </div>
+            ) : isResting ? (
+              <div style={{ textAlign: 'center', padding: '18px 0' }}>
+                <div style={{ width: '64px', height: '64px', background: '#eef6ec', borderRadius: '50%', margin: '0 auto 12px', display: 'grid', placeItems: 'center' }}>
+                  <Icon name="house" size={36} />
+                </div>
+                <h3 style={{ margin: '0 0 6px', fontSize: '18px', color: '#2d5138' }}>Pokoje są przygotowywane</h3>
+                <p style={{ fontSize: '13px', color: '#688071', maxWidth: '400px', margin: '0 auto 14px', lineHeight: '1.5' }}>
+                  Pokoje gościnne są wietrzone i ścielone po ostatnim gościu. Kolejny turysta zbliża się ścieżką z mostu!
+                </p>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#e4f0de', border: '1.5px solid #bdd7b1', borderRadius: '20px', padding: '6px 16px', fontSize: '13px', color: '#396345', fontWeight: 'bold' }}>
+                  <span>Nowy gość za: {waitSec}s</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '12px 0 0' }}>
+                {/* Guest Profile Card */}
+                <div style={{ background: '#f5f8f0', border: '1.5px solid #d5e4cc', borderRadius: '16px', padding: '14px', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                  <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e0ecd6', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b3d2a0' }}>
+                    <Icon name="stall" size={34} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', color: '#2b5137' }}>{currentGuest.name}</h3>
+                      <span style={{ fontSize: '11px', background: '#dcecd3', color: '#335b3e', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                        🌍 {currentGuest.origin}
+                      </span>
+                    </div>
+                    <p style={{ margin: '6px 0 4px', fontSize: '13px', color: '#496b52', fontStyle: 'italic', lineHeight: '1.4' }}>
+                      {currentGuest.greeting}
+                    </p>
+                    <div style={{ fontSize: '11px', color: '#6d8c74', marginTop: '4px' }}>
+                      💡 {currentGuest.wantsHint}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hospitality Menu Options */}
+                <div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#52755c', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Wybierz poczęstunek i przyjmij na nocleg:</h4>
+                  <div className="shop-items" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <article style={{ background: '#fefcf6', borderColor: '#ecd9a7' }}>
+                      <span className="product-icon" style={{ background: '#f8edd1' }}><Icon name="flour" size={28} /></span>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '14px', color: '#684a16' }}>Ciepły bochenek chleba</h3>
+                        <p style={{ fontSize: '12px' }}>Najlepszy rarytas z mąki wiatracznej</p>
+                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
+                          <b>Nagroda:</b> +25 monet, +1 kryształ, ⭐⭐⭐⭐⭐
+                        </div>
+                      </div>
+                      <button className="primary" disabled={game.flour < 1} onClick={() => hostWith('host-guest:bread')} style={{ padding: '8px 12px', fontSize: '12px' }}>
+                        Ugość (1 mąka)
+                      </button>
+                    </article>
+
+                    <article style={{ background: '#fdfbf9', borderColor: '#e9d7ca' }}>
+                      <span className="product-icon" style={{ background: '#f8e4d8' }}><Icon name="apple" size={28} /></span>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '14px', color: '#7a3e23' }}>Soczyste jabłka z sadu</h3>
+                        <p style={{ fontSize: '12px' }}>Słodki poczęstunek z jabłoni</p>
+                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
+                          <b>Nagroda:</b> +20 monet, +3 nasionka, ⭐⭐⭐⭐⭐
+                        </div>
+                      </div>
+                      <button className="primary" disabled={game.apples < 2} onClick={() => hostWith('host-guest:apples')} style={{ padding: '8px 12px', fontSize: '12px' }}>
+                        Poczęstuj (2 jabłka)
+                      </button>
+                    </article>
+
+                    <article style={{ background: '#f8fbf6', borderColor: '#d9e8cf' }}>
+                      <span className="product-icon" style={{ background: '#e5f2dc' }}><Icon name="carrot" size={28} /></span>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '14px', color: '#446b38' }}>Chrupiące marchewki</h3>
+                        <p style={{ fontSize: '12px' }}>Świeże witaminy z domowego ogrodu</p>
+                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
+                          <b>Nagroda:</b> +15 monet, +2 nasionka, ⭐⭐⭐⭐⭐
+                        </div>
+                      </div>
+                      <button className="primary" disabled={game.carrots < 3} onClick={() => hostWith('host-guest:carrots')} style={{ padding: '8px 12px', fontSize: '12px' }}>
+                        Poczęstuj (3 marchewki)
+                      </button>
+                    </article>
+
+                    <article style={{ background: '#f6faf8', borderColor: '#d1e5dd' }}>
+                      <span className="product-icon" style={{ background: '#dceee7' }}><Icon name="house" size={28} /></span>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '14px', color: '#2b5b4e' }}>Sam nocleg i herbata</h3>
+                        <p style={{ fontSize: '12px' }}>Ciepłe łóżko i odpoczynek po wędrówce</p>
+                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
+                          <b>Nagroda:</b> +10 monet, ⭐⭐⭐⭐
+                        </div>
+                      </div>
+                      <button className="secondary" onClick={() => hostWith('host-guest:rest')} style={{ padding: '8px 12px', fontSize: '12px' }}>
+                        Zaoferuj nocleg
+                      </button>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Guestbook section */}
+            <div style={{ marginTop: '16px', background: '#fbfdf9', border: '1.5px solid #e1ecdb', borderRadius: '14px', padding: '12px 14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#3b6146' }}>📖 KSIĘGA GOŚCI REZYDENCJI</span>
+                <span style={{ fontSize: '11px', color: '#688970', fontWeight: 'bold' }}>Ugoszczono: {game.hostedGuestsCount || 0} turystów</span>
+              </div>
+              {game.guestReviews && game.guestReviews.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {game.guestReviews.slice(0, 3).map((r, i) => (
+                    <div key={i} style={{ fontSize: '12px', color: '#4d6955', background: '#f3f8ee', padding: '6px 10px', borderRadius: '8px' }}>
+                      <b>{r.name}</b> <span style={{ color: '#88a68f', fontSize: '11px' }}>({r.origin}):</span> {r.text}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '12px', color: '#88a68f', fontStyle: 'italic' }}>
+                  Bądź pierwszym, który ugości strudzonego wędrowca w swoich progach!
+                </p>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
 
       {modal === 'owl' && (() => {
         const riddle = OWL_RIDDLES.find(r => r.id === owlRiddleId) || OWL_RIDDLES[0];
