@@ -1,29 +1,86 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createWorld } from './world/scene.js';
-import { loadGame, SAVE_KEY, transact, PLACES, actionFor, maxBabies, OWL_RIDDLES, getAvailableVisitors, hasConnectedWorld, TOURIST_GUESTS } from './game.js';
+import {
+  loadGame,
+  SAVE_KEY,
+  SAVE_VERSION,
+  transact,
+  PLACES,
+  actionFor,
+  maxBabies,
+  OWL_RIDDLES,
+  getAvailableVisitors,
+  hasConnectedWorld,
+  TOURIST_GUESTS,
+  exportGameSave,
+  importGameSave,
+  houseCost,
+  penCost,
+  landCost,
+  COSTS
+} from './game.js';
 import { Icon } from './icons.jsx';
 import './style.css';
 import { WorldMap } from './WorldMap.jsx';
 import { REGIONS, visiblePlace } from './world/regions.js';
 
-const resourceNames = { wood: 'drewno', stone: 'kamień', carrots: 'marchewki', apples: 'jabłka', flour: 'mąka', coins: 'monety', seeds: 'nasionka', crystals: 'kryształy' };
-const resourceIcons = { wood: 'wood', stone: 'stone', carrots: 'carrot', apples: 'apple', flour: 'flour', coins: 'coins', seeds: 'seeds', crystals: 'crystal', helper: 'helper', stall: 'stall', windmill: 'windmill' };
+const resourceNames = {
+  wood: 'drewno',
+  stone: 'kamień',
+  carrots: 'marchewki',
+  seeds: 'nasiona',
+  wheat: 'pszenica',
+  apples: 'jabłka',
+  flour: 'mąka',
+  crystals: 'kryształy',
+  coins: 'monety'
+};
 
-function Resources({ state, all = false }) {
+const resourceIcons = {
+  wood: 'wood',
+  stone: 'stone',
+  carrots: 'carrot',
+  seeds: 'seeds',
+  wheat: 'wheat',
+  apples: 'apple',
+  flour: 'flour',
+  crystals: 'crystal',
+  coins: 'coins',
+  helper: 'helper',
+  stall: 'stall',
+  windmill: 'windmill',
+  pump: 'pump',
+  backpack: 'backpack',
+  pickaxe: 'pickaxe'
+};
+
+function Resources({ state, all = false, onOpenBackpack }) {
+  // HUD: max 3 contextual resources + coins (Section 17)
   const keys = all
-    ? ['wood', 'stone', 'carrots', 'apples', 'flour', 'coins', 'seeds', 'crystals']
-    : ['wood', 'stone', 'carrots', ...(state.apples > 0 || state.orchardLevel > 0 ? ['apples'] : []), ...(state.flour > 0 || state.world?.windmill ? ['flour'] : []), 'coins', ...(state.world?.quarry || state.crystals ? ['crystals'] : [])];
+    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins']
+    : ['wood', 'stone', state.plantedCrop === 'wheat' || state.wheat > 0 ? 'wheat' : 'carrots', 'coins'];
 
   return (
     <div className="resources" aria-label="Zasoby">
       {keys.map(k => (
         <span className={`resource ${k}`} key={k} title={resourceNames[k]}>
           <Icon name={resourceIcons[k]} size={22} />
-          <b data-resource={k}>{state[k]}</b>
+          <b data-resource={k}>{state[k] || 0}</b>
           <span className="sr-only"> {resourceNames[k]}</span>
         </span>
       ))}
+      {!all && onOpenBackpack && (
+        <button
+          className="resource backpack-btn"
+          onClick={onOpenBackpack}
+          title="Otwórz pełny plecak"
+          style={{ background: 'rgba(255,255,255,0.85)', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
+          <Icon name="backpack" size={20} />
+          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#684224' }}>Plecak</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -92,6 +149,7 @@ function App() {
   const [frame, setFrame] = useState({ near: null, moving: false, busy: false, labels: {} });
   const [selected, setSelected] = useState(null);
   const [modal, setModal] = useState(null);
+  const [houseTab, setHouseTab] = useState('workshop'); // 'workshop' | 'kitchen' | 'guests'
   const [notice, setNotice] = useState(null);
   const [shopMessage, setShopMessage] = useState('');
   const [ready, setReady] = useState(false);
@@ -103,6 +161,7 @@ function App() {
   const toastTimer = useRef();
   const tickRef = useRef();
   const visitRef = useRef(() => {});
+  const fileInputRef = useRef(null);
 
   const say = useCallback((message, ok = true) => {
     if (!message) return;
@@ -161,7 +220,7 @@ function App() {
       const result = transact(gameRef.current, 'tick', t);
       if (result.ok) {
         commit(result.state);
-        say(result.message);
+        if (result.message) say(result.message);
       }
     }, 1000);
     return () => clearInterval(tickRef.current);
@@ -177,7 +236,7 @@ function App() {
   const canAct = frame.near === active;
 
   const [owlRiddleId, setOwlRiddleId] = useState(1);
-  const [owlAnswerState, setOwlAnswerState] = useState(null); // { selected, correct, fact }
+  const [owlAnswerState, setOwlAnswerState] = useState(null);
 
   function interact() {
     if (!canAct || frame.busy || modal || task?.disabled) return;
@@ -199,12 +258,20 @@ function App() {
       return;
     }
     if (task.action === 'house-modal') {
+      setHouseTab(game.houseLevel >= 3 ? 'guests' : game.houseLevel >= 2 ? 'kitchen' : 'workshop');
       setModal('house');
+      return;
+    }
+    if (active === 'pen' && game.pen) {
+      setModal('pen');
+      return;
+    }
+    if (active === 'garden' && !game.planted) {
+      setModal('garden');
       return;
     }
     if (task.action === 'owl-modal') {
       setOwlAnswerState(null);
-      // Pick first unsolved or current
       const unsolved = OWL_RIDDLES.find(r => !game.solvedRiddles?.includes(r.id));
       if (unsolved) setOwlRiddleId(unsolved.id);
       setModal('owl');
@@ -221,19 +288,41 @@ function App() {
 
   const closeModal = useCallback(() => setModal(null), []);
 
+  const handleImportSave = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = importGameSave(ev.target?.result);
+        commit(imported);
+        closeModal();
+        say('Postęp gry został pomyślnie wczytany!');
+      } catch (err) {
+        say(err.message, false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Main quest progression sequence according to v0.4 section 3 & 8
   const quest = !game.houseLevel
-    ? { title: 'Zbuduj swój dom', text: 'Zbierz drewno i kamień. Postaw pierwsze piętro.', target: 'house', progress: Math.min(game.wood / 6, 1) * 0.5 + Math.min(game.stone / 5, 1) * 0.5 }
+    ? { title: 'Zbuduj swój dom', text: 'Zbierz drewno i kamień. Zbuduj Chatkę (8 drewna, 6 kamieni).', target: 'house', progress: Math.min(game.wood / 8, 1) * 0.5 + Math.min(game.stone / 6, 1) * 0.5 }
     : !game.pen
-    ? { title: 'Zagroda dla przyjaciół', text: 'Zbuduj zagrodę dla Bezucha i Karmelki.', target: 'pen', progress: 0.3 }
-    : !game.babies
-    ? { title: 'Pierwszy mały króliczek', text: game.nextBirthAt ? 'Maluszek jest w drodze!' : 'Wyhoduj marchewki i nakarm króliczki.', target: 'pen', progress: 0.5 }
-    : !game.helper
-    ? { title: 'Zatrudnij pomocnika', text: 'Pomocnik Franek zajmie się podlewaniem ogrodu.', target: 'helper', progress: 0.6 }
-    : !game.stall
-    ? { title: 'Wybuduj stragan', text: 'Stwórz kramik, by handlować z wędrowcami.', target: 'stall', progress: 0.75 }
-    : !game.world?.orchard
-    ? { title: 'Zasadź sad jabłoniowy', text: 'Odkryj łąkę i zbieraj świeże czerwone jabłka.', target: !game.world?.meadow ? 'meadowGate' : 'orchard', progress: 0.85 }
-    : { title: 'Kraina wielkiego rozkwitu', text: 'Rozbuduj dom, powiększ zagrodę i handluj z gośćmi!', target: 'stall', progress: 1 };
+    ? { title: 'Przygotuj zagrodę', text: 'Zbuduj zagrodę i przyjmij Bezucha oraz Karmelkę (6 drewna, 4 kamienie).', target: 'pen', progress: 0.3 }
+    : !game.planted
+    ? { title: 'Pierwszy zasiew', text: 'Posiej i zbierz marchewki w ogrodzie, by nakarmić króliczki.', target: 'garden', progress: 0.4 }
+    : !game.babies && !game.nextBirthAt
+    ? { title: 'Królicza rodzinka', text: 'Nakarm parę królików 2 marchewkami, by powitać pierwszego maluszka!', target: 'pen', progress: 0.5 }
+    : !game.world?.quarry
+    ? { title: 'Droga ku Wzgórzom', text: 'Odbuduj most do Kryształowych Wzgórz (10 drewna, 6 kamieni).', target: 'quarryGate', progress: 0.6 }
+    : game.houseLevel < 2
+    ? { title: 'Dom gospodarza', text: 'Rozbuduj dom o piętro, by odblokować kuchnię, pokój Franka i kram.', target: 'house', progress: 0.7 }
+    : !game.world?.meadow
+    ? { title: 'Słoneczna Łąka', text: 'Odbuduj most na Łąkę i napraw stary wiatrak zbożowy.', target: 'meadowGate', progress: 0.8 }
+    : game.houseLevel < 3
+    ? { title: 'Dom odkrywcy', text: 'Stwórz Dom odkrywcy z pokojami gościnnymi i stołem wypraw!', target: 'house', progress: 0.9 }
+    : { title: 'Wielki rozkwit farmy', text: 'Przyjmuj gości z krain, dbaj o króliczki i kompletuj pamiątki!', target: 'house', progress: 1 };
 
   const currentRegion = frame.region || 'farm';
   const worldQuest = currentRegion !== 'farm'
@@ -251,11 +340,11 @@ function App() {
         <button className="identity" onClick={() => { setName(game.name); setAvatar(game.avatar); setModal('profile'); }} aria-label="Zmień imię i postać">
           <span className="brand-mark"><Icon name="peg" size={27} /></span>
           <span>
-            <small>e-klamerka</small>
+            <small>e-klamerka · v0.4</small>
             <strong>{game.name ? `Farma · ${game.name}` : 'Twoja mała farma'}<span className="edit-dot">✎</span></strong>
           </span>
         </button>
-        <Resources state={game} />
+        <Resources state={game} onOpenBackpack={() => setModal('backpack')} />
         <div className="header-actions">
           <button className="map-shortcut" aria-label="Otwórz mapę świata" onClick={() => setModal('map')}>
             <Icon name="map" />
@@ -269,7 +358,7 @@ function App() {
       </header>
 
       <aside className="quest-card">
-        <span className="eyebrow"><span className="sun-dot" /> ZADANIE</span>
+        <span className="eyebrow"><span className="sun-dot" /> ZADANIE GŁÓWNE</span>
         <h1>{worldQuest.title}</h1>
         <p>{worldQuest.text}</p>
         <button className="quest-link" onClick={() => worldRef.current?.select(worldQuest.target)}>
@@ -298,7 +387,7 @@ function App() {
               <span className="label-dot" />
               {p.short}
               {id === 'pen' && game.babies > 0 && <b>{game.babies}/{maxBabies(game)}</b>}
-              {id === 'stall' && game.stall && <b>Goście</b>}
+              {id === 'stall' && game.stall && <b>Kram</b>}
             </button>
           ))}
         </div>
@@ -340,7 +429,7 @@ function App() {
         ) : (
           <div className="welcome-hint">
             <span className="hint-spark">✧</span>
-            <strong>Twoja mała wielka farma</strong>
+            <strong>Twoja farma 3D</strong>
             <span>Dotknij dowolnego miejsca lub etykiety, aby podejść.</span>
           </div>
         )}
@@ -357,7 +446,7 @@ function App() {
         <Icon name="leaf" size={15} />
         <span>{REGIONS[currentRegion].name.toLocaleUpperCase('pl')}</span>
         <span className="saved-dot" />
-        {storageWarning ? 'Zapis niedostępny' : 'Zapis na urządzeniu'}
+        {storageWarning ? 'Zapis niedostępny' : 'Zapis na urządzeniu (v0.4)'}
       </div>
 
       {!ready && (
@@ -368,30 +457,351 @@ function App() {
         </div>
       )}
 
+      {/* BACKPACK / INVENTORY MODAL (Section 17) */}
+      {modal === 'backpack' && (
+        <Modal title="Twój Plecak Odkrywcy" subtitle="WSZYSTKIE ZASOBY I NARZĘDZIA" onClose={closeModal}>
+          <div style={{ marginBottom: '14px' }}>
+            <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#4a6f54', textTransform: 'uppercase' }}>Surowce (9):</h4>
+            <Resources state={game} all />
+          </div>
+
+          <div style={{ marginTop: '16px', background: '#f8faf6', border: '1.5px solid #dce8d6', borderRadius: '14px', padding: '12px' }}>
+            <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#3f6349', textTransform: 'uppercase' }}>Narzędzia i wyposażenie:</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+              <div style={{ background: '#fff', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon name="leaf" size={20} />
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Siekierka ✓</span>
+              </div>
+              <div style={{ background: '#fff', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon name="leaf" size={20} />
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Konewka ✓</span>
+              </div>
+              <div style={{ background: game.tools?.pickaxe ? '#eaf5e6' : '#f5f5f5', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px', opacity: game.tools?.pickaxe ? 1 : 0.6 }}>
+                <Icon name="pickaxe" size={20} />
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Kilof {game.tools?.pickaxe ? '✓' : '(brak)'}</span>
+              </div>
+              <div style={{ background: game.tools?.basket ? '#eaf5e6' : '#f5f5f5', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px', opacity: game.tools?.basket ? 1 : 0.6 }}>
+                <Icon name="backpack" size={20} />
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Kosz {game.tools?.basket ? '✓' : '(brak)'}</span>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* MAP MODAL */}
       {modal === 'map' && (
         <Modal title="Świat za klamerką" subtitle="MAPA KRAIN" onClose={closeModal}>
           <WorldMap game={game} current={currentRegion} position={frame.position} onTravel={id => { closeModal(); worldRef.current?.select(id); }} onOverview={() => { closeModal(); worldRef.current?.worldView(); }} />
         </Modal>
       )}
 
+      {/* GARDEN PLANTING SELECTOR MODAL */}
+      {modal === 'garden' && (
+        <Modal title="Marchewkowy i Zbożowy Ogród" subtitle="WYBIERZ ZASIEW" onClose={closeModal}>
+          <Resources state={game} />
+          <p style={{ fontSize: '13px', color: '#52755c', margin: '12px 0' }}>
+            Wybierz roślinę do posiania na Twoich {1 + (game.landLevel || 0)} grządkach (1 nasiono = obsianie ogrodu):
+          </p>
+          <div className="shop-items">
+            <article style={{ background: '#fcf8f0', borderColor: '#e8dcba' }}>
+              <span className="product-icon" style={{ background: '#f5ebd2' }}><Icon name="carrot" size={32} /></span>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '15px', color: '#7a4e1d' }}>Soczyste Marchewki</h3>
+                <p style={{ fontSize: '12px' }}>Zbiór: 6 sztuk / grządkę po 60 sekundach · pokarm dla królików</p>
+              </div>
+              <button
+                className="primary"
+                disabled={game.seeds < 1}
+                onClick={() => { perform('plant:carrots'); closeModal(); worldRef.current?.animateAction('garden'); }}
+              >
+                Posiej Marchewki
+              </button>
+            </article>
+
+            <article style={{ background: '#faf9f2', borderColor: '#e2ddbe' }}>
+              <span className="product-icon" style={{ background: '#f2edd0' }}><Icon name="wheat" size={32} /></span>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ fontSize: '15px', color: '#6d5a1b' }}>Złota Pszenica</h3>
+                <p style={{ fontSize: '12px' }}>Zbiór: 4 sztuki / grządkę po 90 sekundach · surowiec do młyna na mąkę</p>
+              </div>
+              <button
+                className="primary"
+                disabled={game.seeds < 1}
+                onClick={() => { perform('plant:wheat'); closeModal(); worldRef.current?.animateAction('garden'); }}
+              >
+                Posiej Pszenicę
+              </button>
+            </article>
+          </div>
+        </Modal>
+      )}
+
+      {/* RABBIT PEN MODAL (Section 11) */}
+      {modal === 'pen' && (() => {
+        const capacity = maxBabies(game);
+        const isFull = game.babies >= capacity;
+        const upgradeCost = penCost(game.penLevel);
+
+        return (
+          <Modal title="Bezuch i Karmelka" subtitle="KRÓLICZA RODZINKA I ZAGRODA" onClose={closeModal}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#f8fdf4', border: '1.5px solid #d4e7c7', borderRadius: '16px', padding: '12px 16px', marginBottom: '14px' }}>
+              <div style={{ width: '56px', height: '56px', background: '#e5f3dc', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b7dba2' }}>
+                <Icon name="rabbit" size={36} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#2d5936' }}>Para Rodziców: Bezuch i Karmelka</h3>
+                <p style={{ margin: 0, fontSize: '12px', color: '#577c60', lineHeight: '1.4' }}>
+                  Stała para mieszkańców farmy. Karm ich marchewkami, by powitać na świecie puszyste maluszki!
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fcfbf7', border: '1.5px solid #e8e2d0', borderRadius: '12px', padding: '10px 14px', marginBottom: '14px' }}>
+              <div>
+                <span style={{ fontSize: '11px', color: '#7a7566', textTransform: 'uppercase', fontWeight: 'bold' }}>Pojemność zagrody:</span>
+                <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#334c38' }}>
+                  {game.babies} / {capacity} maluszków (Poziom {game.penLevel})
+                </div>
+              </div>
+              {game.penLevel < 3 && (
+                <button
+                  className="secondary"
+                  style={{ fontSize: '12px', padding: '6px 12px' }}
+                  onClick={() => perform('pen')}
+                >
+                  Powiększ zagrodę
+                  <Cost cost={upgradeCost} state={game} />
+                </button>
+              )}
+            </div>
+
+            <div className="shop-items" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <article style={{ background: '#fcf9f2', borderColor: '#e6dec5' }}>
+                <span className="product-icon" style={{ background: '#f3ebd4' }}><Icon name="carrot" size={28} /></span>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '14px', color: '#684a16' }}>Nakarm parę rodziców (2 marchewki)</h3>
+                  <p style={{ fontSize: '12px' }}>
+                    {game.nextBirthAt ? `Maluszek już w drodze (${remaining}s)!` : isFull ? 'Zagroda pełna – powiększ zagrodę lub oddaj maluszka do adopcji.' : `Czas: ${game.totalBred === 0 ? '45s' : '90s'}`}
+                  </p>
+                </div>
+                <button
+                  className="primary"
+                  disabled={Boolean(game.nextBirthAt) || isFull || game.carrots < 2}
+                  onClick={() => perform('feed')}
+                  style={{ fontSize: '12px', padding: '8px 14px' }}
+                >
+                  {game.nextBirthAt ? `${remaining}s` : 'Nakarm'}
+                </button>
+              </article>
+
+              <article style={{ background: '#f5faf4', borderColor: '#d3e8cf' }}>
+                <span className="product-icon" style={{ background: '#e1f2dc' }}><Icon name="rabbit" size={28} /></span>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '14px', color: '#2d5e38' }}>Nowy dom dla maluszka</h3>
+                  <p style={{ fontSize: '12px' }}>Przekaż wybranego maluszka nowej kochającej rodzinie · +5 monet</p>
+                </div>
+                <button
+                  className="secondary"
+                  disabled={game.babies < 1}
+                  onClick={() => perform('sell-baby')}
+                  style={{ fontSize: '12px', padding: '8px 14px' }}
+                >
+                  Adopcja (+5)
+                </button>
+              </article>
+            </div>
+          </Modal>
+        );
+      })()}
+
+      {/* HOUSE MODAL (Section 5: Warsztat, Kuchnia, Goście) */}
+      {modal === 'house' && (() => {
+        const connected = hasConnectedWorld(game);
+        const currentGuest = TOURIST_GUESTS[(game.guestIndex || 0) % TOURIST_GUESTS.length];
+        const isResting = Date.now() - (game.lastTouristIncome || 0) < 30000;
+        const waitSec = Math.max(1, Math.ceil((30000 - (Date.now() - (game.lastTouristIncome || 0))) / 1000));
+
+        return (
+          <Modal title="Twój Dom · Baza Gospodarza" subtitle={`POZIOM ${game.houseLevel}: ${game.houseLevel === 1 ? 'CHATKA' : game.houseLevel === 2 ? 'DOM GOSPODARZA' : 'DOM ODKRYWCY'}`} onClose={closeModal}>
+            <Resources state={game} all />
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '8px', margin: '14px 0 10px', borderBottom: '2px solid #e1ebdc', paddingBottom: '8px' }}>
+              <button
+                className={houseTab === 'workshop' ? 'primary' : 'secondary'}
+                style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '10px' }}
+                onClick={() => setHouseTab('workshop')}
+              >
+                Warsztat
+              </button>
+              {game.houseLevel >= 2 && (
+                <button
+                  className={houseTab === 'kitchen' ? 'primary' : 'secondary'}
+                  style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '10px' }}
+                  onClick={() => setHouseTab('kitchen')}
+                >
+                  Kuchnia
+                </button>
+              )}
+              {game.houseLevel >= 3 && (
+                <button
+                  className={houseTab === 'guests' ? 'primary' : 'secondary'}
+                  style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '10px' }}
+                  onClick={() => setHouseTab('guests')}
+                >
+                  Pokoje Gościnne
+                </button>
+              )}
+            </div>
+
+            {/* TAB: WORKSHOP */}
+            {houseTab === 'workshop' && (
+              <div>
+                <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#4a6f54' }}>Wytwarzanie narzędzi i wyposażenia:</h4>
+                <div className="shop-items">
+                  <article style={{ background: '#fdfbf7', borderColor: '#e6ded0' }}>
+                    <span className="product-icon" style={{ background: '#efe7d6' }}><Icon name="pickaxe" size={28} /></span>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '14px' }}>Kilof górniczy</h3>
+                      <p style={{ fontSize: '12px' }}>Wymagany do wydobycia błękitnych kryształów na Wzgórzach</p>
+                    </div>
+                    <button disabled={Boolean(game.tools?.pickaxe)} className="primary" onClick={() => perform('unlock:quarry')} style={{ fontSize: '12px' }}>
+                      {game.tools?.pickaxe ? 'Posiadany ✓' : 'Zrób kilof'}
+                    </button>
+                  </article>
+
+                  <article style={{ background: '#fdfbf7', borderColor: '#e6ded0' }}>
+                    <span className="product-icon" style={{ background: '#efe7d6' }}><Icon name="backpack" size={28} /></span>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '14px' }}>Kosz wyprawowy</h3>
+                      <p style={{ fontSize: '12px' }}>Wykonany z 3 drewna do dalszych wypraw</p>
+                    </div>
+                    <button disabled={Boolean(game.tools?.basket)} className="primary" onClick={() => perform('unlock:lake')} style={{ fontSize: '12px' }}>
+                      {game.tools?.basket ? 'Posiadany ✓' : 'Wypleć (3 drewna)'}
+                    </button>
+                  </article>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: KITCHEN */}
+            {houseTab === 'kitchen' && (
+              <div>
+                <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#4a6f54' }}>Kuchnia i pieczenie pieczywa:</h4>
+                <div className="shop-items">
+                  <article style={{ background: '#fefdf7', borderColor: '#eae0c8' }}>
+                    <span className="product-icon" style={{ background: '#f8eed4' }}><Icon name="flour" size={28} /></span>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '14px' }}>Świeże pieczywo dla gości</h3>
+                      <p style={{ fontSize: '12px' }}>Wypiek bochenka z 1 mąki do poczęstunku turystów</p>
+                    </div>
+                    <button disabled={game.flour < 1} className="primary" onClick={() => say('Masz gotową mąkę do przygotowania poczęstunku dla gościa!')} style={{ fontSize: '12px' }}>
+                      {game.flour >= 1 ? 'Mąka gotowa' : 'Brak mąki'}
+                    </button>
+                  </article>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: GUESTS (Section 14: 1 guest, 1 room, exact v0.4 rewards) */}
+            {houseTab === 'guests' && (
+              <div>
+                {!connected ? (
+                  <p style={{ fontSize: '13px', color: '#7a5a3a' }}>
+                    Odbuduj most do Wzgórz lub Łąki na mapie, by goście mogli tu dotrzeć!
+                  </p>
+                ) : isResting ? (
+                  <div style={{ textAlign: 'center', padding: '14px 0' }}>
+                    <p style={{ fontSize: '13px', color: '#5b7a65', margin: '0 0 8px' }}>
+                      Pokój gościnny jest wietrzony po wizycie. Kolejny gość zbliża się drogą!
+                    </p>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#396345', background: '#e4f0de', padding: '4px 12px', borderRadius: '12px' }}>
+                      Nowy gość za: {waitSec}s
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ background: '#f5f9f2', border: '1.5px solid #d5e5cf', borderRadius: '14px', padding: '12px', marginBottom: '12px' }}>
+                      <h3 style={{ margin: '0 0 4px', fontSize: '15px', color: '#2b5137' }}>{currentGuest.name} ({currentGuest.origin})</h3>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#496b52', fontStyle: 'italic' }}>{currentGuest.greeting}</p>
+                    </div>
+
+                    <div className="shop-items" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <article style={{ background: '#fcfdfa' }}>
+                        <span className="product-icon"><Icon name="house" size={26} /></span>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ margin: 0, fontSize: '13px' }}>Sam nocleg i herbatka</h4>
+                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +8 monet</span>
+                        </div>
+                        <button className="secondary" onClick={() => perform('host-guest:tea')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                          Ugość (8 monet)
+                        </button>
+                      </article>
+
+                      <article style={{ background: '#fcfdfa' }}>
+                        <span className="product-icon"><Icon name="carrot" size={26} /></span>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ margin: 0, fontSize: '13px' }}>Poczęstunek marchewkowy (3 marchewki)</h4>
+                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +16 monet</span>
+                        </div>
+                        <button className="primary" disabled={game.carrots < 3} onClick={() => perform('host-guest:carrots')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                          Poczęstuj (16 monet)
+                        </button>
+                      </article>
+
+                      <article style={{ background: '#fcfdfa' }}>
+                        <span className="product-icon"><Icon name="apple" size={26} /></span>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ margin: 0, fontSize: '13px' }}>Deser jabłkowy (2 jabłka)</h4>
+                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +18 monet</span>
+                        </div>
+                        <button className="primary" disabled={game.apples < 2} onClick={() => perform('host-guest:apples')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                          Poczęstuj (18 monet)
+                        </button>
+                      </article>
+
+                      <article style={{ background: '#fcfdfa' }}>
+                        <span className="product-icon"><Icon name="flour" size={26} /></span>
+                        <div style={{ flex: 1 }}>
+                          <h4 style={{ margin: 0, fontSize: '13px' }}>Ciepłe pieczywo (1 mąka)</h4>
+                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +18 monet</span>
+                        </div>
+                        <button className="primary" disabled={game.flour < 1} onClick={() => perform('host-guest:bread')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                          Upiecz i ugość (18 monet)
+                        </button>
+                      </article>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Modal>
+        );
+      })()}
+
+      {/* SHOP MODAL (Section 12: Exact v0.4 buy/sell tables) */}
       {modal === 'shop' && (
         <Modal title="Sklepik pod klamerką" subtitle="DOBRZE CIĘ WIDZIEĆ" onClose={closeModal}>
           <Resources state={game} all />
           <div className="shop-feedback" role="status">{shopMessage || 'Wybierz nasiona lub towary do wymiany.'}</div>
           <div className="shop-items">
             {[
-              { action: 'buy-seeds', icon: 'seeds', title: 'Paczuszka nasion', desc: 'Jedno sadzenie · co najmniej 3 marchewki', label: 'Kup · 2', available: game.coins >= 2 },
-              { action: 'buy-carrots', icon: 'carrot', title: 'Dwie marchewki', desc: 'Pyszny posiłek dla króliczej pary', label: 'Kup · 3', available: game.coins >= 3 },
-              ...(game.apples > 0 || game.orchardLevel > 0 ? [
-                { action: 'sell-apples', icon: 'apple', title: 'Sprzedaj 2 jabłka', desc: 'Soczyste owoce z Twojego sadu', label: 'Sprzedaj · +3', available: game.apples >= 2 }
+              { action: 'buy-seeds', icon: 'seeds', title: 'Paczka nasion', desc: 'Uniwersalne nasiona do siewu w ogrodzie', label: 'Kup · 2', available: game.coins >= 2 },
+              { action: 'buy-carrots', icon: 'carrot', title: '2 marchewki', desc: 'Pyszny posiłek dla króliczej pary', label: 'Kup · 3', available: game.coins >= 3 },
+              { action: 'buy-wood', icon: 'wood', title: '2 drewna', desc: 'Materiały do budowy i rozbudowy', label: 'Kup · 3', available: game.coins >= 3 },
+              { action: 'buy-stone', icon: 'stone', title: '2 kamienie', desc: 'Materiały na mosty i fundamenty', label: 'Kup · 3', available: game.coins >= 3 },
+              ...(game.world?.quarry ? [
+                { action: 'buy-crystal', icon: 'crystal', title: 'Błękitny kryształ', desc: 'Cenny minerał z kopalni wzgórz', label: 'Kup · 10', available: game.coins >= 10 }
               ] : []),
-              ...(game.flour > 0 || game.world?.windmill ? [
-                { action: 'sell-flour', icon: 'flour', title: 'Sprzedaj mąkę', desc: 'Świeża mąka ze skrzydlatego wiatraka', label: 'Sprzedaj · +4', available: game.flour >= 1 }
-              ] : []),
-              { action: 'sell-crystal', icon: 'crystal', title: 'Kryształ ze wzgórz', desc: 'Rzadki minerał o wysokiej wartości', label: 'Sprzedaj · +4', available: game.crystals > 0 },
-              { action: 'sell-wood', icon: 'wood', title: 'Sprzedaj 2 drewna', desc: 'Las zawsze ma coś w zapasie', label: 'Sprzedaj · +2', available: game.wood >= 2 },
-              { action: 'sell-stone', icon: 'stone', title: 'Sprzedaj 2 kamienie', desc: 'Zamień zapasy na nowe możliwości', label: 'Sprzedaj · +2', available: game.stone >= 2 },
-              { action: 'sell-baby', icon: 'rabbit', title: 'Nowy dom dla maluszka', desc: `Masz ${game.babies} małych króliczków.`, label: 'Sprzedaj · +5', available: game.babies > 0 }
+              { action: 'sell-wood', icon: 'wood', title: 'Sprzedaj 2 drewna', desc: 'Nadwyżki zebrane z farmy lub lasu', label: 'Sprzedaj · +2', available: game.wood >= 2 },
+              { action: 'sell-stone', icon: 'stone', title: 'Sprzedaj 2 kamienie', desc: 'Zapas kamieni z polany', label: 'Sprzedaj · +2', available: game.stone >= 2 },
+              { action: 'sell-carrot', icon: 'carrot', title: 'Sprzedaj 1 marchewkę', desc: 'Świeży plon z ogrodu', label: 'Sprzedaj · +1', available: game.carrots >= 1 },
+              { action: 'sell-wheat', icon: 'wheat', title: 'Sprzedaj 1 pszenicę', desc: 'Złote kłosy zebrane z ogrodu', label: 'Sprzedaj · +1', available: game.wheat >= 1 },
+              { action: 'sell-apples', icon: 'apple', title: 'Sprzedaj 2 jabłka', desc: 'Soczyste owoce z sadu jabłoni', label: 'Sprzedaj · +4', available: game.apples >= 2 },
+              { action: 'sell-flour', icon: 'flour', title: 'Sprzedaj 1 mąkę', desc: 'Świeża mąka ze skrzydlatego młyna', label: 'Sprzedaj · +3', available: game.flour >= 1 },
+              { action: 'sell-crystal', icon: 'crystal', title: 'Sprzedaj 1 kryształ', desc: 'Rzadki kryształ ze wzgórz', label: 'Sprzedaj · +4', available: game.crystals >= 1 },
+              { action: 'sell-baby', icon: 'rabbit', title: 'Nowy dom dla maluszka', desc: `Masz ${game.babies} małych króliczków.`, label: 'Adopcja · +5', available: game.babies > 0 }
             ].map(item => (
               <article key={item.action}>
                 <span className={`product-icon ${item.icon}`}><Icon name={item.icon} size={30} /></span>
@@ -409,25 +819,19 @@ function App() {
         </Modal>
       )}
 
+      {/* STALL / KRAM WĘDROWCÓW MODAL */}
       {modal === 'stall' && (() => {
         const connected = hasConnectedWorld(game);
         const visitorsList = getAvailableVisitors(game);
 
         return (
-          <Modal title="Kramik Wędrowców" subtitle="HANDEL I GOŚCIE Z INNYCH KRAIN" onClose={closeModal}>
+          <Modal title="Kramik Wędrowców" subtitle="ZAMÓWIENIA GOŚCI Z KRAIN" onClose={closeModal}>
             <Resources state={game} all />
             <p className="modal-intro" style={{ fontSize: '13px', color: '#688071', margin: '14px 0' }}>
               {connected
-                ? 'Goście z połączonych krain odwiedzają Twój stragan, by kupić świeże produkty z farmy!'
-                : 'Połącz farmę z innymi krainami (zbuduj most do Kryształowych Wzgórz lub Słonecznej Łąki), by wędrowcy i turyści mogli tu dotrzeć!'}
+                ? 'Wędrowcy z połączonych krain składają zamówienia na plony z Twojej farmy.'
+                : 'Odbuduj most do Wzgórz lub Łąki, by przybyli pierwsi wędrowcy.'}
             </p>
-
-            {game.houseLevel >= 3 && (
-              <div style={{ background: '#fdf8ea', border: '1.5px solid #ecd89f', borderRadius: '12px', padding: '10px 14px', marginBottom: '14px', fontSize: '12px', color: '#6f521b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Icon name="star" size={20} />
-                <span><b>Rezydencja Gościnna:</b> Turyści dają Ci +50% więcej monet za każde zamówienie i płacą regularny czynsz!</span>
-              </div>
-            )}
 
             <div className="shop-items">
               {visitorsList.map(v => {
@@ -439,7 +843,7 @@ function App() {
                       <h3 style={{ color: '#385e42' }}>{v.name}</h3>
                       <p>{v.desc}</p>
                       <div style={{ display: 'flex', gap: '8px', fontSize: '11px', marginTop: '6px', flexWrap: 'wrap' }}>
-                        <b>Chce:</b>
+                        <b>Potrzebuje:</b>
                         {Object.entries(v.wants).map(([k, n]) => (
                           <span key={k} style={{ color: (game[k] || 0) < n ? '#bc785d' : '#4d7557', display: 'flex', alignItems: 'center', gap: '3px' }}>
                             <Icon name={resourceIcons[k] || 'leaf'} size={15} /> {n} {resourceNames[k]}
@@ -448,8 +852,7 @@ function App() {
                       </div>
                     </div>
                     <button className="primary" disabled={!canFulfill} onClick={() => perform(`fulfill:${v.id}`)} style={{ padding: '10px 14px', fontSize: '12px' }}>
-                      Sprzedaj
-                      <Icon name="coins" size={16} />
+                      Dostarcz (+{v.gives.coins} monet)
                     </button>
                   </article>
                 );
@@ -459,173 +862,23 @@ function App() {
         );
       })()}
 
+      {/* HELPER MODAL */}
       {modal === 'helper' && (
         <Modal title="Pomocnik Franek" subtitle="PRZYJACIEL W OGRODZIE" onClose={closeModal}>
           <div style={{ textAlign: 'center', padding: '14px 0' }}>
             <div style={{ width: '64px', height: '64px', background: '#dce8d5', borderRadius: '50%', margin: '0 auto 14px', display: 'grid', placeItems: 'center' }}>
               <Icon name="helper" size={38} />
             </div>
-            <h3 style={{ margin: '0 0 8px', fontSize: '19px' }}>Franek pracuje na Twoich grządkach!</h3>
+            <h3 style={{ margin: '0 0 8px', fontSize: '19px' }}>Franek pomaga w Twoim ogrodzie!</h3>
             <p style={{ fontSize: '13px', color: '#688071', maxWidth: '400px', margin: '0 auto 16px', lineHeight: '1.6' }}>
-              Gdy posiadasz nasionka w plecaku, Franek automatycznie sieje i podlewa marchewki oraz zwiększa wszystkie zbiory o +2!
+              Franek zbiera dojrzałe uprawy i ponownie obsiewa grządki, dbając o nienaruszalną rezerwę nasion (min. 2 nasiona w plecaku).
             </p>
             <button className="primary full" onClick={closeModal}>Dziękuję, Franku!</button>
           </div>
         </Modal>
       )}
 
-      {modal === 'house' && (() => {
-        const connected = hasConnectedWorld(game);
-        const isResting = Date.now() - (game.lastTouristIncome || 0) < 12000;
-        const waitSec = Math.max(1, Math.ceil((12000 - (Date.now() - (game.lastTouristIncome || 0))) / 1000));
-        const currentGuest = TOURIST_GUESTS[(game.guestIndex || 0) % TOURIST_GUESTS.length];
-
-        const hostWith = (optionAction) => {
-          perform(optionAction);
-          worldRef.current?.animateAction?.('host-tourist');
-        };
-
-        return (
-          <Modal title="Rezydencja Gościnna" subtitle="POKOJE DLA TURYSTÓW I GOŚCINNOŚĆ" onClose={closeModal}>
-            <Resources state={game} all />
-
-            {!connected ? (
-              <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                <div style={{ width: '60px', height: '60px', background: '#fdf3e7', borderRadius: '50%', margin: '0 auto 12px', display: 'grid', placeItems: 'center' }}>
-                  <Icon name="map" size={32} />
-                </div>
-                <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#825021' }}>Otwórz drogę do innych krain!</h3>
-                <p style={{ fontSize: '13px', color: '#688071', maxWidth: '420px', margin: '0 auto 16px', lineHeight: '1.5' }}>
-                  Twoja Rezydencja ma wspaniałe pokoje gościnne, ale turyści nie mogą jeszcze do Ciebie dotrzeć. Odbuduj most do Kryształowych Wzgórz lub Słonecznej Łąki na mapie świata!
-                </p>
-                <button className="primary" onClick={() => { closeModal(); setModal('map'); }}>
-                  Otwórz mapę świata <Icon name="map" size={16} />
-                </button>
-              </div>
-            ) : isResting ? (
-              <div style={{ textAlign: 'center', padding: '18px 0' }}>
-                <div style={{ width: '64px', height: '64px', background: '#eef6ec', borderRadius: '50%', margin: '0 auto 12px', display: 'grid', placeItems: 'center' }}>
-                  <Icon name="house" size={36} />
-                </div>
-                <h3 style={{ margin: '0 0 6px', fontSize: '18px', color: '#2d5138' }}>Pokoje są przygotowywane</h3>
-                <p style={{ fontSize: '13px', color: '#688071', maxWidth: '400px', margin: '0 auto 14px', lineHeight: '1.5' }}>
-                  Pokoje gościnne są wietrzone i ścielone po ostatnim gościu. Kolejny turysta zbliża się ścieżką z mostu!
-                </p>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#e4f0de', border: '1.5px solid #bdd7b1', borderRadius: '20px', padding: '6px 16px', fontSize: '13px', color: '#396345', fontWeight: 'bold' }}>
-                  <span>Nowy gość za: {waitSec}s</span>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '12px 0 0' }}>
-                {/* Guest Profile Card */}
-                <div style={{ background: '#f5f8f0', border: '1.5px solid #d5e4cc', borderRadius: '16px', padding: '14px', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                  <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e0ecd6', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b3d2a0' }}>
-                    <Icon name="stall" size={34} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-                      <h3 style={{ margin: 0, fontSize: '16px', color: '#2b5137' }}>{currentGuest.name}</h3>
-                      <span style={{ fontSize: '11px', background: '#dcecd3', color: '#335b3e', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
-                        🌍 {currentGuest.origin}
-                      </span>
-                    </div>
-                    <p style={{ margin: '6px 0 4px', fontSize: '13px', color: '#496b52', fontStyle: 'italic', lineHeight: '1.4' }}>
-                      {currentGuest.greeting}
-                    </p>
-                    <div style={{ fontSize: '11px', color: '#6d8c74', marginTop: '4px' }}>
-                      💡 {currentGuest.wantsHint}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hospitality Menu Options */}
-                <div>
-                  <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#52755c', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Wybierz poczęstunek i przyjmij na nocleg:</h4>
-                  <div className="shop-items" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <article style={{ background: '#fefcf6', borderColor: '#ecd9a7' }}>
-                      <span className="product-icon" style={{ background: '#f8edd1' }}><Icon name="flour" size={28} /></span>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '14px', color: '#684a16' }}>Ciepły bochenek chleba</h3>
-                        <p style={{ fontSize: '12px' }}>Najlepszy rarytas z mąki wiatracznej</p>
-                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
-                          <b>Nagroda:</b> +25 monet, +1 kryształ, ⭐⭐⭐⭐⭐
-                        </div>
-                      </div>
-                      <button className="primary" disabled={game.flour < 1} onClick={() => hostWith('host-guest:bread')} style={{ padding: '8px 12px', fontSize: '12px' }}>
-                        Ugość (1 mąka)
-                      </button>
-                    </article>
-
-                    <article style={{ background: '#fdfbf9', borderColor: '#e9d7ca' }}>
-                      <span className="product-icon" style={{ background: '#f8e4d8' }}><Icon name="apple" size={28} /></span>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '14px', color: '#7a3e23' }}>Soczyste jabłka z sadu</h3>
-                        <p style={{ fontSize: '12px' }}>Słodki poczęstunek z jabłoni</p>
-                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
-                          <b>Nagroda:</b> +20 monet, +3 nasionka, ⭐⭐⭐⭐⭐
-                        </div>
-                      </div>
-                      <button className="primary" disabled={game.apples < 2} onClick={() => hostWith('host-guest:apples')} style={{ padding: '8px 12px', fontSize: '12px' }}>
-                        Poczęstuj (2 jabłka)
-                      </button>
-                    </article>
-
-                    <article style={{ background: '#f8fbf6', borderColor: '#d9e8cf' }}>
-                      <span className="product-icon" style={{ background: '#e5f2dc' }}><Icon name="carrot" size={28} /></span>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '14px', color: '#446b38' }}>Chrupiące marchewki</h3>
-                        <p style={{ fontSize: '12px' }}>Świeże witaminy z domowego ogrodu</p>
-                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
-                          <b>Nagroda:</b> +15 monet, +2 nasionka, ⭐⭐⭐⭐⭐
-                        </div>
-                      </div>
-                      <button className="primary" disabled={game.carrots < 3} onClick={() => hostWith('host-guest:carrots')} style={{ padding: '8px 12px', fontSize: '12px' }}>
-                        Poczęstuj (3 marchewki)
-                      </button>
-                    </article>
-
-                    <article style={{ background: '#f6faf8', borderColor: '#d1e5dd' }}>
-                      <span className="product-icon" style={{ background: '#dceee7' }}><Icon name="house" size={28} /></span>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '14px', color: '#2b5b4e' }}>Sam nocleg i herbata</h3>
-                        <p style={{ fontSize: '12px' }}>Ciepłe łóżko i odpoczynek po wędrówce</p>
-                        <div style={{ fontSize: '11px', color: '#396b44', marginTop: '2px' }}>
-                          <b>Nagroda:</b> +10 monet, ⭐⭐⭐⭐
-                        </div>
-                      </div>
-                      <button className="secondary" onClick={() => hostWith('host-guest:rest')} style={{ padding: '8px 12px', fontSize: '12px' }}>
-                        Zaoferuj nocleg
-                      </button>
-                    </article>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Guestbook section */}
-            <div style={{ marginTop: '16px', background: '#fbfdf9', border: '1.5px solid #e1ecdb', borderRadius: '14px', padding: '12px 14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#3b6146' }}>📖 KSIĘGA GOŚCI REZYDENCJI</span>
-                <span style={{ fontSize: '11px', color: '#688970', fontWeight: 'bold' }}>Ugoszczono: {game.hostedGuestsCount || 0} turystów</span>
-              </div>
-              {game.guestReviews && game.guestReviews.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {game.guestReviews.slice(0, 3).map((r, i) => (
-                    <div key={i} style={{ fontSize: '12px', color: '#4d6955', background: '#f3f8ee', padding: '6px 10px', borderRadius: '8px' }}>
-                      <b>{r.name}</b> <span style={{ color: '#88a68f', fontSize: '11px' }}>({r.origin}):</span> {r.text}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ margin: 0, fontSize: '12px', color: '#88a68f', fontStyle: 'italic' }}>
-                  Bądź pierwszym, który ugości strudzonego wędrowca w swoich progach!
-                </p>
-              )}
-            </div>
-          </Modal>
-        );
-      })()}
-
+      {/* OWL RIDDLES MODAL (Section 15: 2 coins reward, hint, trivia) */}
       {modal === 'owl' && (() => {
         const riddle = OWL_RIDDLES.find(r => r.id === owlRiddleId) || OWL_RIDDLES[0];
         const isSolved = game.solvedRiddles?.includes(riddle.id);
@@ -642,10 +895,10 @@ function App() {
                 nextState[k] = (nextState[k] || 0) + n;
               }
               commit(nextState);
-              say(`Brawo! Nagroda od Sowy Klary: +${riddle.reward.coins} monet i nagrody!`);
+              say(`Brawo! Nagroda od Sowy Klary: +${riddle.reward.coins} monety!`);
             }
           } else {
-            setOwlAnswerState({ selected: optionIndex, correct: false, fact: 'Niemal! Zastanów się jeszcze raz lub zapytaj przyjaciół.' });
+            setOwlAnswerState({ selected: optionIndex, correct: false, fact: riddle.hint || 'Zastanów się jeszcze raz!' });
           }
         };
 
@@ -664,13 +917,13 @@ function App() {
         return (
           <Modal title="Mądra Sowa Klara" subtitle="ZAGADKI I TAJEMNICE PRZYRODY" onClose={closeModal}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#f5f8f1', border: '1.5px solid #dbe6d2', borderRadius: '16px', padding: '14px 18px', marginBottom: '14px' }}>
-              <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e1ecd6', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b9d7a6', boxShadow: '0 4px 12px rgba(90,130,80,0.15)' }}>
+              <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e1ecd6', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b9d7a6' }}>
                 <Icon name="owl" size={36} />
               </div>
               <div>
-                <h4 style={{ margin: '0 0 4px', fontSize: '15px', color: '#2d5138' }}>Sowa Klara · Strażniczka Przyrody</h4>
+                <h4 style={{ margin: '0 0 4px', fontSize: '15px', color: '#2d5138' }}>Sowa Klara · Przewodniczka</h4>
                 <p style={{ margin: 0, fontSize: '12px', color: '#5b7863', lineHeight: '1.4' }}>
-                  „Huhu! Znam sekrety lasu, wzgórz i łąki. Odgadnij moją zagadkę i zdobądź cenne nagrody!”
+                  „Huhu! Znam sekrety lasu, łąki i gwiazd. Rozwiąż zagadkę przyrodniczą!”
                 </p>
               </div>
             </div>
@@ -725,8 +978,7 @@ function App() {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.15s ease'
+                        textAlign: 'left'
                       }}
                     >
                       <span>{String.fromCharCode(65 + idx)}. {opt}</span>
@@ -750,25 +1002,14 @@ function App() {
                   {owlAnswerState.fact}
                 </div>
               )}
-
-              {isSolved && !owlAnswerState && (
-                <div style={{ marginTop: '12px', fontSize: '12px', color: '#4d7557', textAlign: 'center', fontWeight: '500' }}>
-                  ✓ Ta zagadka została już rozwiązana. Możesz przejść do następnej!
-                </div>
-              )}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
               <button onClick={prevRiddle} style={{ background: '#f0f5ec', border: '1px solid #d3e2ce', borderRadius: '10px', padding: '10px 14px', color: '#385e42', fontWeight: '600', fontSize: '12px' }}>
                 ◀ Poprzednia
               </button>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '11px', color: '#688071' }}>
-                Nagroda:
-                {Object.entries(riddle.reward).map(([k, n]) => (
-                  <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', fontWeight: '600', color: '#355b3f' }}>
-                    <Icon name={resourceIcons[k] || 'coins'} size={15} /> +{n}
-                  </span>
-                ))}
+              <div style={{ fontSize: '12px', color: '#355b3f', fontWeight: 'bold' }}>
+                Nagroda: +{riddle.reward.coins} monety
               </div>
               <button onClick={nextRiddle} className="primary" style={{ padding: '10px 16px', fontSize: '12px' }}>
                 Następna ▶
@@ -778,11 +1019,12 @@ function App() {
         );
       })()}
 
+      {/* PROFILE & SAVE EXPORT / IMPORT MODAL (Section 18) */}
       {modal === 'profile' && (
-        <Modal title="To Twoja przygoda" subtitle="PROFIL POSTACI" onClose={closeModal}>
-          <form onSubmit={e => { e.preventDefault(); commit({ ...gameRef.current, name: name.trim().slice(0, 20), avatar }); closeModal(); say('Gotowe. Ruszamy na polanę!'); }}>
-            <label className="field-label" htmlFor="player-name">Jak nazwiemy Twoją postać?</label>
-            <input id="player-name" autoComplete="nickname" maxLength={20} placeholder="Wpisz imię" value={name} onChange={e => setName(e.target.value)} />
+        <Modal title="Profil i Zapis Gry" subtitle={`WERSJA SCHEMATU: ${SAVE_VERSION}`} onClose={closeModal}>
+          <form onSubmit={e => { e.preventDefault(); commit({ ...gameRef.current, name: name.trim().slice(0, 20), avatar }); closeModal(); say('Postać zapisana!'); }}>
+            <label className="field-label" htmlFor="player-name">Nazwa Twojej farmy:</label>
+            <input id="player-name" autoComplete="nickname" maxLength={20} placeholder="Wpisz nazwę farmy lub imię" value={name} onChange={e => setName(e.target.value)} />
             <div className="avatar-choices">
               {['girl', 'boy'].map(a => (
                 <button type="button" className={avatar === a ? 'chosen' : ''} key={a} aria-pressed={avatar === a} onClick={() => setAvatar(a)}>
@@ -792,8 +1034,41 @@ function App() {
                 </button>
               ))}
             </div>
-            <button type="submit" className="primary full">Zapisz postać <Icon name="arrow" size={20} /></button>
+            <button type="submit" className="primary full" style={{ marginBottom: '14px' }}>Zapisz postać <Icon name="arrow" size={20} /></button>
           </form>
+
+          {/* Export / Import Safe Progression Tools */}
+          <div style={{ background: '#f8faf6', border: '1.5px solid #dce8d6', borderRadius: '14px', padding: '12px 14px' }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: '#3f6349' }}>Kopia zapasowa postępów (Eksport / Import):</h4>
+            <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#6a8470', lineHeight: '1.4' }}>
+              Możesz pobrać swój stan gry jako plik .json i wczytać go na innym telefonie lub komputerze.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="secondary"
+                style={{ fontSize: '12px', padding: '8px 12px' }}
+                onClick={() => exportGameSave(game)}
+              >
+                Pobierz zapis (.json)
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                style={{ fontSize: '12px', padding: '8px 12px' }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Wczytaj plik zapisu
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept=".json,application/json"
+                onChange={handleImportSave}
+              />
+            </div>
+          </div>
         </Modal>
       )}
     </main>
@@ -845,3 +1120,4 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
       .catch(() => {});
   });
 }
+

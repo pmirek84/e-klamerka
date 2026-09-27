@@ -86,6 +86,14 @@ button svg { flex-shrink: 0; }
 .resource { display: flex; gap: 6px; align-items: center; font-size: 16px; min-width: 36px; }
 .resource b { font-variant-numeric: tabular-nums; font-size: 16px; }
 .resource.coins { padding-left: 12px; border-left: 1px solid #dddcca; }
+.resource.wheat svg { color: #b58d34; }
+.resource.backpack-btn {
+  transition: transform .15s ease, background .15s ease;
+}
+.resource.backpack-btn:hover {
+  background: #fdf3e2 !important;
+  transform: translateY(-1px);
+}
 .resource svg { color: #6f7665; }
 
 .header-actions { display: flex; gap: 8px; pointer-events: auto; }
