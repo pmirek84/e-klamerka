@@ -7,8 +7,6 @@ const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
 const graDir = path.resolve(rootDir, 'gra');
 
-console.log('Copying build output from dist/ to /gra/ folder...');
-
 function copyRecursiveSync(src, dest) {
   const exists = fs.existsSync(src);
   const stats = exists && fs.statSync(src);
@@ -26,8 +24,10 @@ function copyRecursiveSync(src, dest) {
 }
 
 if (fs.existsSync(distDir)) {
+  console.log('Copying build output from dist/ to root and /gra/ folders...');
   copyRecursiveSync(distDir, graDir);
-  console.log('Successfully copied dist contents to /gra/!');
+  copyRecursiveSync(distDir, rootDir);
+  console.log('Successfully copied dist contents to root and /gra/!');
 } else {
   console.error('dist directory does not exist! Run npm run build first.');
 }

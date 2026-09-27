@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
-    "build:ovh": "vite build && node scripts/copy-dist-to-root.js",
+    "dev": "node scripts/prebuild.js && vite --host 127.0.0.1",
+    "build": "node scripts/prebuild.js && vite build",
+    "build:ovh": "node scripts/prebuild.js && vite build && node scripts/copy-dist-to-root.js",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
