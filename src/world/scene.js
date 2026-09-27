@@ -1,5 +1,5 @@
 import * as T from 'three';
-import { palette as C, material, box, ball, cylinder, group, shadow, bake, tree, house, pen, garden, shop, rabbit, person } from './models.js';
+import { palette as C, material, box, ball, cylinder, group, shadow, bake, tree, house, pen, garden, shop, rabbit, person, stall, helper, visitor, owl } from './models.js';
 import { PLACES } from '../game.js';
 import { REGIONS, regionAt, insideWorld, visiblePlace, unlocked } from './regions.js';
 import { findPath } from './navigation.js';
@@ -19,8 +19,8 @@ export function createWorld(host, callbacks) {
   const camera=new T.PerspectiveCamera(38,1,.1,260);let yaw=.35,zoom=1,overview=true,worldOverview=false;
   const look=new T.Vector3(0,0,1), desiredLook=new T.Vector3(), offset=new T.Vector3();
   let width=1,height=1, state={}, raf=0, disposed=false, last=performance.now(),time=0,lastUi=0;
-  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,landObj,player,worldChanges;let lastRegion=null;
-  const obstacles=[...[[ -35,-4],[-31,-4],[-26,-5],[-23,-2],[-36,1],[-34,6],[-29,6],[-24,5],[25,4],[37,3],[26,-6]].map(([x,z])=>({x,z,w:.8,d:.8}))];let rabbits=[],selected=null,path=[],keys=new Set(),busyUntil=0,fx=[];
+  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,landObj,stallObj,helperObj,owlObj,player,worldChanges;let lastRegion=null;
+  const obstacles=[...[[ -35,-4],[-31,-4],[-26,-5],[-23,-2],[-36,1],[-34,6],[-29,6],[-24,5],[25,4],[37,3],[26,-6]].map(([x,z])=>({x,z,w:.8,d:.8}))];let rabbits=[],visitors=[],selected=null,path=[],keys=new Set(),busyUntil=0,fx=[];
   const raycaster=new T.Raycaster(),pointer=new T.Vector2(),ground=new T.Plane(new T.Vector3(0,1,0),0),hitPoint=new T.Vector3();
   let seed=43;const random=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};
 
@@ -123,8 +123,11 @@ export function createWorld(host, callbacks) {
       if(worldChanges)disposeObject(worldChanges.root);worldChanges=buildWorldChanges(dynamic,next);
     }
     if(!houseObj||prev.houseLevel!==next.houseLevel){disposeObject(houseObj);houseObj=house(dynamic,next.houseLevel);targets.push(houseObj);}
-    if(!penObj||prev.pen!==next.pen){disposeObject(penObj);penObj=pen(dynamic,next.pen);}
+    if(!penObj||prev.pen!==next.pen||prev.penLevel!==next.penLevel){disposeObject(penObj);penObj=pen(dynamic,next.pen,next.penLevel||1);}
     if(!gardenObj||prev.planted!==next.planted||prev.watered!==next.watered||prev.landLevel!==next.landLevel){disposeObject(gardenObj);gardenObj=garden(dynamic,next);targets.push(gardenObj);}
+    if(!stallObj||prev.stall!==next.stall){disposeObject(stallObj);stallObj=stall(dynamic,next.stall);targets.push(stallObj);}
+    if(!helperObj||prev.helper!==next.helper){if(helperObj?.root)disposeObject(helperObj.root);helperObj=helper(dynamic,next.helper);if(helperObj?.root)targets.push(helperObj.root);}
+    if(!owlObj){owlObj=owl(dynamic);targets.push(owlObj.root);}
     if(!landObj||prev.landLevel!==next.landLevel){
       disposeObject(landObj);landObj=group(dynamic);
       for(let i=0;i<next.landLevel;i++)island(landObj,13+i*2.8,4.8,3,4);
@@ -132,8 +135,6 @@ export function createWorld(host, callbacks) {
       bake(landObj);
     }
     if(!player||prev.avatar!==next.avatar){if(player)player.root.removeFromParent();player=person(scene,next.avatar);player.root.position.copy(pos);}
-    // Construction can enlarge an obstacle around a player who acted before reaching the marker.
-    // Move to the closest free point so an upgrade can never trap the avatar.
     if(!walkable(pos.x,pos.z)){
       let safe=null;
       for(let r=.35;r<5&&!safe;r+=.35)for(let i=0;i<24;i++){
@@ -142,20 +143,34 @@ export function createWorld(host, callbacks) {
       }
       if(safe){pos.set(safe.x,0,safe.z);player.root.position.copy(pos);path=[];}
     }
-    const n=next.rabbits&&next.pen?2+Math.min(next.babies,10):0;
+    const n=next.rabbits&&next.pen?2+Math.min(next.babies,18):0;
     while(rabbits.length>n){rabbits.pop().root.removeFromParent();}
     while(rabbits.length<n){const i=rabbits.length,r=rabbit(scene,i,i>=2);r.root.position.set(4.1+random()*2.3,0,2.1+random()*1.4);r.from=r.root.position.clone();r.to=r.from.clone();r.next=time+random()*1.2;r.started=0;r.duration=.8;rabbits.push(r);}
+
+    const numVisitors = next.stall ? 2 : 0;
+    while(visitors.length > numVisitors) { visitors.pop().root.removeFromParent(); }
+    while(visitors.length < numVisitors) {
+      const idx = visitors.length;
+      const v = visitor(scene, idx);
+      v.root.position.set(-1.2 + (idx === 0 ? 1.4 : -1.4), 0, 7.6 + idx * 0.4);
+      visitors.push(v);
+    }
   }
   function inside(x,z){return insideWorld(x,z,state);}
   function walkable(x,z){
     if(!inside(x,z))return false;
-    const blocks=[...obstacles,{x:1,z:-30,w:4.6,d:3.4},...(state.world?.windmill?[{x:34,z:-4,w:2.7,d:2.7}]:[]),{x:state.houseLevel>=3?-2.15:-3,z:state.houseLevel>=3?-1.8:-2,w:state.houseLevel>=3?6.5:4.6,d:state.houseLevel>=3?4.5:3.8},...(state.pen?[{x:5.3,z:2.3,w:5.2,d:4.2}]:[])];
+    const blocks=[...obstacles,{x:1,z:-30,w:4.6,d:3.4},...(state.world?.windmill?[{x:34,z:-4,w:2.7,d:2.7}]:[]),{x:state.houseLevel>=3?-2.15:-3,z:state.houseLevel>=3?-1.8:-2,w:state.houseLevel>=3?6.5:4.6,d:state.houseLevel>=3?4.5:3.8},...(state.pen?[{x:5.3,z:2.3,w:state.penLevel>=2?6.2:5.2,d:4.2}]:[]),...(state.stall?[{x:-1.2,z:8.5,w:2.2,d:1.6}]:[])];
     return !blocks.some(b=>Math.abs(x-b.x)<b.w/2+.3&&Math.abs(z-b.z)<b.d/2+.3);
   }
   function route(x,z){return findPath([pos.x,pos.z],[x,z],walkable).map(([px,pz])=>new T.Vector3(px,0,pz));}
   function select(id){if(PLACES[id]?.region&&!unlocked(PLACES[id].region,state))id=REGIONS[PLACES[id].region].gate;worldOverview=false;selected=id;callbacks.onSelect(id);if(!id)return;const p=PLACES[id];path=route(...p.approach);marker.position.set(...[p.approach[0],.12,p.approach[1]]);marker.visible=true;overview=false;}
   function goTo(x,z){worldOverview=false;path=route(x,z);if(path.length){const end=path.at(-1);marker.position.set(end.x,.12,end.z);marker.visible=true;}overview=false;}
-  function project(v){const p=new T.Vector3(...v).project(camera);return {x:(p.x*.5+.5)*width,y:(-.5*p.y+.5)*height,visible:p.z<1&&Math.abs(p.x)<.95&&Math.abs(p.y)<.92};}
+  function project(v){
+    const p=new T.Vector3(...v).project(camera);
+    const sx = (p.x*.5+.5)*width;
+    const sy = (-.5*p.y+.5)*height;
+    return {x:sx,y:sy,visible:p.z<1&&sx>20&&sx<width-20&&sy>20&&sy<height-20};
+  }
   function positionCamera(dt){
     const region=REGIONS[regionAt(pos.x,pos.z)||lastRegion||'farm'];
     desiredLook.set(worldOverview?0:overview?region.x:pos.x,0,worldOverview?-9:overview?region.z:pos.z-1.5);
@@ -171,6 +186,7 @@ export function createWorld(host, callbacks) {
   function turn(d){yaw+=d;overview=false;worldOverview=false;}
   function setZoom(d){zoom=T.MathUtils.clamp(zoom+d,.58,1.45);}
   const pointerDown=new Map();let drag=null,pinch=null,lastGestureRoute=0;
+  let lastTapTime=0, lastTapCoords={x:0,y:0};
   const suppressed=new Set();
   function screenRay(x,y){const rect=renderer.domElement.getBoundingClientRect();pointer.set((x-rect.left)/width*2-1,-(y-rect.top)/height*2+1);raycaster.setFromCamera(pointer,camera);}
   function guideFinger(e){screenRay(e.clientX,e.clientY);if(raycaster.ray.intersectPlane(ground,hitPoint)&&inside(hitPoint.x,hitPoint.z))goTo(hitPoint.x,hitPoint.z);}
@@ -200,8 +216,29 @@ export function createWorld(host, callbacks) {
     pointerDown.delete(e.pointerId);suppressed.delete(e.pointerId);drag=null;if(!pointerDown.size)pinch=null;
     if(multi||!start||e.button>0)return;
     if(Math.hypot(e.clientX-start.startX,e.clientY-start.startY)>9){guideFinger(e);return;}
+
+    // Check double-tap on touch/mouse
+    const now = performance.now();
+    const tapInterval = now - lastTapTime;
+    const tapDist = Math.hypot(e.clientX - lastTapCoords.x, e.clientY - lastTapCoords.y);
+    lastTapTime = now;
+    lastTapCoords = { x: e.clientX, y: e.clientY };
+
     screenRay(e.clientX,e.clientY);
-    const hits=raycaster.intersectObjects(targets,true);if(hits.length){let o=hits[0].object;while(o&&!o.userData.place)o=o.parent;if(o?.userData.place){select(o.userData.place);return;}}
+    const hits=raycaster.intersectObjects(targets,true);
+    let hitPlace = null;
+    if(hits.length){
+      let o=hits[0].object;
+      while(o&&!o.userData.place)o=o.parent;
+      if(o?.userData.place) hitPlace = o.userData.place;
+    }
+
+    if (tapInterval < 380 && tapDist < 25) {
+      if (hitPlace) { performDirectAction(hitPlace); return; }
+      if (selected) { performDirectAction(selected); return; }
+    }
+
+    if(hitPlace){select(hitPlace);return;}
     if(raycaster.ray.intersectPlane(ground,hitPoint))goTo(hitPoint.x,hitPoint.z);
   }
   function wheel(e){e.preventDefault();setZoom(e.deltaY*.0007);}
@@ -247,7 +284,7 @@ export function createWorld(host, callbacks) {
 
   function burst(x,z,color){for(let i=0;i<9;i++){const m=box(scene,.12,.12,.12,color,x,.55,z);fx.push({m,v:new T.Vector3((random()-.5)*2,2+random()*2,(random()-.5)*2),end:time+.75});}}
   function animateAction(kind){busyUntil=time+1.1;path=[];const p=PLACES[selected];burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':'#f6d68a');}
-  let paused=false, frameTime=16, lastTapTime = 0, lastTapTarget = null;
+  let paused=false, frameTime=16;
   function frame(now){
     if(disposed)return;frameTime=frameTime*.9+(now-last)*.1;const dt=Math.min(.1,(now-last)/1000);last=now;time+=dt;
     let dx=0,dz=0,speed=0;
@@ -278,6 +315,11 @@ export function createWorld(host, callbacks) {
       } else { autoActTarget=null; }
     }
 
+    if(helperObj?.update) helperObj.update(time);
+    if(owlObj?.update) owlObj.update(time);
+    for(const v of visitors){
+      v.body.position.y = Math.sin(time * 2.5 + v.phase) * 0.02;
+    }
     if(worldChanges?.rotor)worldChanges.rotor.rotation.z-=dt*.6;
     for(const r of rabbits){
       if(time>r.next){r.from.copy(r.root.position);r.to.set(3.5+random()*3.5,0,2.25+random()*1.65);r.started=time;r.duration=.6+r.from.distanceTo(r.to)*.2;r.next=time+r.duration+1.2+random()*2.2;r.root.rotation.y=Math.atan2(r.to.x-r.from.x,r.to.z-r.from.z);}

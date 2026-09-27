@@ -135,15 +135,16 @@ export function fence(p,x,z,w,d) {
     for(const y of [.4,.78])box(p,.09,.12,d,palette.cream,x+side*w/2,y,z);
   }
 }
-export function pen(p,built) {
+export function pen(p,built,level=1) {
   const g=group(p,5.3,0,2.3);g.userData.place='pen';
-  box(g,5.2,.08,4.2,built?'#b3c579':'#a4b870',0,.05,0,.15);
+  const width=level>=2?6.2:5.2;
+  box(g,width,.08,4.2,built?'#b3c579':'#a4b870',0,.05,0,.15);
   if(!built) {
     for(const x of [-2.6,2.6])for(const z of [-2.1,2.1])box(g,.14,.4,.14,palette.lightWood,x,.2,z);
     for(const z of [-2.1,2.1])box(g,5.2,.045,.06,palette.cream,0,.1,z);
     return bake(g);
   }
-  fence(g,0,0,5.2,4.2);
+  fence(g,0,0,width,4.2);
   const hutch=group(g,0,0,-.8);box(hutch,2,.9,1.3,palette.lightWood,0,1,0);box(hutch,.65,.65,.08,'#674934',.42,.91,.69);
   for(const x of [-.8,.8])for(const z of [-.5,.5])box(hutch,.13,.65,.13,palette.wood,x,.33,z);
   roof(hutch,2,1.3,1.5);
@@ -151,7 +152,99 @@ export function pen(p,built) {
   for(let i=0;i<4;i++)box(hutch,.67,.08,.09,palette.lightWood,.42,.14+i*.11,1.62-i*.23);
   cylinder(g,.3,.33,.16,'#819cac',1.5,.13,1.1);cylinder(g,.24,.24,.012,'#81cbd1',1.5,.22,1.1);
   box(g,.7,.27,.5,'#e7bf6b',-1.6,.23,-1);
+  if(level>=2){
+    box(g,1.4,.65,1,'#c8ab82',-2,.4,1.1);roof(g,1.4,1,.85,'#ac7245');
+    box(g,.5,.25,.8,'#e7bf6b',-1.8,.15,1.2);
+  }
+  if(level>=3){
+    box(g,1.3,.2,.4,'#98a7a7',2.1,.15,-1.2);cylinder(g,.18,.18,.02,'#81cbd1',2.1,.26,-1.2);
+  }
   return bake(g);
+}
+export function stall(p,built) {
+  const g=group(p,-1.2,0,8.5);g.userData.place='stall';shadow(g,0,0,1.5,1.3);
+  if(!built){
+    box(g,2,.12,1.5,'#c2b090',0,.06,0);
+    for(const x of [-.9,.9])for(const z of [-.6,.6])box(g,.1,.35,.1,palette.wood,x,.2,z);
+    return bake(g);
+  }
+  box(g,2.2,.15,1.6,palette.lightWood,0,.1,0);
+  box(g,2,.85,.8,'#b98b5a',0,.52,.25);
+  box(g,2.15,.12,1,palette.cream,0,.96,.25);
+  for(const x of [-.95,.95])box(g,.11,2.1,.11,palette.wood,x,1.1,-.55);
+  for(let i=0;i<5;i++){
+    const awn=box(g,.44,.1,1.8,i%2?'#e06b52':'#fff1d2',-.88+i*.44,2.2,0);awn.rotation.x=.12;
+    box(g,.43,.25,.08,i%2?'#e06b52':'#fff1d2',-.88+i*.44,1.95,.88);
+  }
+  // Crates with apples and carrots
+  box(g,.55,.22,.55,palette.wood,-.6,.98,.25);
+  for(let i=0;i<4;i++)ball(g,.09,'#e04a4a',-.7+i%2*.18,1.12,.17+Math.floor(i/2)*.18);
+  box(g,.55,.22,.55,palette.wood,.6,.98,.25);
+  for(let i=0;i<3;i++)cylinder(g,.05,.02,.24,'#e89240',.52+i*.1,1.1,.25).rotation.z=.4;
+  return bake(g);
+}
+export function helper(p,active) {
+  const root=group(p,-3.8,0,6.8);root.userData.place='helper';
+  if(!active){
+    box(root,.4,.7,.4,'#c8ab82',0,.35,0);
+    ball(root,.18,'#d5ba8c',0,.8,0);
+    return {root,update:()=>{}};
+  }
+  shadow(root,0,0,.45,.35);
+  const body=group(root);
+  // Franek helper in denim overalls & straw hat
+  cylinder(body,.18,.14,.6,'#3d678a',0,.45,0);
+  cylinder(body,.19,.18,.35,'#d65b43',0,.85,0);
+  ball(body,.16,'#eed3b3',0,1.12,0);
+  // Straw hat
+  cylinder(body,.36,.36,.04,'#dcba78',0,1.24,0);
+  cylinder(body,.22,.22,.15,'#c9a35e',0,1.32,0);
+  // Watering can in hand
+  const can=group(body,.28,.55,.15);
+  cylinder(can,.12,.14,.24,'#52888d',0,0,0);
+  const spout=cylinder(can,.03,.05,.26,'#52888d',.12,.1,0);spout.rotation.z=-.7;
+  function update(time){
+    body.position.y=Math.abs(Math.sin(time*3))*.04;
+    can.rotation.z=Math.sin(time*2.5)*.25;
+  }
+  return {root,body,update};
+}
+export function visitor(p,index=0) {
+  const root=group(p);
+  const body=group(root);
+  const colors=['#4d7c67','#885a8a','#b37341'];
+  const cloakColor=colors[index%colors.length];
+  cylinder(body,.2,.16,.7,cloakColor,0,.5,0);
+  ball(body,.16,'#eed8be',0,1.05,0);
+  // Traveler backpack / hood
+  box(body,.3,.4,.25,'#6d4e38',0,.6,-.22);
+  cylinder(body,.24,.24,.06,'#8a6e53',0,1.18,0);
+  shadow(root,0,0,.45,.35);
+  return {root,body,phase:index*2.1};
+}
+export function owl(p) {
+  const root=group(p,-6.5,0,-6.2);root.userData.place='owl';shadow(root,0,0,.45,.35);
+  cylinder(root,.12,.14,1.4,palette.wood,0,.7,0);
+  const cross=cylinder(root,.08,.08,.7,palette.lightWood,0,1.35,0);cross.rotation.z=Math.PI/2;
+  const bird=group(root,0,1.42,0);
+  ball(bird,.28,'#8c5e39',0,.22,0,.9,1.15,.9);
+  ball(bird,.2,'#f6ecd7',0,.2,.14,.8,1,.5);
+  const head=group(bird,0,.48,0);
+  ball(head,.24,'#9c6a42',0,0,0,1.05,.9,1);
+  for(const side of [-1,1]){
+    ball(head,.09,'#fdf7ea',side*.09,.04,.18);
+    ball(head,.05,'#2e241d',side*.09,.04,.23);
+    ball(head,.018,'#ffffff',side*.09-.015,.055,.26);
+    const ear=box(head,.06,.15,.06,'#7d4e2a',side*.15,.2,-.02);ear.rotation.z=-side*.3;
+  }
+  const beak=cylinder(head,0,.04,.09,'#e89e3a',0,-.02,.25);beak.rotation.x=Math.PI/2;
+  for(const side of [-1,1]){const wing=ball(bird,.22,'#7a4a27',side*.25,.2,-.02,.45,1.2,.85);wing.rotation.z=side*.2;}
+  function update(time){
+    head.rotation.y=Math.sin(time*.8)*.55+Math.sin(time*2.1)*.15;
+    head.rotation.x=Math.sin(time*1.4)*.08;
+    bird.position.y=1.42+Math.sin(time*2.2)*.015;
+  }
+  return {root,bird,head,update};
 }
 export function garden(p,s) {
   const g=group(p,-4.8,0,5);g.userData.place='garden';
