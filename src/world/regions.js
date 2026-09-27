@@ -16,7 +16,7 @@ export const WORLD_PLACES = {
   meadowGate: { title: 'Most na łąkę', short: 'Most na łąkę', x: 12.5, z: -3, approach: [11, -3], label: [12.5, 2, -3] },
   orchard: { title: 'Sad na Słonecznej Łące', short: 'Sad', region: 'meadow', x: 30, z: 2, approach: [28, 2], label: [30, 3.5, 2] },
   windmill: { title: 'Wiatrak na wzgórzu', short: 'Wiatrak', region: 'meadow', x: 34, z: -4, approach: [33, -1.5], label: [34, 5.5, -4] },
-  lakeGate: { title: 'Most na Lazurowe Jezioro', short: 'Most na jezioro', x: 0, z: 11.2, approach: [0, 9.8], label: [0, 1.9, 11.2] },
+  lakeGate: { title: 'Most na Lazurowe Jezioro', short: 'Most na jezioro', x: 0, z: 10.8, approach: [0, 9.5], label: [0, 1.9, 10.8] },
   lakeDock: { title: 'Złota Przystań', short: 'Przystań', region: 'lake', x: 0, z: 28, approach: [0, 26], label: [0, 3.2, 28] },
   lakePearls: { title: 'Perłowa Zatoczka', short: 'Perły', region: 'lake', x: -3.5, z: 32, approach: [-2.5, 31], label: [-3.5, 2.5, 32] },
   cloudsGate: { title: 'Ścieżka na Gwiezdną Polanę', short: 'Ścieżka gwiazd', x: 16, z: -16, approach: [14.5, -14.5], label: [16, 2.2, -16] },

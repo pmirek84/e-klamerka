@@ -84,10 +84,6 @@ export function createWorld(host, callbacks) {
     if(flowers<160&&i%2===0){transform.position.y=.31;transform.scale.setScalar(1+random()*.8);transform.updateMatrix();blossoms.setMatrixAt(flowers++,transform.matrix);}
   }
   scenery.add(tufts,blossoms);
-  // Entry bridge and a little e-klamerka pennant.
-  for(let i=0;i<9;i++)box(scenery,1.8,.13,.35,C.lightWood,0,-.03,10+i*.34);
-  for(const x of [-1.03,1.03])for(const z of [10,12.8]){cylinder(scenery,.12,.15,1.05,C.wood,x,.42,z);ball(scenery,.16,'#dfbd86',x,.98,z);}
-  for(const x of [-1.03,1.03])box(scenery,.1,.1,2.8,C.cream,x,.75,11.4);
   for(const [cx,cz,angle] of [[-7.4,9.4,-.45],[-11.3,1.7,1.4],[10.7,6.8,.9],[6.6,-9.6,-.4]]) {
     const f=group(scenery,cx,0,cz);f.rotation.y=angle;
     for(const x of [-1.1,0,1.1]){box(f,.12,.85,.13,C.lightWood,x,.44,0);box(f,.18,.1,.19,C.cream,x,.9,0);}

@@ -90,7 +90,7 @@ export function buildWorldChanges(parent,state){
   bridge(-16.4,0,9.6,false,true);
   bridge(0,-15.7,10.8,true,w.quarry);
   bridge(16.8,-3,10.2,false,w.meadow);
-  bridge(0,16.2,10.8,true,w.lake);
+  bridge(0,15.9,10.8,true,w.lake);
   bridge(14.5,-14.5,12.5,false,w.clouds,-Math.PI*0.25);
   // Chest lid visibly opens and stays open after the one-time reward.
   const chest=group(g,-33,0,4);box(chest,1.05,.55,.75,C.wood,0,.36,0);for(const x of [-.38,.38])box(chest,.08,.58,.8,'#e6c67c',x,.36,0);
