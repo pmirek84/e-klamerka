@@ -407,13 +407,8 @@ input { width: 100%; border: 1px solid #d7ddc8; border-radius: 12px; padding: 12
 
 @media (max-width: 600px), (pointer: coarse) {
   .desktop-only { display: none !important; }
-  .camera-controls {
-    grid-template-columns: 36px;
-    position: absolute;
-    right: 14px;
-    bottom: 92px;
-  }
-  .camera-controls button { width: 36px; height: 36px; border-radius: 10px; }
+  .camera-controls { display: none !important; }
+  .movement, .gesture-hint, .keyboard-hint { display: none !important; }
 }
 
 @media (max-width: 600px) {

@@ -127,7 +127,7 @@ export function createWorld(host, callbacks) {
     if(!gardenObj||prev.planted!==next.planted||prev.watered!==next.watered||prev.landLevel!==next.landLevel){disposeObject(gardenObj);gardenObj=garden(dynamic,next);targets.push(gardenObj);}
     if(!stallObj||prev.stall!==next.stall){disposeObject(stallObj);stallObj=stall(dynamic,next.stall);targets.push(stallObj);}
     if(!helperObj||prev.helper!==next.helper){if(helperObj?.root)disposeObject(helperObj.root);helperObj=helper(dynamic,next.helper);if(helperObj?.root)targets.push(helperObj.root);}
-    if(!owlObj){owlObj=owl(dynamic,-28,-3.5);targets.push(owlObj.root);}
+    if(!owlObj){owlObj=owl(dynamic,-4.5,-2.8);targets.push(owlObj.root);}
     if(!landObj||prev.landLevel!==next.landLevel){
       disposeObject(landObj);landObj=group(dynamic);
       for(let i=0;i<next.landLevel;i++)island(landObj,13+i*2.8,4.8,3,4);
@@ -177,7 +177,7 @@ export function createWorld(host, callbacks) {
     const p=new T.Vector3(...v).project(camera);
     const sx = (p.x*.5+.5)*width;
     const sy = (-.5*p.y+.5)*height;
-    return {x:sx,y:sy,visible:p.z<1&&sx>20&&sx<width-20&&sy>20&&sy<height-20};
+    return {x:sx,y:sy,visible:p.z<1&&sx>30&&sx<width-30&&sy>135&&sy<height-80};
   }
   function positionCamera(dt){
     const region=REGIONS[regionAt(pos.x,pos.z)||lastRegion||'farm'];
@@ -241,7 +241,7 @@ export function createWorld(host, callbacks) {
       if(o?.userData.place) hitPlace = o.userData.place;
     }
 
-    if (tapInterval < 380 && tapDist < 25) {
+    if (tapInterval < 450 && tapDist < 35) {
       if (hitPlace) { performDirectAction(hitPlace); return; }
       if (selected) { performDirectAction(selected); return; }
     }
