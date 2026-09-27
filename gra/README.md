@@ -18,12 +18,18 @@ lokalnego repozytorium `e-klamerka`, zastępując pliki. W GitHub Desktop sprawd
 zmiany, zrób commit i Push. Po pojawieniu się zmian na gałęzi wdrażanej przez OVH
 uruchom wdrożenie. Samo skopiowanie plików na komputer nie zmienia strony.
 
-Bieżąca wersja: 0.2.0, pamięć aplikacji `eklamerka-world-3d-v1`.
+Bieżąca wersja: 0.3.0, pamięć aplikacji `eklamerka-world-3d-v2`.
 Zapis poprzedniej gry nie jest usuwany. Grafika wymaga WebGL2.
 
 ## Sprawdzone
 
-7 testów logiki gry; automatyczna próba zbierania, budowy trzech poziomów domu,
-ogrodu, narodzin, sprzedaży, zapisu po odświeżeniu, powiększenia terenu i joysticka.
+14 testów logiki gry i nawigacji; automatyczna próba zbierania, budowy trzech poziomów domu,
+ogrodu, narodzin, sprzedaży, zapisu po odświeżeniu, powiększenia terenu i sterowania dotykowego.
 Testy przeglądarkowe odbyły się w Chromium z emulacją ekranu telefonu.
 Wydajność na fizycznym telefonie nie została potwierdzona.
+
+
+Wersja 0.3.0 dodaje trzy wyspy, naprawę mostów, kryształy, sad, wiatrak i mapę.
+Joystick został zastąpiony gestami na planszy. Testy świata i gestów:
+`npm run test:world`. Testy korzystają z Chromium instalowanego przez Playwright.
+Współdzielony świat i konta serwerowe nie są jeszcze częścią tej wersji.

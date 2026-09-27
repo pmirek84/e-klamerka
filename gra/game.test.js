@@ -37,3 +37,21 @@ test('normalization clamps invalid counts and supports each upgrade',()=>{
   const s=normalize({coins:-9,houseLevel:10,landLevel:40});assert.equal(s.coins,0);assert.equal(s.houseLevel,3);assert.equal(s.landLevel,3);
   let g={...INITIAL,wood:100,stone:100,coins:100};for(let i=0;i<3;i++)g=transact(g,'house').state;assert.equal(g.houseLevel,3);assert.equal(transact(g,'house').ok,false);
 });
+
+test('world migration preserves the farm and defaults to an open woodland',()=>{
+  const s=normalize({coins:24,houseLevel:2});assert.equal(s.coins,24);assert.deepEqual(s.world.visited,['farm']);assert.equal(s.world.quarry,false);assert.equal(s.crystals,0);
+});
+test('bridge unlocking is paid once, requires a home and persists',()=>{
+  let s={...INITIAL,wood:100,stone:100,crystals:10};assert.equal(transact(s,'unlock:quarry').ok,false);
+  s={...s,houseLevel:1};s=transact(s,'unlock:quarry').state;assert.equal(s.wood,90);assert.equal(s.stone,94);assert.equal(s.world.quarry,true);
+  assert.strictEqual(transact(s,'unlock:quarry').state,s);assert.equal(normalize(JSON.parse(JSON.stringify(s))).world.quarry,true);
+  s=transact(s,'unlock:meadow').state;assert.equal(s.crystals,7);assert.equal(s.world.meadow,true);
+});
+test('locked regions cannot produce resources; forest chest cannot be claimed twice',()=>{
+  assert.equal(transact(INITIAL,'crystals').ok,false);const chest=transact(INITIAL,'chest');assert.equal(chest.state.coins,16);assert.equal(chest.state.seeds,2);assert.strictEqual(transact(chest.state,'chest').state,chest.state);
+});
+test('remote gathering has a cooldown and meadow buildings improve future harvests',()=>{
+  let s={...INITIAL,houseLevel:1,wood:100,stone:100,coins:100,crystals:10};s=transact(s,'unlock:quarry').state;
+  const mined=transact(s,'crystals',100000);assert.equal(mined.state.crystals,11);assert.equal(transact(mined.state,'crystals',100001).ok,false);assert.equal(transact(mined.state,'crystals',112000).ok,true);
+  s=transact(mined.state,'unlock:meadow').state;s=transact(s,'orchard').state;s=transact(s,'windmill').state;s=transact({...s,planted:true,watered:true},'garden').state;assert.equal(s.carrots,7);
+});

@@ -1,9 +1,12 @@
 import * as T from 'three';
 import { palette as C, material, box, ball, cylinder, group, shadow, bake, tree, house, pen, garden, shop, rabbit, person } from './models.js';
 import { PLACES } from '../game.js';
+import { REGIONS, regionAt, insideWorld, visiblePlace, unlocked } from './regions.js';
+import { findPath } from './navigation.js';
+import { buildRegions, buildWorldChanges } from './expansion.js';
 
 export function createWorld(host, callbacks) {
-  const scene=new T.Scene();scene.background=new T.Color('#cbded9');scene.fog=new T.Fog('#cbded9',60,115);
+  const scene=new T.Scene();scene.background=new T.Color('#cbded9');scene.fog=new T.Fog('#cbded9',110,240);
   const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;
@@ -12,12 +15,12 @@ export function createWorld(host, callbacks) {
   host.appendChild(renderer.domElement);
   scene.add(new T.HemisphereLight('#f9f1dc','#748c79',1.45));
   const sun=new T.DirectionalLight('#fff0db',2.65);sun.position.set(-12,22,9);sun.castShadow=true;
-  sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-23,right:23,top:22,bottom:-22,near:1,far:65});sun.shadow.normalBias=.045;sun.shadow.bias=-.0002;scene.add(sun);
-  const camera=new T.PerspectiveCamera(38,1,.1,160);let yaw=.35,zoom=1,overview=true;
+  sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-23,right:23,top:22,bottom:-22,near:1,far:65});sun.shadow.normalBias=.045;sun.shadow.bias=-.0002;scene.add(sun);scene.add(sun.target);
+  const camera=new T.PerspectiveCamera(38,1,.1,260);let yaw=.35,zoom=1,overview=true,worldOverview=false;
   const look=new T.Vector3(0,0,1), desiredLook=new T.Vector3(), offset=new T.Vector3();
   let width=1,height=1, state={}, raf=0, disposed=false, last=performance.now(),time=0,lastUi=0;
-  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,landObj,player;
-  const obstacles=[];let rabbits=[],selected=null,path=[],keys=new Set(),stick={x:0,y:0},busyUntil=0,fx=[];
+  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,landObj,player,worldChanges;let lastRegion=null;
+  const obstacles=[...[[ -35,-4],[-31,-4],[-26,-5],[-23,-2],[-36,1],[-34,6],[-29,6],[-24,5],[25,4],[37,3],[26,-6]].map(([x,z])=>({x,z,w:.8,d:.8}))];let rabbits=[],selected=null,path=[],keys=new Set(),busyUntil=0,fx=[];
   const raycaster=new T.Raycaster(),pointer=new T.Vector2(),ground=new T.Plane(new T.Vector3(0,1,0),0),hitPoint=new T.Vector3();
   let seed=43;const random=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};
 
@@ -30,11 +33,7 @@ export function createWorld(host, callbacks) {
     return g;
   }
   island(scenery,0,0,13.5,11.4);
-  // Soft background islands make the playable world feel larger than its frame.
-  for(const [x,z,r] of [[-35,-22,8],[29,-34,11],[-32,21,5],[34,23,6]]) {
-    const g=island(scenery,x,z,r,r*.72);g.position.y=-4;
-    for(let i=0;i<4;i++)tree(g,(random()-.5)*r,(random()-.5)*r,.7+i*.12,i);
-  }
+  buildRegions(scene);
   // Winding paths are geometry, and stay aligned when the camera moves.
   let trailIndex=0;
   function trail(points,width=1.35) {
@@ -54,6 +53,9 @@ export function createWorld(host, callbacks) {
   trail([[-7,-4.3],[-7.1,-1.8],[-5,.5],[-3.5,1.4]],1.1);
   trail([[0,2.7],[2,.1],[4,-2.7],[6.3,-4.2]],1.35);
   trail([[-.1,7],[-2.5,7.7],[-3.3,8]],1.2);
+  trail([[-7,1],[-9,0],[-12.5,0]],1.3);
+  trail([[0,1],[1,-3],[0,-6],[0,-10.5]],1.3);
+  trail([[6,-3.3],[9,-3],[12.5,-3]],1.3);
   // Pond and stones sit behind the work areas.
   const pond=group(scenery,1.9,0,-7.8);
   cylinder(pond,2.7,2.7,.05,'#c5d8a8',0,.07,0,40).scale.z=.64;
@@ -116,6 +118,10 @@ export function createWorld(host, callbacks) {
   function disposeObject(g){if(!g)return;const targetIndex=targets.indexOf(g);if(targetIndex>=0)targets.splice(targetIndex,1);g.traverse(o=>{if(o.isMesh&&o.geometry && !o.isInstancedMesh&&!o.material.transparent)o.geometry.dispose();});g.removeFromParent();}
   function setGame(next){
     const prev=state;state=next;
+    const oldWorld=prev.world||{},newWorld=next.world||{};
+    if(!worldChanges||['quarry','meadow','orchard','windmill','chest'].some(k=>oldWorld[k]!==newWorld[k])){
+      if(worldChanges)disposeObject(worldChanges.root);worldChanges=buildWorldChanges(dynamic,next);
+    }
     if(!houseObj||prev.houseLevel!==next.houseLevel){disposeObject(houseObj);houseObj=house(dynamic,next.houseLevel);targets.push(houseObj);}
     if(!penObj||prev.pen!==next.pen){disposeObject(penObj);penObj=pen(dynamic,next.pen);}
     if(!gardenObj||prev.planted!==next.planted||prev.watered!==next.watered||prev.landLevel!==next.landLevel){disposeObject(gardenObj);gardenObj=garden(dynamic,next);targets.push(gardenObj);}
@@ -140,55 +146,61 @@ export function createWorld(host, callbacks) {
     while(rabbits.length>n){rabbits.pop().root.removeFromParent();}
     while(rabbits.length<n){const i=rabbits.length,r=rabbit(scene,i,i>=2);r.root.position.set(4.1+random()*2.3,0,2.1+random()*1.4);r.from=r.root.position.clone();r.to=r.from.clone();r.next=time+random()*1.2;r.started=0;r.duration=.8;rabbits.push(r);}
   }
-  function inside(x,z){return (x/13.1)**2+(z/11)**2<1 || Array.from({length:state.landLevel||0},(_,i)=>13+i*2.8).some(cx=>((x-cx)/2.8)**2+((z-4.8)/3.8)**2<1);}
+  function inside(x,z){return insideWorld(x,z,state);}
   function walkable(x,z){
     if(!inside(x,z))return false;
-    const blocks=[...obstacles,{x:state.houseLevel>=3?-2.15:-3,z:state.houseLevel>=3?-1.8:-2,w:state.houseLevel>=3?6.5:4.6,d:state.houseLevel>=3?4.5:3.8},...(state.pen?[{x:5.3,z:2.3,w:5.2,d:4.2}]:[])];
+    const blocks=[...obstacles,{x:1,z:-30,w:4.6,d:3.4},...(state.world?.windmill?[{x:34,z:-4,w:2.7,d:2.7}]:[]),{x:state.houseLevel>=3?-2.15:-3,z:state.houseLevel>=3?-1.8:-2,w:state.houseLevel>=3?6.5:4.6,d:state.houseLevel>=3?4.5:3.8},...(state.pen?[{x:5.3,z:2.3,w:5.2,d:4.2}]:[])];
     return !blocks.some(b=>Math.abs(x-b.x)<b.w/2+.3&&Math.abs(z-b.z)<b.d/2+.3);
   }
-  function route(x,z){
-    const step=.65,snap=v=>Math.round(v/step),sx=snap(pos.x),sz=snap(pos.z);let tx=snap(x),tz=snap(z);
-    if(!walkable(tx*step,tz*step)){
-      let best=null;
-      for(let a=-4;a<=4;a++)for(let b=-4;b<=4;b++){const nx=tx+a,nz=tz+b;if(walkable(nx*step,nz*step)&&(!best||a*a+b*b<best.d))best={x:nx,z:nz,d:a*a+b*b};}
-      if(!best)return [];tx=best.x;tz=best.z;
-    }
-    const key=(x,z)=>`${x},${z}`,start={x:sx,z:sz,g:0,f:0,parent:null},open=[start],known=new Map([[key(sx,sz),start]]),closed=new Set();let end;
-    for(let attempt=0;open.length&&attempt<2400;attempt++){
-      open.sort((a,b)=>a.f-b.f);const n=open.shift(),k=key(n.x,n.z);if(closed.has(k))continue;closed.add(k);
-      if(n.x===tx&&n.z===tz){end=n;break;}
-      for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
-        const nx=n.x+dx,nz=n.z+dz,nk=key(nx,nz);
-        if(closed.has(nk)||!walkable(nx*step,nz*step))continue;
-        if(dx&&dz&&(!walkable((n.x+dx)*step,n.z*step)||!walkable(n.x*step,(n.z+dz)*step)))continue;
-        const g=n.g+Math.hypot(dx,dz);if(known.has(nk)&&known.get(nk).g<=g)continue;
-        const v={x:nx,z:nz,g,f:g+Math.hypot(tx-nx,tz-nz),parent:n};known.set(nk,v);open.push(v);
-      }
-    }
-    const result=[];while(end&&end.parent){result.unshift(new T.Vector3(end.x*step,0,end.z*step));end=end.parent;}return result;
-  }
-  function select(id){selected=id;callbacks.onSelect(id);if(!id)return;const p=PLACES[id];path=route(...p.approach);marker.position.set(...[p.approach[0],.12,p.approach[1]]);marker.visible=true;overview=false;}
-  function goTo(x,z){path=route(x,z);if(path.length){const end=path.at(-1);marker.position.set(end.x,.12,end.z);marker.visible=true;}overview=false;}
+  function route(x,z){return findPath([pos.x,pos.z],[x,z],walkable).map(([px,pz])=>new T.Vector3(px,0,pz));}
+  function select(id){if(PLACES[id]?.region&&!unlocked(PLACES[id].region,state))id=REGIONS[PLACES[id].region].gate;worldOverview=false;selected=id;callbacks.onSelect(id);if(!id)return;const p=PLACES[id];path=route(...p.approach);marker.position.set(...[p.approach[0],.12,p.approach[1]]);marker.visible=true;overview=false;}
+  function goTo(x,z){worldOverview=false;path=route(x,z);if(path.length){const end=path.at(-1);marker.position.set(end.x,.12,end.z);marker.visible=true;}overview=false;}
   function project(v){const p=new T.Vector3(...v).project(camera);return {x:(p.x*.5+.5)*width,y:(-.5*p.y+.5)*height,visible:p.z<1&&Math.abs(p.x)<.95&&Math.abs(p.y)<.92};}
   function positionCamera(dt){
-    desiredLook.set(overview?0:pos.x*.74,0,overview?1:pos.z*.74);
+    const region=REGIONS[regionAt(pos.x,pos.z)||lastRegion||'farm'];
+    desiredLook.set(worldOverview?0:overview?region.x:pos.x,0,worldOverview?-9:overview?region.z:pos.z-1.5);
     look.lerp(desiredLook,1-Math.exp(-dt*3));
     const portrait=width/height<.8;
-    const distance=(overview?(portrait?72:36):(portrait?34:25))*zoom;
+    const distance=(worldOverview?(portrait?180:108):overview?(portrait?72:36):(portrait?34:25))*zoom;
     offset.set(Math.sin(yaw)*distance*.82,distance*.65,Math.cos(yaw)*distance*.82);
-    camera.position.copy(look).add(offset);camera.lookAt(look);camera.updateMatrixWorld();
+    sun.position.set(pos.x-12,22,pos.z+9);sun.target.position.set(pos.x,0,pos.z);camera.position.copy(look).add(offset);camera.lookAt(look);camera.updateMatrixWorld();
   }
   let firstResize=true;
   function resize(){width=host.clientWidth;height=host.clientHeight;if(firstResize&&width/height<.8){overview=false;look.set(0,0,4.4);}firstResize=false;renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();positionCamera(10);}
   const observer=new ResizeObserver(resize);observer.observe(host);resize();
-  function turn(d){yaw+=d;overview=false;}
+  function turn(d){yaw+=d;overview=false;worldOverview=false;}
   function setZoom(d){zoom=T.MathUtils.clamp(zoom+d,.58,1.45);}
-  const pointerDown=new Map();let drag=null,pinch=null;
-  function down(e){if(e.button>0){drag={x:e.clientX,y:e.clientY};}pointerDown.set(e.pointerId,{x:e.clientX,y:e.clientY});renderer.domElement.setPointerCapture(e.pointerId);if(pointerDown.size===2){const a=[...pointerDown.values()];pinch={distance:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),zoom};}}
-  function move(e){if(drag&&pointerDown.size===1){yaw-=(e.clientX-drag.x)*.009;drag={x:e.clientX,y:e.clientY};overview=false;}if(pointerDown.size===2){pointerDown.set(e.pointerId,{x:e.clientX,y:e.clientY});const a=[...pointerDown.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);zoom=T.MathUtils.clamp(pinch.zoom*pinch.distance/Math.max(1,d),.58,1.45);}}
-  function up(e){const start=pointerDown.get(e.pointerId),wasPinch=!!pinch;pointerDown.delete(e.pointerId);drag=null;if(!pointerDown.size)pinch=null;
-    if(wasPinch||!start||e.button>0||Math.hypot(e.clientX-start.x,e.clientY-start.y)>12)return;
-    const rect=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-rect.left)/width*2-1,-(e.clientY-rect.top)/height*2+1);raycaster.setFromCamera(pointer,camera);
+  const pointerDown=new Map();let drag=null,pinch=null,lastGestureRoute=0;
+  const suppressed=new Set();
+  function screenRay(x,y){const rect=renderer.domElement.getBoundingClientRect();pointer.set((x-rect.left)/width*2-1,-(y-rect.top)/height*2+1);raycaster.setFromCamera(pointer,camera);}
+  function guideFinger(e){screenRay(e.clientX,e.clientY);if(raycaster.ray.intersectPlane(ground,hitPoint)&&inside(hitPoint.x,hitPoint.z))goTo(hitPoint.x,hitPoint.z);}
+  function down(e){
+    pointerDown.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY});
+    renderer.domElement.setPointerCapture(e.pointerId);
+    if(e.button>0)drag={x:e.clientX,y:e.clientY};
+    if(pointerDown.size===2){
+      const a=[...pointerDown.values()];pinch={distance:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),angle:Math.atan2(a[1].y-a[0].y,a[1].x-a[0].x),zoom,yaw};
+      pointerDown.forEach((_,id)=>suppressed.add(id));path=[];drag=null;
+    }
+  }
+  function move(e){
+    const p=pointerDown.get(e.pointerId);if(!p)return;
+    pointerDown.set(e.pointerId,{...p,x:e.clientX,y:e.clientY});
+    if(pointerDown.size===2&&pinch){
+      const a=[...pointerDown.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),angle=Math.atan2(a[1].y-a[0].y,a[1].x-a[0].x);
+      zoom=T.MathUtils.clamp(pinch.zoom*pinch.distance/Math.max(1,d),.58,1.45);
+      yaw=pinch.yaw-Math.atan2(Math.sin(angle-pinch.angle),Math.cos(angle-pinch.angle));return;
+    }
+    if(pinch||suppressed.has(e.pointerId))return;
+    if(drag){yaw-=(e.clientX-drag.x)*.009;drag={x:e.clientX,y:e.clientY};overview=false;return;}
+    if(Math.hypot(e.clientX-p.startX,e.clientY-p.startY)>9&&performance.now()-lastGestureRoute>150){guideFinger(e);lastGestureRoute=performance.now();}
+  }
+  function up(e){
+    const start=pointerDown.get(e.pointerId),multi=suppressed.has(e.pointerId)||!!pinch;
+    pointerDown.delete(e.pointerId);suppressed.delete(e.pointerId);drag=null;if(!pointerDown.size)pinch=null;
+    if(multi||!start||e.button>0)return;
+    if(Math.hypot(e.clientX-start.startX,e.clientY-start.startY)>9){guideFinger(e);return;}
+    screenRay(e.clientX,e.clientY);
     const hits=raycaster.intersectObjects(targets,true);if(hits.length){let o=hits[0].object;while(o&&!o.userData.place)o=o.parent;if(o?.userData.place){select(o.userData.place);return;}}
     if(raycaster.ray.intersectPlane(ground,hitPoint))goTo(hitPoint.x,hitPoint.z);
   }
@@ -196,21 +208,21 @@ export function createWorld(host, callbacks) {
   function context(e){e.preventDefault();}
   function keyDown(e){if(e.target.closest('input,textarea,[role="dialog"]'))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==='e'&&!e.repeat)callbacks.onAction();}
   function keyUp(e){keys.delete(e.key.toLowerCase());}
-  function clearInput(){keys.clear();stick={x:0,y:0};pointerDown.clear();drag=null;pinch=null;}
+  function clearInput(){keys.clear();pointerDown.clear();suppressed.clear();drag=null;pinch=null;}
   function visibility(){clearInput();last=performance.now();if(document.hidden){cancelAnimationFrame(raf);raf=0;}else if(!raf&&!disposed)raf=requestAnimationFrame(frame);}
   const canvas=renderer.domElement;
   canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',clearInput);canvas.addEventListener('wheel',wheel,{passive:false});canvas.addEventListener('contextmenu',context);
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',clearInput);document.addEventListener('visibilitychange',visibility);
   function burst(x,z,color){for(let i=0;i<9;i++){const m=box(scene,.12,.12,.12,color,x,.55,z);fx.push({m,v:new T.Vector3((random()-.5)*2,2+random()*2,(random()-.5)*2),end:time+.75});}}
-  function animateAction(kind){busyUntil=time+1.1;player.tool.visible=['forest','mine','house','pen'].includes(kind);path=[];const p=PLACES[selected];if(p)player.root.rotation.y=Math.atan2(p.x-pos.x,p.z-pos.z);burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':'#f6d68a');}
+  function animateAction(kind){busyUntil=time+1.1;player.tool.visible=['forest','mine','house','pen','grove','crystals','windmill'].includes(kind);path=[];const p=PLACES[selected];if(p)player.root.rotation.y=Math.atan2(p.x-pos.x,p.z-pos.z);burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':'#f6d68a');}
   let paused=false, frameTime=16;
   function frame(now){
     if(disposed)return;frameTime=frameTime*.9+(now-last)*.1;const dt=Math.min(.1,(now-last)/1000);last=now;time+=dt;
     let dx=0,dz=0,speed=0;
     if(player&&!paused&&time>busyUntil){
-      const inputX=stick.x+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
-      const inputZ=stick.y+(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);
-      if(inputX||inputZ){path=[];overview=false;const length=Math.max(1,Math.hypot(inputX,inputZ));dx=(inputX*Math.cos(yaw)+inputZ*Math.sin(yaw))/length;dz=(-inputX*Math.sin(yaw)+inputZ*Math.cos(yaw))/length;}
+      const inputX=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
+      const inputZ=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);
+      if(inputX||inputZ){path=[];overview=false;worldOverview=false;const length=Math.max(1,Math.hypot(inputX,inputZ));dx=(inputX*Math.cos(yaw)+inputZ*Math.sin(yaw))/length;dz=(-inputX*Math.sin(yaw)+inputZ*Math.cos(yaw))/length;}
       else if(path.length){const v=path[0].clone().sub(pos);if(v.length()<.15)path.shift();else{v.normalize();dx=v.x;dz=v.z;}}
       const ox=pos.x,oz=pos.z,step=Math.min(dt*3.1,path.length?pos.distanceTo(path[0]):Infinity);
       if(walkable(pos.x+dx*step,pos.z))pos.x+=dx*step;
@@ -227,6 +239,7 @@ export function createWorld(host, callbacks) {
       else{player.body.rotation.x=0;player.tool.visible=false;}
       player.head.rotation.y=moving?0:Math.sin(time*.65)*.1;
     }
+    if(worldChanges?.rotor)worldChanges.rotor.rotation.z-=dt*.6;
     for(const r of rabbits){
       if(time>r.next){r.from.copy(r.root.position);r.to.set(3.5+random()*3.5,0,2.25+random()*1.65);r.started=time;r.duration=.6+r.from.distanceTo(r.to)*.2;r.next=time+r.duration+1.2+random()*2.2;r.root.rotation.y=Math.atan2(r.to.x-r.from.x,r.to.z-r.from.z);}
       const u=T.MathUtils.clamp((time-r.started)/r.duration,0,1),hopping=u<1&&r.started>0;
@@ -241,14 +254,16 @@ export function createWorld(host, callbacks) {
     positionCamera(dt);
     if(now-lastUi>100){
       let nearest=null,dist=Infinity;
-      for(const [id,p] of Object.entries(PLACES)){const d=Math.hypot(pos.x-p.approach[0],pos.z-p.approach[1]);if(d<dist){nearest=id;dist=d;}}
-      callbacks.onFrame({near:dist<1.65?nearest:null,moving:speed>.08,busy:time<busyUntil,labels:Object.fromEntries(Object.entries(PLACES).map(([id,p])=>[id,project(p.label)]))});lastUi=now;
+      for(const [id,p] of Object.entries(PLACES)){if(!visiblePlace(p,state))continue;const d=Math.hypot(pos.x-p.approach[0],pos.z-p.approach[1]);if(d<dist){nearest=id;dist=d;}}
+      const currentRegion=regionAt(pos.x,pos.z);
+      if(currentRegion&&currentRegion!==lastRegion){lastRegion=currentRegion;callbacks.onRegion?.(currentRegion);}
+      callbacks.onFrame({region:lastRegion||'farm',position:[pos.x,pos.z],destination:selected,near:dist<1.65?nearest:null,moving:speed>.08,busy:time<busyUntil,labels:Object.fromEntries(Object.entries(PLACES).filter(([,p])=>visiblePlace(p,state)).map(([id,p])=>[id,project(p.label)]))});lastUi=now;
     }
     renderer.render(scene,camera);raf=requestAnimationFrame(frame);
   }
   raf=requestAnimationFrame(frame);
-  const api={setGame,select,turn,zoom:setZoom,home(){overview=true;zoom=1;yaw=.35;},follow(){overview=false;},setStick(x,y){stick={x,y};},pause(value){paused=value;clearInput();},animateAction,
-    inspect(){return {position:pos.toArray(),joints:player?.legs.map(x=>x.rotation.x),rabbits:rabbits.map(r=>({position:r.root.position.toArray(),ears:r.ears.map(e=>e.rotation.x)})),fps:Math.round(1000/frameTime),calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,houseLevel:state.houseLevel,objects:{house:houseObj?.uuid,pen:penObj?.uuid},project:(point)=>project(point)};},
+  const api={setGame,select,turn,zoom:setZoom,home(){worldOverview=false;overview=true;zoom=1;yaw=.35;},worldView(){worldOverview=true;overview=true;zoom=1;yaw=.12;},returnHome(){select('house');},stop(){path=[];selected=null;callbacks.onSelect(null);marker.visible=false;},follow(){overview=false;},pause(value){paused=value;clearInput();},animateAction,
+    inspect(){return {region:lastRegion,routeLength:path.length,position:pos.toArray(),routeTo:(x,z)=>route(x,z).map(p=>p.toArray()),inside:(x,z)=>inside(x,z),camera:{yaw,zoom},joints:player?.legs.map(x=>x.rotation.x),rabbits:rabbits.map(r=>({position:r.root.position.toArray(),ears:r.ears.map(e=>e.rotation.x)})),fps:Math.round(1000/frameTime),calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,houseLevel:state.houseLevel,objects:{house:houseObj?.uuid,pen:penObj?.uuid},project:(point)=>project(point)};},
     destroy(){disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clearInput);document.removeEventListener('visibilitychange',visibility);scene.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});renderer.dispose();canvas.remove();}
   };
   return api;

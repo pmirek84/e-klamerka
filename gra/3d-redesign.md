@@ -20,9 +20,9 @@ postać i króliki są zbudowane z geometrii 3D. Kamera zmienia położenie wzgl
 ## Sterowanie
 
 Dotknij ziemi lub podpisu miejsca, aby postać do niego podeszła. Trasa omija dom,
-zagrodę, sklep i skały. Na telefonie działa joystick; na komputerze WASD i strzałki.
-Klawisz E wykonuje dostępną akcję przy obiekcie. Dwa palce lub kółko myszy zmieniają
-przybliżenie. Prawy przycisk myszy z przeciąganiem obraca kamerę; dostępne są też
+zagrodę, sklep i skały. Na telefonie dotknięcie wyznacza cel, a przeciągnięcie palcem prowadzi postać.
+Na komputerze działają WASD i strzałki.
+Klawisz E wykonuje dostępną akcję przy obiekcie. Dwa palce obracają i przybliżają widok; kółko myszy zmienia przybliżenie. Prawy przycisk myszy z przeciąganiem obraca kamerę; dostępne są też
 przyciski kamery. Kompas pokazuje całą farmę.
 
 Postać ma osobno obracane ręce, nogi i głowę. Króliki przemieszczają się po zagrodzie,
@@ -59,3 +59,28 @@ w katalogu `gra`, zgodnie z obecnym wdrażaniem OVH. Nowe wdrożenie powinno zaw
 razem index, wszystkie wskazane przez niego pliki assets oraz nowy service worker.
 
 Nie trzeba pobierać modeli ani bibliotek z CDN w czasie gry. Three.js jest w paczce.
+
+
+## Świat poza farmą — wersja 0.3.0
+
+Do farmy dołączono trzy rzeczywiste wyspy połączone przechodnimi mostami:
+Szumiący Las, Kryształowe Wzgórza i Słoneczną Łąkę. Las jest dostępny od początku.
+Wzgórza wymagają domu i naprawy mostu za 10 drewna i 6 kamieni. Most na łąkę kosztuje
+14 drewna, 10 kamieni i 3 kryształy. Po naprawieniu mosty pozostają otwarte w zapisie.
+
+Stare dęby dają 5 drewna. Żyła na wzgórzach daje 3 kamienie i 1 kryształ.
+Oba miejsca odnawiają zasoby po 12 sekundach. Skrzynka w lesie daje jednorazowo
+8 monet i 2 paczuszki nasion. Kryształ można sprzedać w sklepie za 4 monety.
+
+Na łące można zbudować sad oraz wiatrak. Każdy podnosi zbiory marchewek o 2.
+Sad pojawia się jako drzewa owocowe; gotowy wiatrak obraca skrzydłami w scenie 3D.
+Są to dodatkowe cele, niezależne od trzech wcześniejszych rozszerzeń własnej farmy.
+
+Mapa świata wskazuje bieżącą wyspę, odblokowane przejścia, koszt kolejnych mostów
+i liczbę odkrytych miejsc. Wskazanie celu uruchamia chodzenie, nie teleportację.
+Przycisk „Do domu” prowadzi z dowolnej odblokowanej wyspy do domu na farmie.
+„Zatrzymaj” przerywa marsz. Dane świata są dopisywane do istniejącego zapisu.
+
+Sterowanie mobilne nie ma joysticka. Jeden palec wskazuje lub zmienia trasę;
+dwa palce służą wyłącznie do przybliżania i obracania kamery. Gest kamery nie
+uruchamia chodzenia po oderwaniu palców. Cel pozostaje widoczny jako znacznik.

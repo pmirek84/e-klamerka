@@ -1,5 +1,8 @@
 import React from 'react';
 const paths={
+ touch:<><path d="M9 13V5a2 2 0 0 1 4 0v7-3a2 2 0 0 1 4 0v3-1a2 2 0 0 1 4 0v6c0 3-2 5-5 5h-3c-2 0-3-1-4-3l-4-5a2 2 0 0 1 3-2l1 1Z"/><path d="M5 5a6 6 0 0 1 12-1"/></>,
+ crystal:<><path d="m12 2 7 7-2 10-5 3-6-5-1-8Z" fill="#92c8d3"/><path d="m12 2 2 9-2 11M5 9l9 2 5-2M6 17l8-6 3 8"/></>,
+ map:<><path d="m2 5 6-2 8 3 6-3v16l-6 3-8-3-6 2Z" fill="#d1dcbc"/><path d="M8 3v16M16 6v16m-6-12 4 3"/></>,
  wood:<><path d="m6 7 11-3 3 13-11 3Z" fill="#c88f58"/><ellipse cx="7" cy="13.5" rx="3.5" ry="6.5" fill="#edc58c" transform="rotate(-12 7 13.5)"/><path d="m12 7 1 6m3-6 1 8M6 11l1 5"/></>,
  stone:<><path d="m3 15 4-9 9-2 5 9-3 7H7Z" fill="#abb9b9"/><path d="m7 6 5 8 9-1M3 15l9-1 6 6"/></>,
  carrot:<><path d="M14 7c-7-3-10 7-11 14 6-2 16-7 11-14Z" fill="#eda45d"/><path d="m13 8 2-6m-1 6 6-5m-6 6 7-1M7 14l2 2m0-6 2 2"/></>,
