@@ -1,12 +1,9 @@
-name: Deploy E-Klamerka PWA to OVH
+name: Build and Deploy E-Klamerka PWA
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build-and-deploy:
@@ -15,8 +12,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,30 +25,10 @@ jobs:
       - name: Build PWA bundle
         run: npm run build:ovh
 
-      - name: Auto-commit built static files to repo
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html assets/ sw.js manifest.webmanifest icon.svg icon-192.png icon-512.png
-          if ! git diff --cached --quiet; then
-            git commit -m "build: automated PWA bundle release for OVH hosting [skip ci]"
-            git push
-          else
-            echo "No build changes to commit."
-          fi
-
-      - name: Trigger OVH Deploy Webhook (optional)
+      - name: Trigger OVH Deploy Webhook
         if: ${{ secrets.OVH_WEBHOOK_URL != '' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.OVH_WEBHOOK_URL }}
         run: |
           echo "Triggering OVH deployment webhook..."
-          curl -X POST "${{ secrets.OVH_WEBHOOK_URL }}"
-
-      - name: Deploy via FTP to OVH Web Hosting (optional)
-        if: ${{ secrets.FTP_SERVER != '' && secrets.FTP_USERNAME != '' && secrets.FTP_PASSWORD != '' }}
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/
-          server-dir: ./
+          curl -X POST "$WEBHOOK_URL"
