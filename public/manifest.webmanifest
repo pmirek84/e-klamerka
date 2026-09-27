@@ -1,32 +1,17 @@
 {
-  "id": "/",
   "name": "E-Klamerka — Moja farma",
   "short_name": "E-Klamerka",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#a8dcf1",
-  "theme_color": "#a8dcf1",
-  "description": "Zbuduj i rozwijaj swoją własną uroczą farmę w E-Klamerce!",
-  "categories": ["games", "entertainment"],
+  "background_color": "#cbded9",
+  "theme_color": "#cbded9",
   "icons": [
     {
       "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
