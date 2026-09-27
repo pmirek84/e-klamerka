@@ -211,8 +211,8 @@ export function person(p, avatar = 'girl') {
     t.generateMipmaps = true;
     t.minFilter = T.LinearMipmapLinearFilter;
     t.magFilter = T.LinearFilter;
-    t.repeat.set(1 / 3, 1);
-    t.offset.set(1 / 3, 0);
+    t.repeat.set(0.25, 1);
+    t.offset.set(0, 0);
     return t;
   }
 
@@ -220,13 +220,13 @@ export function person(p, avatar = 'girl') {
   const rightTex = loadTex(isGirl ? girlRightUrl : boyRightUrl);
   const leftTex = loadTex(isGirl ? girlLeftUrl : boyLeftUrl);
 
-  const geo = new T.PlaneGeometry(2.1, 2.1);
-  geo.translate(0, 1.05, 0);
+  const geo = new T.PlaneGeometry(1.7, 2.25);
+  geo.translate(0, 1.12, 0);
 
   const mat = new T.MeshStandardMaterial({
     map: frontTex,
     transparent: true,
-    alphaTest: 0.12,
+    alphaTest: 0.1,
     roughness: 0.65,
     metalness: 0.05,
     side: T.DoubleSide
@@ -259,24 +259,24 @@ export function person(p, avatar = 'girl') {
         mat.needsUpdate = true;
       }
 
-      const frameIndex = Math.floor((time * 7.5) % 3);
+      const frameIndex = Math.floor((time * 8.5) % 4);
 
       if (currentFrame !== frameIndex || mat.map !== currentMap) {
         currentMap = targetTex;
         currentFrame = frameIndex;
-        targetTex.repeat.set(1 / 3, 1);
-        targetTex.offset.set(frameIndex * (1 / 3), 0);
+        targetTex.repeat.set(0.25, 1);
+        targetTex.offset.set(frameIndex * 0.25, 0);
       }
 
       spriteMesh.position.y = Math.abs(Math.sin(time * 10)) * 0.09;
     } else {
-      if (mat.map !== frontTex || currentFrame !== 1) {
-        frontTex.repeat.set(1 / 3, 1);
-        frontTex.offset.set(1 / 3, 0);
+      if (mat.map !== frontTex || currentFrame !== 0) {
+        frontTex.repeat.set(0.25, 1);
+        frontTex.offset.set(0, 0);
         mat.map = frontTex;
         mat.needsUpdate = true;
         currentMap = frontTex;
-        currentFrame = 1;
+        currentFrame = 0;
       }
       spriteMesh.position.y = Math.sin(time * 2.2) * 0.025;
     }
