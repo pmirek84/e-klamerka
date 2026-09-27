@@ -808,8 +808,40 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (alreadyControlled && !reloading) {
       reloading = true;
-      location.reload();
+      window.location.reload();
     }
   });
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {}));
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./sw.js', { updateViaCache: 'none' })
+      .then((reg) => {
+        reg.update().catch(() => {});
+
+        window.addEventListener('focus', () => reg.update().catch(() => {}));
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            reg.update().catch(() => {});
+          }
+        });
+
+        setInterval(() => reg.update().catch(() => {}), 5 * 60 * 1000);
+
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          }
+        });
+      })
+      .catch(() => {});
+  });
 }
