@@ -191,26 +191,103 @@ export function rabbit(p,index,baby=false) {
   const feet=[];for(const x of [-.2,.2])for(const z of [-.23,.24]){const foot=group(body,x,.14,z);ball(foot,.13,c,0,0,.04,.7,.65,1.45);feet.push(foot);}
   root.scale.setScalar(baby?.58:1);return { root, body, ears, feet, phase:index*1.71, baby };
 }
-export function person(p,avatar='girl') {
-  const root=group(p),body=group(root);const shirt=avatar==='girl'?'#d67b8e':'#589397',hair='#674334',skin='#edbb8a';
-  box(body,.64,.64,.38,shirt,0,1.08,0,.09);
-  box(body,.42,.44,.05,avatar==='girl'?'#bd587a':'#32727e',0,1.03,.216,.04);
-  for(const x of [-.19,.19]){box(body,.09,.48,.06,avatar==='girl'?'#f4cfad':'#b1c9a8',x,1.23,.2,.02);ball(body,.033,'#f5d481',x,1.12,.25);}
-  const head=group(body,0,1.68,0);
-  box(head,.66,.65,.58,skin,0,0,0,.16);
-  box(head,.72,.26,.64,hair,0,.28,-.035,.1);
-  box(head,.64,.12,.13,hair,-.025,.2,.29,.06);
-  if(avatar==='girl')for(const x of [-.31,.31]){box(head,.15,.6,.44,hair,x,-.02,-.06,.07);ball(head,.16,hair,x,-.35,-.18,1,1.5,1);}
-  for(const x of [-.14,.14]){ball(head,.047,'#343736',x,.01,.294,1,1.15,.4);ball(head,.012,'#fff6da',x-.012,.03,.316);ball(head,.053,'#e7a58b',x*1.2,-.10,.296,1,.42,.2);}
-  box(head,.12,.022,.025,'#985d48',0,-.145,.3,.009);
-  // A leaf clip is the visual identity shared by Kaja and Tola's world.
-  ball(head,.1,'#bad378',.27,.33,.29,1.5,.6,.28);
-  const arms=[],legs=[];
-  for(const side of [-1,1]) {
-    const arm=group(body,side*.43,1.32,0);box(arm,.22,.29,.27,'#f6e8cd',0,-.12,0,.065);box(arm,.18,.38,.2,skin,0,-.41,0,.06);ball(arm,.105,skin,0,-.63,0);arms.push(arm);
-    const leg=group(body,side*.19,.78,0);box(leg,.25,.51,.27,avatar==='girl'?'#e7ba91':'#416878',0,-.22,0,.06);box(leg,.29,.19,.4,'#f9efdb',0,-.51,.075,.06);box(leg,.29,.055,.41,'#b6b5a2',0,-.6,.08,.015);legs.push(leg);
+import girlFrontUrl from '../girl-walk-front.png';
+import girlRightUrl from '../girl-walk-right.png';
+import girlLeftUrl from '../girl-walk-left.png';
+import boyFrontUrl from '../boy-walk-front.png';
+import boyRightUrl from '../boy-walk-right.png';
+import boyLeftUrl from '../boy-walk-left.png';
+
+export function person(p, avatar = 'girl') {
+  const root = group(p);
+  const isGirl = avatar === 'girl';
+  const loader = new T.TextureLoader();
+
+  function loadTex(url) {
+    const t = loader.load(url);
+    t.colorSpace = T.SRGBColorSpace;
+    t.wrapS = T.ClampToEdgeWrapping;
+    t.wrapT = T.ClampToEdgeWrapping;
+    t.generateMipmaps = true;
+    t.minFilter = T.LinearMipmapLinearFilter;
+    t.magFilter = T.LinearFilter;
+    t.repeat.set(1 / 3, 1);
+    t.offset.set(1 / 3, 0);
+    return t;
   }
-  const tool=group(arms[1],0,-.6,0);cylinder(tool,.035,.04,.62,palette.wood,0,0,.18).rotation.x=Math.PI/2;box(tool,.42,.13,.14,'#879ba3',0,0,.43);tool.visible=false;
-  const blob=shadow(root,0,0,.42,.32,.18);
-  return {root,body,head,arms,legs,tool,blob};
+
+  const frontTex = loadTex(isGirl ? girlFrontUrl : boyFrontUrl);
+  const rightTex = loadTex(isGirl ? girlRightUrl : boyRightUrl);
+  const leftTex = loadTex(isGirl ? girlLeftUrl : boyLeftUrl);
+
+  const geo = new T.PlaneGeometry(2.1, 2.1);
+  geo.translate(0, 1.05, 0);
+
+  const mat = new T.MeshStandardMaterial({
+    map: frontTex,
+    transparent: true,
+    alphaTest: 0.12,
+    roughness: 0.65,
+    metalness: 0.05,
+    side: T.DoubleSide
+  });
+
+  const spriteMesh = new T.Mesh(geo, mat);
+  spriteMesh.castShadow = true;
+  spriteMesh.receiveShadow = false;
+  root.add(spriteMesh);
+
+  const blob = shadow(root, 0, 0, 0.58, 0.42, 0.38);
+
+  let currentMap = frontTex;
+  let currentFrame = -1;
+
+  function update({ moving, speed, dx, dz, time, cameraYaw, busy }) {
+    spriteMesh.rotation.y = cameraYaw;
+
+    if (moving && speed > 0.04) {
+      const relX = dx * Math.cos(cameraYaw) - dz * Math.sin(cameraYaw);
+      const relZ = dx * Math.sin(cameraYaw) + dz * Math.cos(cameraYaw);
+
+      let targetTex = frontTex;
+      if (Math.abs(relX) > Math.abs(relZ) * 0.5) {
+        targetTex = relX > 0 ? rightTex : leftTex;
+      }
+
+      if (mat.map !== targetTex) {
+        mat.map = targetTex;
+        mat.needsUpdate = true;
+      }
+
+      const frameIndex = Math.floor((time * 7.5) % 3);
+
+      if (currentFrame !== frameIndex || mat.map !== currentMap) {
+        currentMap = targetTex;
+        currentFrame = frameIndex;
+        targetTex.repeat.set(1 / 3, 1);
+        targetTex.offset.set(frameIndex * (1 / 3), 0);
+      }
+
+      spriteMesh.position.y = Math.abs(Math.sin(time * 10)) * 0.09;
+    } else {
+      if (mat.map !== frontTex || currentFrame !== 1) {
+        frontTex.repeat.set(1 / 3, 1);
+        frontTex.offset.set(1 / 3, 0);
+        mat.map = frontTex;
+        mat.needsUpdate = true;
+        currentMap = frontTex;
+        currentFrame = 1;
+      }
+      spriteMesh.position.y = Math.sin(time * 2.2) * 0.025;
+    }
+
+    if (busy) {
+      spriteMesh.rotation.z = Math.sin(time * 16) * 0.07;
+    } else {
+      spriteMesh.rotation.z = 0;
+    }
+  }
+
+  return { root, spriteMesh, blob, update, tool: { visible: false } };
 }
+

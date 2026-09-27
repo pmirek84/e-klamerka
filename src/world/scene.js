@@ -213,9 +213,41 @@ export function createWorld(host, callbacks) {
   const canvas=renderer.domElement;
   canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',clearInput);canvas.addEventListener('wheel',wheel,{passive:false});canvas.addEventListener('contextmenu',context);
   window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);window.addEventListener('blur',clearInput);document.addEventListener('visibilitychange',visibility);
+  let autoActTarget = null;
+  function performDirectAction(placeId) {
+    if (!placeId) return;
+    select(placeId);
+    const p = PLACES[placeId];
+    if (!p) return;
+    const d = Math.hypot(pos.x - p.approach[0], pos.z - p.approach[1]);
+    if (d < 1.75) {
+      callbacks.onAction?.();
+    } else {
+      autoActTarget = placeId;
+    }
+  }
+
+  function dblclick(e) {
+    e.preventDefault();
+    screenRay(e.clientX, e.clientY);
+    const hits = raycaster.intersectObjects(targets, true);
+    if (hits.length) {
+      let o = hits[0].object;
+      while (o && !o.userData.place) o = o.parent;
+      if (o?.userData.place) {
+        performDirectAction(o.userData.place);
+        return;
+      }
+    }
+    if (selected) {
+      performDirectAction(selected);
+    }
+  }
+  canvas.addEventListener('dblclick', dblclick);
+
   function burst(x,z,color){for(let i=0;i<9;i++){const m=box(scene,.12,.12,.12,color,x,.55,z);fx.push({m,v:new T.Vector3((random()-.5)*2,2+random()*2,(random()-.5)*2),end:time+.75});}}
-  function animateAction(kind){busyUntil=time+1.1;player.tool.visible=['forest','mine','house','pen','grove','crystals','windmill'].includes(kind);path=[];const p=PLACES[selected];if(p)player.root.rotation.y=Math.atan2(p.x-pos.x,p.z-pos.z);burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':'#f6d68a');}
-  let paused=false, frameTime=16;
+  function animateAction(kind){busyUntil=time+1.1;path=[];const p=PLACES[selected];burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':'#f6d68a');}
+  let paused=false, frameTime=16, lastTapTime = 0, lastTapTarget = null;
   function frame(now){
     if(disposed)return;frameTime=frameTime*.9+(now-last)*.1;const dt=Math.min(.1,(now-last)/1000);last=now;time+=dt;
     let dx=0,dz=0,speed=0;
@@ -228,17 +260,24 @@ export function createWorld(host, callbacks) {
       if(walkable(pos.x+dx*step,pos.z))pos.x+=dx*step;
       if(walkable(pos.x,pos.z+dz*step))pos.z+=dz*step;
       speed=Math.hypot(pos.x-ox,pos.z-oz)/Math.max(dt,.001);
-      if(speed>.01){const angle=Math.atan2(dx,dz);let diff=Math.atan2(Math.sin(angle-player.root.rotation.y),Math.cos(angle-player.root.rotation.y));player.root.rotation.y+=diff*Math.min(1,dt*14);}
     }
     if(player){
-      player.root.position.copy(pos);const moving=speed>.08,cycle=time*11;
-      player.body.position.y=-.14+(moving?Math.abs(Math.sin(cycle))*.065:Math.sin(time*2)*.012);
-      player.legs.forEach((leg,i)=>leg.rotation.x=moving?Math.sin(cycle+i*Math.PI)*.7:0);
-      player.arms.forEach((arm,i)=>{arm.rotation.x=moving?-Math.sin(cycle+i*Math.PI)*.62:Math.sin(time*2+i)*.035;});
-      if(time<busyUntil){player.arms[1].rotation.x=-1.3+Math.sin(time*16)*.8;player.body.rotation.x=.06;}
-      else{player.body.rotation.x=0;player.tool.visible=false;}
-      player.head.rotation.y=moving?0:Math.sin(time*.65)*.1;
+      player.root.position.copy(pos);
+      const moving=speed>.04;
+      player.update({ moving, speed, dx, dz, time, cameraYaw: yaw, busy: time < busyUntil });
     }
+
+    if(autoActTarget){
+      const p=PLACES[autoActTarget];
+      if(p){
+        const d=Math.hypot(pos.x-p.approach[0],pos.z-p.approach[1]);
+        if(d<1.75||path.length===0){
+          autoActTarget=null;
+          callbacks.onAction?.();
+        }
+      } else { autoActTarget=null; }
+    }
+
     if(worldChanges?.rotor)worldChanges.rotor.rotation.z-=dt*.6;
     for(const r of rabbits){
       if(time>r.next){r.from.copy(r.root.position);r.to.set(3.5+random()*3.5,0,2.25+random()*1.65);r.started=time;r.duration=.6+r.from.distanceTo(r.to)*.2;r.next=time+r.duration+1.2+random()*2.2;r.root.rotation.y=Math.atan2(r.to.x-r.from.x,r.to.z-r.from.z);}
@@ -252,19 +291,39 @@ export function createWorld(host, callbacks) {
     if(marker.visible){marker.scale.setScalar(1+Math.sin(time*3)*.1);if(!path.length)marker.material.opacity=.3;else marker.material.opacity=.9;}
     if(player){flag.visible=true;flag.position.set(pos.x,2.55+Math.sin(time*2)*.05,pos.z);flag.rotation.z=Math.PI;}
     positionCamera(dt);
+
+    // 60 FPS Direct Label Synchronization (Eliminates DOM lag and wobble)
+    const labelWrap = host.querySelector('.world-labels');
+    if (labelWrap) {
+      for (const [id, p] of Object.entries(PLACES)) {
+        if (!visiblePlace(p, state)) continue;
+        const btn = labelWrap.querySelector(`[data-place="${id}"]`);
+        if (btn) {
+          const sPos = project(p.label);
+          if (sPos.visible) {
+            btn.style.display = 'flex';
+            btn.style.transform = `translate3d(${sPos.x.toFixed(1)}px, ${sPos.y.toFixed(1)}px, 0) translate(-50%, -50%)`;
+          } else {
+            btn.style.display = 'none';
+          }
+        }
+      }
+    }
+
     if(now-lastUi>100){
       let nearest=null,dist=Infinity;
       for(const [id,p] of Object.entries(PLACES)){if(!visiblePlace(p,state))continue;const d=Math.hypot(pos.x-p.approach[0],pos.z-p.approach[1]);if(d<dist){nearest=id;dist=d;}}
       const currentRegion=regionAt(pos.x,pos.z);
       if(currentRegion&&currentRegion!==lastRegion){lastRegion=currentRegion;callbacks.onRegion?.(currentRegion);}
-      callbacks.onFrame({region:lastRegion||'farm',position:[pos.x,pos.z],destination:selected,near:dist<1.65?nearest:null,moving:speed>.08,busy:time<busyUntil,labels:Object.fromEntries(Object.entries(PLACES).filter(([,p])=>visiblePlace(p,state)).map(([id,p])=>[id,project(p.label)]))});lastUi=now;
+      callbacks.onFrame({region:lastRegion||'farm',position:[pos.x,pos.z],destination:selected,near:dist<1.65?nearest:null,moving:speed>.04,busy:time<busyUntil,labels:Object.fromEntries(Object.entries(PLACES).filter(([,p])=>visiblePlace(p,state)).map(([id,p])=>[id,project(p.label)]))});lastUi=now;
     }
     renderer.render(scene,camera);raf=requestAnimationFrame(frame);
   }
   raf=requestAnimationFrame(frame);
-  const api={setGame,select,turn,zoom:setZoom,home(){worldOverview=false;overview=true;zoom=1;yaw=.35;},worldView(){worldOverview=true;overview=true;zoom=1;yaw=.12;},returnHome(){select('house');},stop(){path=[];selected=null;callbacks.onSelect(null);marker.visible=false;},follow(){overview=false;},pause(value){paused=value;clearInput();},animateAction,
-    inspect(){return {region:lastRegion,routeLength:path.length,position:pos.toArray(),routeTo:(x,z)=>route(x,z).map(p=>p.toArray()),inside:(x,z)=>inside(x,z),camera:{yaw,zoom},joints:player?.legs.map(x=>x.rotation.x),rabbits:rabbits.map(r=>({position:r.root.position.toArray(),ears:r.ears.map(e=>e.rotation.x)})),fps:Math.round(1000/frameTime),calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,houseLevel:state.houseLevel,objects:{house:houseObj?.uuid,pen:penObj?.uuid},project:(point)=>project(point)};},
-    destroy(){disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clearInput);document.removeEventListener('visibilitychange',visibility);scene.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});renderer.dispose();canvas.remove();}
+  const api={setGame,select,performDirectAction,turn,zoom:setZoom,home(){worldOverview=false;overview=true;zoom=1;yaw=.35;},worldView(){worldOverview=true;overview=true;zoom=1;yaw=.12;},returnHome(){select('house');},stop(){path=[];selected=null;callbacks.onSelect(null);marker.visible=false;},follow(){overview=false;},pause(value){paused=value;clearInput();},animateAction,
+    inspect(){return {region:lastRegion,routeLength:path.length,position:pos.toArray(),routeTo:(x,z)=>route(x,z).map(p=>p.toArray()),inside:(x,z)=>inside(x,z),camera:{yaw,zoom},fps:Math.round(1000/frameTime),calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,houseLevel:state.houseLevel,project:(point)=>project(point)};},
+    destroy(){disposed=true;cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clearInput);canvas.removeEventListener('dblclick',dblclick);document.removeEventListener('visibilitychange',visibility);scene.traverse(o=>{o.geometry?.dispose();if(o.material){for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});renderer.dispose();canvas.remove();}
   };
   return api;
 }
+

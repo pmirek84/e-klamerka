@@ -3,27 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#a8dcf1">
-  <meta name="description" content="E-Klamerka — Zbuduj i rozwijaj swoją własną uroczą farmę online! Gra PWA z królikami, uprawami i domkiem.">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="E-Klamerka">
-  <link rel="icon" type="image/svg+xml" href="./assets/icon-Dr-syx_L-Dr-syx_L-Dr-syx_L.svg">
-  <link rel="apple-touch-icon" href="./assets/icon-192-DJAV_vEs-DJAV_vEs-DJAV_vEs.png">
-  <link rel="manifest" href="./assets/manifest-BN7P8lqe-BN7P8lqe-BN7P8lqe.webmanifest">
-  <title>E-Klamerka — Moja farma</title>
-  <script type="module" crossorigin src="./assets/index-Xj4KQz1c.js"></script>
+  <meta name="theme-color" content="#cbded9">
+  <meta name="description" content="E-Klamerka — Zbuduj swoją pierwszą farmę w 3D!">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <title>E-Klamerka — Moja farma 3D</title>
+  <script type="module" crossorigin src="./assets/index-C5BmPQS_.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-bcFH5M15.css">
 </head>
 <body>
   <div id="root"></div>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('SW zarejestrowany:', reg.scope))
-          .catch(err => console.error('Błąd SW:', err));
-      });
-    }
-  </script>
 </body>
 </html>

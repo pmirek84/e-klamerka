@@ -7,7 +7,7 @@ const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
 const graDir = path.resolve(rootDir, 'gra');
 
-console.log('Copying build output from dist/ to root and gra/ folders for full OVH compatibility...');
+console.log('Copying build output from dist/ to /gra/ folder...');
 
 function copyRecursiveSync(src, dest) {
   const exists = fs.existsSync(src);
@@ -26,9 +26,8 @@ function copyRecursiveSync(src, dest) {
 }
 
 if (fs.existsSync(distDir)) {
-  copyRecursiveSync(distDir, rootDir);
   copyRecursiveSync(distDir, graDir);
-  console.log('Successfully copied dist contents to root and /gra/!');
+  console.log('Successfully copied dist contents to /gra/!');
 } else {
   console.error('dist directory does not exist! Run npm run build first.');
 }

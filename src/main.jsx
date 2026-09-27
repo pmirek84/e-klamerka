@@ -5,7 +5,7 @@ import { loadGame, SAVE_KEY, transact, PLACES, actionFor } from './game.js';
 import { Icon } from './icons.jsx';
 import './style.css';
 import { WorldMap } from './WorldMap.jsx';
-import { REGIONS } from './world/regions.js';
+import { REGIONS, visiblePlace } from './world/regions.js';
 const resourceNames={wood:'drewno',stone:'kamień',carrots:'marchewki',coins:'monety',seeds:'nasionka',crystals:'kryształy'};
 const resourceIcons={wood:'wood',stone:'stone',carrots:'carrot',coins:'coins',seeds:'seeds',crystals:'crystal'};
 function Resources({state,all=false}){return <div className="resources" aria-label="Zasoby">{(all?['wood','stone','carrots','coins','seeds','crystals']:['wood','stone','carrots','coins',...(state.world?.quarry||state.crystals?['crystals']:[])]).map(k=><span className={`resource ${k}`} key={k} title={resourceNames[k]}><Icon name={resourceIcons[k]} size={23}/><b data-resource={k}>{state[k]}</b><span className="sr-only"> {resourceNames[k]}</span></span>)}</div>;}
@@ -54,7 +54,7 @@ function App(){
     </header>
     <aside className="quest-card"><span className="eyebrow"><span className="sun-dot"/> SŁONECZNY PORANEK</span><h1>{worldQuest.title}</h1><p>{worldQuest.text}</p><button className="quest-link" onClick={()=>worldRef.current?.select(worldQuest.target)}>Prowadź mnie <Icon name="arrow" size={16}/></button><div className="quest-progress"><i style={{width:`${worldQuest.progress*100}%`}}/></div></aside>
     {!modal&&<div className="travel-tools"><button onClick={()=>worldRef.current?.returnHome()}><Icon name="house" size={16}/> Do domu</button>{frame.moving&&<button onClick={()=>worldRef.current?.stop()}>Zatrzymaj</button>}</div>}
-    {ready&&!modal&&<div className="world-labels">{Object.entries(frame.labels).map(([id,p])=>p.visible&&<button key={id} className={`place-label ${selected===id||frame.near===id?'selected':''}`} style={{left:p.x,top:p.y}} onClick={()=>worldRef.current?.select(id)} data-place={id}><span className="label-dot"/>{PLACES[id].short}{id==='pen'&&game.babies>0&&<b>{game.babies}</b>}</button>)}</div>}
+    {ready&&!modal&&<div className="world-labels">{Object.entries(PLACES).map(([id,p])=>visiblePlace(p,game)&&<button key={id} className={`place-label ${selected===id||frame.near===id?'selected':''}`} onClick={()=>worldRef.current?.select(id)} onDoubleClick={()=>worldRef.current?.performDirectAction(id)} data-place={id}><span className="label-dot"/>{p.short}{id==='pen'&&game.babies>0&&<b>{game.babies}</b>}</button>)}</div>}
     {game.nextBirthAt&&<div className="nursery"><Icon name="rabbit" size={20}/><span>Maluszek za <b>{remaining}s</b></span></div>}
     {notice&&!modal&&<div className={`toast ${!notice.ok?'warning':''}`} role="status"><Icon name={notice.ok?'check':'leaf'} size={20}/>{notice.message}</div>}
     <div className="bottom-hud">
