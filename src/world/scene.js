@@ -56,6 +56,7 @@ export function createWorld(host, callbacks) {
   trail([[-7,1],[-9,0],[-12.5,0]],1.3);
   trail([[0,1],[1,-3],[0,-6],[0,-10.5]],1.3);
   trail([[6,-3.3],[9,-3],[12.5,-3]],1.3);
+  trail([[4,-2.7],[6.2,-5.6],[8.6,-8.6]],1.25);
   // Pond and stones sit behind the work areas.
   const pond=group(scenery,1.9,0,-7.8);
   cylinder(pond,2.7,2.7,.05,'#c5d8a8',0,.07,0,40).scale.z=.64;

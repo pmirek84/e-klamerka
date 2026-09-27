@@ -19,7 +19,7 @@ export const WORLD_PLACES = {
   lakeGate: { title: 'Most na Lazurowe Jezioro', short: 'Most na jezioro', x: 0, z: 10.8, approach: [0, 9.5], label: [0, 1.9, 10.8] },
   lakeDock: { title: 'Złota Przystań', short: 'Przystań', region: 'lake', x: 0, z: 28, approach: [0, 26], label: [0, 3.2, 28] },
   lakePearls: { title: 'Perłowa Zatoczka', short: 'Perły', region: 'lake', x: -3.5, z: 32, approach: [-2.5, 31], label: [-3.5, 2.5, 32] },
-  cloudsGate: { title: 'Ścieżka na Gwiezdną Polanę', short: 'Ścieżka gwiazd', x: 16, z: -16, approach: [14.5, -14.5], label: [16, 2.2, -16] },
+  cloudsGate: { title: 'Ścieżka na Gwiezdną Polanę', short: 'Ścieżka gwiazd', x: 8.6, z: -8.6, approach: [7.5, -7.5], label: [8.6, 2.2, -8.6] },
   observatory: { title: 'Obserwatorium Gwiazd', short: 'Teleskop', region: 'clouds', x: 28, z: -28, approach: [26, -27], label: [28, 4.5, -28] },
 };
 
@@ -54,7 +54,7 @@ export function insideWorld(x, z, s) {
   if (s.world?.quarry && Math.abs(x) < 1.02 && z >= -21 && z <= -10) return true;
   if (s.world?.meadow && x >= 11.8 && x <= 22 && Math.abs(z + 3) < 1.02) return true;
   if (s.world?.lake && Math.abs(x) < 1.02 && z >= 10 && z <= 21) return true;
-  if (s.world?.clouds && x >= 10 && x <= 21 && z <= -10 && z >= -21) return true;
+  if (s.world?.clouds && x >= 8 && x <= 22 && z <= -8 && z >= -22 && Math.abs((x - 8) - (-z - 8)) < 2.5) return true;
   return Array.from({ length: s.landLevel || 0 }, (_, i) => 13 + i * 2.8).some(cx => ((x - cx) / 2.8) ** 2 + ((z - 4.8) / 3.8) ** 2 < 1);
 }
 

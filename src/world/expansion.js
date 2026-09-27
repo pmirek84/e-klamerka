@@ -48,7 +48,9 @@ export function buildRegions(scene){
       for(let i=0;i<14;i++){const x=Math.sin(i*3.1)*6,z=Math.cos(i*2.3)*5+2;if(Math.hypot(x,z-2)<4.5)continue;cylinder(g,.04,.05,.6,'#588950',x,.3,z);ball(g,.14,'#a8d594',x,.65,z,1,.4,1);}
     }
     if(id==='clouds'){
-      path(-2,2,10,1.4);path(0,0,1.4,8);
+      const pObs = box(g, 11, .035, 1.4, '#d9c391', -3.2, .085, 3.2, .015);
+      pObs.rotation.y = Math.PI * 0.25;
+      path(0, 0, 1.4, 6);
       // Observatory tower & celestial dome
       const obs=group(g,0,0,0);
       cylinder(obs,2.2,2.5,2.4,'#ded8eb',0,1.2,0,16);
@@ -91,7 +93,7 @@ export function buildWorldChanges(parent,state){
   bridge(0,-15.7,10.8,true,w.quarry);
   bridge(16.8,-3,10.2,false,w.meadow);
   bridge(0,15.9,10.8,true,w.lake);
-  bridge(14.5,-14.5,12.5,false,w.clouds,-Math.PI*0.25);
+  bridge(15.1,-15.1,19.2,false,w.clouds,Math.PI*0.25);
   // Chest lid visibly opens and stays open after the one-time reward.
   const chest=group(g,-33,0,4);box(chest,1.05,.55,.75,C.wood,0,.36,0);for(const x of [-.38,.38])box(chest,.08,.58,.8,'#e6c67c',x,.36,0);
   const hinge=group(chest,0,.65,-.36);const lid=box(hinge,1.1,.18,.8,'#c89a5e',0,.02,.35);hinge.rotation.x=w.chest?-1.2:0;box(chest,.15,.16,.08,'#f6d785',0,.58,.4);
