@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createWorld } from './world/scene.js';
-import { loadGame, SAVE_KEY, transact, PLACES, actionFor, maxBabies, OWL_RIDDLES } from './game.js';
+import { loadGame, SAVE_KEY, transact, PLACES, actionFor, maxBabies, OWL_RIDDLES, getAvailableVisitors, hasConnectedWorld } from './game.js';
 import { Icon } from './icons.jsx';
 import './style.css';
 import { WorldMap } from './WorldMap.jsx';
@@ -378,7 +378,9 @@ function App() {
             {[
               { action: 'buy-seeds', icon: 'seeds', title: 'Paczuszka nasion', desc: 'Jedno sadzenie · co najmniej 3 marchewki', label: 'Kup · 2', available: game.coins >= 2 },
               { action: 'buy-carrots', icon: 'carrot', title: 'Dwie marchewki', desc: 'Pyszny posiłek dla króliczej pary', label: 'Kup · 3', available: game.coins >= 3 },
-              { action: 'sell-apples', icon: 'apple', title: 'Sprzedaj 2 jabłka', desc: 'Soczyste owoce z Twojego sadu', label: 'Sprzedaj · +3', available: game.apples >= 2 },
+              ...(game.apples > 0 || game.orchardLevel > 0 ? [
+                { action: 'sell-apples', icon: 'apple', title: 'Sprzedaj 2 jabłka', desc: 'Soczyste owoce z Twojego sadu', label: 'Sprzedaj · +3', available: game.apples >= 2 }
+              ] : []),
               { action: 'sell-crystal', icon: 'crystal', title: 'Kryształ ze wzgórz', desc: 'Rzadki minerał o wysokiej wartości', label: 'Sprzedaj · +4', available: game.crystals > 0 },
               { action: 'sell-wood', icon: 'wood', title: 'Sprzedaj 2 drewna', desc: 'Las zawsze ma coś w zapasie', label: 'Sprzedaj · +2', available: game.wood >= 2 },
               { action: 'sell-stone', icon: 'stone', title: 'Sprzedaj 2 kamienie', desc: 'Zamień zapasy na nowe możliwości', label: 'Sprzedaj · +2', available: game.stone >= 2 },
@@ -400,40 +402,55 @@ function App() {
         </Modal>
       )}
 
-      {modal === 'stall' && (
-        <Modal title="Kramik Wędrowców" subtitle="HANDEL I GOŚCIE Z INNYCH KRAIN" onClose={closeModal}>
-          <Resources state={game} all />
-          <p className="modal-intro" style={{ fontSize: '13px', color: '#688071', margin: '14px 0' }}>
-            Goście z lasu, wzgórz i łąki odwiedzają Twój stragan, by kupić świeże produkty z farmy!
-          </p>
-          <div className="shop-items">
-            {game.visitors?.map(v => {
-              const canFulfill = Object.entries(v.wants).every(([k, n]) => (game[k] || 0) >= n);
-              return (
-                <article key={v.id} style={{ background: '#f8fdf4', borderColor: '#d3e4c7' }}>
-                  <span className="product-icon" style={{ background: '#e4efd7' }}><Icon name={v.icon || 'stall'} size={30} /></span>
-                  <div>
-                    <h3 style={{ color: '#385e42' }}>{v.name}</h3>
-                    <p>{v.desc}</p>
-                    <div style={{ display: 'flex', gap: '8px', fontSize: '11px', marginTop: '6px' }}>
-                      <b>Chce:</b>
-                      {Object.entries(v.wants).map(([k, n]) => (
-                        <span key={k} style={{ color: (game[k] || 0) < n ? '#bc785d' : '#4d7557', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <Icon name={resourceIcons[k] || 'leaf'} size={15} /> {n} {resourceNames[k]}
-                        </span>
-                      ))}
+      {modal === 'stall' && (() => {
+        const connected = hasConnectedWorld(game);
+        const visitorsList = getAvailableVisitors(game);
+
+        return (
+          <Modal title="Kramik Wędrowców" subtitle="HANDEL I GOŚCIE Z INNYCH KRAIN" onClose={closeModal}>
+            <Resources state={game} all />
+            <p className="modal-intro" style={{ fontSize: '13px', color: '#688071', margin: '14px 0' }}>
+              {connected
+                ? 'Goście z połączonych krain odwiedzają Twój stragan, by kupić świeże produkty z farmy!'
+                : 'Połącz farmę z innymi krainami (zbuduj most do Kryształowych Wzgórz lub Słonecznej Łąki), by wędrowcy i turyści mogli tu dotrzeć!'}
+            </p>
+
+            {game.houseLevel >= 3 && (
+              <div style={{ background: '#fdf8ea', border: '1.5px solid #ecd89f', borderRadius: '12px', padding: '10px 14px', marginBottom: '14px', fontSize: '12px', color: '#6f521b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon name="star" size={20} />
+                <span><b>Rezydencja Gościnna:</b> Turyści dają Ci +50% więcej monet za każde zamówienie i płacą regularny czynsz!</span>
+              </div>
+            )}
+
+            <div className="shop-items">
+              {visitorsList.map(v => {
+                const canFulfill = Object.entries(v.wants).every(([k, n]) => (game[k] || 0) >= n);
+                return (
+                  <article key={v.id} style={{ background: '#f8fdf4', borderColor: '#d3e4c7' }}>
+                    <span className="product-icon" style={{ background: '#e4efd7' }}><Icon name={v.icon || 'stall'} size={30} /></span>
+                    <div>
+                      <h3 style={{ color: '#385e42' }}>{v.name}</h3>
+                      <p>{v.desc}</p>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        <b>Chce:</b>
+                        {Object.entries(v.wants).map(([k, n]) => (
+                          <span key={k} style={{ color: (game[k] || 0) < n ? '#bc785d' : '#4d7557', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <Icon name={resourceIcons[k] || 'leaf'} size={15} /> {n} {resourceNames[k]}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <button className="primary" disabled={!canFulfill} onClick={() => perform(`fulfill:${v.id}`)} style={{ padding: '10px 14px', fontSize: '12px' }}>
-                    Sprzedaj
-                    <Icon name="coins" size={16} />
-                  </button>
-                </article>
-              );
-            })}
-          </div>
-        </Modal>
-      )}
+                    <button className="primary" disabled={!canFulfill} onClick={() => perform(`fulfill:${v.id}`)} style={{ padding: '10px 14px', fontSize: '12px' }}>
+                      Sprzedaj
+                      <Icon name="coins" size={16} />
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </Modal>
+        );
+      })()}
 
       {modal === 'helper' && (
         <Modal title="Pomocnik Franek" subtitle="PRZYJACIEL W OGRODZIE" onClose={closeModal}>
@@ -487,11 +504,25 @@ function App() {
 
         return (
           <Modal title="Mądra Sowa Klara" subtitle="ZAGADKI I TAJEMNICE PRZYRODY" onClose={closeModal}>
-            <div style={{ textAlign: 'center', marginBottom: '14px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#f0f5ec', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', color: '#44654d', fontWeight: '600' }}>
-                <Icon name="owl" size={20} />
-                <span>Zagadka {riddle.id} z {OWL_RIDDLES.length} · Rozwiązane: {solvedCount}/{OWL_RIDDLES.length} ⭐</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#f5f8f1', border: '1.5px solid #dbe6d2', borderRadius: '16px', padding: '14px 18px', marginBottom: '14px' }}>
+              <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e1ecd6', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b9d7a6', boxShadow: '0 4px 12px rgba(90,130,80,0.15)' }}>
+                <Icon name="owl" size={36} />
               </div>
+              <div>
+                <h4 style={{ margin: '0 0 4px', fontSize: '15px', color: '#2d5138' }}>Sowa Klara · Strażniczka Przyrody</h4>
+                <p style={{ margin: 0, fontSize: '12px', color: '#5b7863', lineHeight: '1.4' }}>
+                  „Huhu! Znam sekrety lasu, wzgórz i łąki. Odgadnij moją zagadkę i zdobądź cenne nagrody!”
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px' }}>
+              <span style={{ fontSize: '12px', color: '#4a6f54', fontWeight: '700' }}>
+                Zagadka {riddle.id} z {OWL_RIDDLES.length}
+              </span>
+              <span style={{ fontSize: '12px', background: '#ebf4e6', color: '#385e42', padding: '3px 10px', borderRadius: '12px', fontWeight: '600' }}>
+                Rozwiązane: {solvedCount}/{OWL_RIDDLES.length} ⭐
+              </span>
             </div>
 
             <div style={{ background: '#fdfcf7', border: '1.5px solid #e5dec9', borderRadius: '16px', padding: '18px', margin: '0 0 16px' }}>

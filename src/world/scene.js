@@ -127,7 +127,7 @@ export function createWorld(host, callbacks) {
     if(!gardenObj||prev.planted!==next.planted||prev.watered!==next.watered||prev.landLevel!==next.landLevel){disposeObject(gardenObj);gardenObj=garden(dynamic,next);targets.push(gardenObj);}
     if(!stallObj||prev.stall!==next.stall){disposeObject(stallObj);stallObj=stall(dynamic,next.stall);targets.push(stallObj);}
     if(!helperObj||prev.helper!==next.helper){if(helperObj?.root)disposeObject(helperObj.root);helperObj=helper(dynamic,next.helper);if(helperObj?.root)targets.push(helperObj.root);}
-    if(!owlObj){owlObj=owl(dynamic);targets.push(owlObj.root);}
+    if(!owlObj){owlObj=owl(dynamic,-4.5,-2.8);targets.push(owlObj.root);}
     if(!landObj||prev.landLevel!==next.landLevel){
       disposeObject(landObj);landObj=group(dynamic);
       for(let i=0;i<next.landLevel;i++)island(landObj,13+i*2.8,4.8,3,4);
@@ -147,12 +147,20 @@ export function createWorld(host, callbacks) {
     while(rabbits.length>n){rabbits.pop().root.removeFromParent();}
     while(rabbits.length<n){const i=rabbits.length,r=rabbit(scene,i,i>=2);r.root.position.set(4.1+random()*2.3,0,2.1+random()*1.4);r.from=r.root.position.clone();r.to=r.from.clone();r.next=time+random()*1.2;r.started=0;r.duration=.8;rabbits.push(r);}
 
-    const numVisitors = next.stall ? 2 : 0;
+    const isConnected = Boolean(next.world?.quarry || next.world?.meadow || (next.world?.visited && next.world?.visited.length > 1));
+    let numVisitors = 0;
+    if (next.stall && isConnected) {
+      numVisitors = 1;
+      if (next.world?.quarry) numVisitors++;
+      if (next.world?.meadow) numVisitors++;
+    }
     while(visitors.length > numVisitors) { visitors.pop().root.removeFromParent(); }
     while(visitors.length < numVisitors) {
       const idx = visitors.length;
       const v = visitor(scene, idx);
-      v.root.position.set(-1.2 + (idx === 0 ? 1.4 : -1.4), 0, 7.6 + idx * 0.4);
+      if (idx === 0) v.root.position.set(-0.1, 0, 7.8);
+      else if (idx === 1) v.root.position.set(-2.3, 0, 8.1);
+      else v.root.position.set(0.9, 0, 8.7);
       visitors.push(v);
     }
   }
@@ -318,7 +326,7 @@ export function createWorld(host, callbacks) {
     if(helperObj?.update) helperObj.update(time);
     if(owlObj?.update) owlObj.update(time);
     for(const v of visitors){
-      v.body.position.y = Math.sin(time * 2.5 + v.phase) * 0.02;
+      if(v.update) v.update(time, v.phase);
     }
     if(worldChanges?.rotor)worldChanges.rotor.rotation.z-=dt*.6;
     for(const r of rabbits){

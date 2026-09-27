@@ -60,6 +60,26 @@ export const OWL_RIDDLES = [
   }
 ];
 
+export const hasConnectedWorld = (s) => Boolean(s.world?.quarry || s.world?.meadow || (s.world?.visited && s.world?.visited.length > 1));
+
+export function getAvailableVisitors(s) {
+  if (!s || !hasConnectedWorld(s)) return [];
+  const list = [];
+  // Leśny wędrowiec przychodzi, gdy odwiedzono Szumiący Las
+  if (s.world?.visited?.includes('woodland') || s.world?.quarry || s.world?.meadow) {
+    list.push(s.visitors?.find(v => v.id === 'v1') || DEFAULT_VISITORS[0]);
+  }
+  // Kupiec ze Wzgórz przychodzi po naprawie mostu do Kryształowych Wzgórz
+  if (s.world?.quarry) {
+    list.push(s.visitors?.find(v => v.id === 'v2') || DEFAULT_VISITORS[1]);
+  }
+  // Podróżnik z Łąki przychodzi po naprawie mostu na Słoneczną Łąkę
+  if (s.world?.meadow) {
+    list.push(s.visitors?.find(v => v.id === 'v3') || DEFAULT_VISITORS[2]);
+  }
+  return list.length ? list : [s.visitors?.[0] || DEFAULT_VISITORS[0]];
+}
+
 export const INITIAL = {
   version: 2,
   world: NEW_WORLD,
@@ -113,8 +133,22 @@ export function normalize(raw = {}) {
 
 export function loadGame(storage = localStorage) {
   try {
-    const raw = storage.getItem(SAVE_KEY) || storage.getItem('farm-v2');
-    return normalize(raw ? JSON.parse(raw) : {});
+    // Check all past save keys in priority order to safely preserve any player save!
+    const keysToCheck = [SAVE_KEY, 'farm-v2', 'farm-world-save', 'eklamerka-save', 'farm-save'];
+    for (const key of keysToCheck) {
+      const raw = storage.getItem(key);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            return normalize(parsed);
+          }
+        } catch {
+          // continue to next key
+        }
+      }
+    }
+    return { ...INITIAL };
   } catch {
     return { ...INITIAL };
   }
@@ -226,6 +260,7 @@ export function transact(state, action, now = Date.now()) {
     case 'helper':
       if (s.helper) return fail('Pomocnik Franek już pracuje w Twoim ogrodzie!');
       if (s.houseLevel < 2) return fail('Rozbuduj dom na 2. poziom, aby stworzyć pokój dla pomocnika!');
+      if (!hasConnectedWorld(s)) return fail('Połącz najpierw farmę z inną krainą (np. most do Wzgórz lub Łąki), aby zaprosić pomocnika!');
       if (!pay(COSTS.helper)) return fail('Na zatrudnienie pomocnika potrzeba 12 monet, 6 drewna i 4 marchewek.');
       s.helper = true;
       message = 'Pomocnik Franek zamieszkał na piętrze i pomaga w ogrodzie!';
@@ -233,6 +268,7 @@ export function transact(state, action, now = Date.now()) {
     case 'stall':
       if (s.stall) return fail('Stragan wędrowców jest już otwarty!');
       if (s.houseLevel < 2) return fail('Rozbuduj dom na 2. poziom, aby prowadzić handel z wędrowcami!');
+      if (!hasConnectedWorld(s)) return fail('Połącz farmę z innymi krainami (zbuduj most), by goście mogli tu dotrzeć!');
       if (!pay(COSTS.stall)) return fail('Na wybudowanie straganu potrzeba 8 drewna, 4 kamieni i 6 monet.');
       s.stall = true;
       message = 'Stragan gotowy! Wędrowcy i goście z innych krain już tu zmierzają.';
@@ -244,6 +280,7 @@ export function transact(state, action, now = Date.now()) {
       const vId = action.split(':')[1];
       const visitor = s.visitors.find(v => v.id === vId);
       if (!visitor) return fail('Wędrowiec wyruszył już w dalszą drogę.');
+      if (!hasConnectedWorld(s)) return fail('Połącz farmę z innymi krainami, aby goście mogli Cię odwiedzać!');
       if (!pay(visitor.wants)) return fail('Brakuje produktów, o które prosi wędrowiec.');
       const multiplier = s.houseLevel >= 3 ? 1.5 : 1;
       for (const [k, n] of Object.entries(visitor.gives)) {
@@ -402,7 +439,7 @@ export const PLACES = {
   helper: { title: 'Pomocnik Franek', short: 'Pomocnik', x: -3.8, z: 6.8, approach: [-3.5, 6.2], label: [-3.8, 1.9, 6.8] },
   pen: { title: 'Bezuch i Karmelka', short: 'Króliki', x: 5.3, z: 2.3, approach: [3, 4.8], label: [5.3, 2.8, 2.3] },
   stall: { title: 'Stragan wędrowców', short: 'Stragan', x: -1.2, z: 8.5, approach: [-1.2, 7.2], label: [-1.2, 2.6, 8.5] },
-  owl: { title: 'Mądra Sowa Klara', short: 'Sowa', x: -6.5, z: -6.2, approach: [-5.8, -5.2], label: [-6.5, 2.8, -6.2] },
+  owl: { title: 'Mądra Sowa Klara', short: 'Sowa', x: -4.5, z: -2.8, approach: [-3.8, -1.8], label: [-4.5, 3.0, -2.8] },
   shop: { title: 'Sklepik pod klamerką', short: 'Sklepik', x: -9, z: 3.8, approach: [-7, 2.6], label: [-9, 3.5, 3.8] },
   land: { title: 'Nowa polana', short: 'Rozbudowa', x: 11, z: 5, approach: [9, 5.8], label: [10.8, 1.6, 5] },
 };
@@ -446,14 +483,42 @@ export function actionFor(place, s) {
         : { label: 'Zbuduj zagrodę', hint: 'Przytulny dom dla Bezucha i Karmelki.', cost: COSTS.pen, action: 'pen', disabled: !s.houseLevel, icon: 'rabbit' };
     case 'garden':
       return { label: !s.planted ? 'Posiej marchewki' : !s.watered ? 'Podlej ogród' : 'Zbierz marchewki', hint: 'Słodkie marchewki dla króliczków i na handel.', cost: !s.planted ? { seeds: 1 } : null, action: 'garden', icon: 'carrot' };
-    case 'helper':
+    case 'helper': {
+      const connected = hasConnectedWorld(s);
+      const hLvlOk = s.houseLevel >= 2;
       return s.helper
         ? { label: 'Pomocnik Franek', hint: 'Franek automatycznie sieje i podlewa grządki!', action: 'helper-status', icon: 'helper' }
-        : { label: 'Zatrudnij pomocnika', hint: s.houseLevel < 2 ? 'Wymaga domu na poziomie 2 (pokój na piętrze).' : 'Franek pomoże w podlewaniu i zwiększy plony.', cost: COSTS.helper, action: 'helper', disabled: s.houseLevel < 2, icon: 'helper' };
-    case 'stall':
+        : {
+            label: 'Zatrudnij pomocnika',
+            hint: !hLvlOk
+              ? 'Wymaga domu na poziomie 2 (pokój na piętrze).'
+              : !connected
+              ? 'Połącz farmę z innymi krainami (napraw most do Wzgórz lub Łąki), by zaprosić pomocnika.'
+              : 'Franek pomoże w podlewaniu i zwiększy plony.',
+            cost: COSTS.helper,
+            action: 'helper',
+            disabled: !hLvlOk || !connected,
+            icon: 'helper'
+          };
+    }
+    case 'stall': {
+      const connected = hasConnectedWorld(s);
+      const hLvlOk = s.houseLevel >= 2;
       return s.stall
-        ? { label: 'Kram wędrowców', hint: 'Odwiedzający z innych krain kupują Twoje plony!', action: 'stall-modal', icon: 'stall' }
-        : { label: 'Wybuduj stragan', hint: s.houseLevel < 2 ? 'Wymaga domu na poziomie 2.' : 'Sprzedawaj jabłka, marchewki i kryształy gościom.', cost: COSTS.stall, action: 'stall', disabled: s.houseLevel < 2, icon: 'stall' };
+        ? { label: 'Kram wędrowców', hint: connected ? 'Odwiedzający z innych krain kupują Twoje plony!' : 'Połącz farmę z krainami, aby przybyli wędrowcy.', action: 'stall-modal', icon: 'stall' }
+        : {
+            label: 'Wybuduj stragan',
+            hint: !hLvlOk
+              ? 'Wymaga domu na poziomie 2.'
+              : !connected
+              ? 'Połącz farmę z inną krainą (napraw most), by wędrowcy mogli dotrzeć do straganu.'
+              : 'Sprzedawaj jabłka, marchewki i kryształy gościom.',
+            cost: COSTS.stall,
+            action: 'stall',
+            disabled: !hLvlOk || !connected,
+            icon: 'stall'
+          };
+    }
     case 'owl':
       return { label: 'Zagadka Mądrej Sowy', hint: 'Rozwiąż zagadkę i zdobądź niespodziankę!', action: 'owl-modal', icon: 'owl' };
     case 'shop':

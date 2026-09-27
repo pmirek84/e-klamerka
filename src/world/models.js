@@ -190,59 +190,118 @@ export function helper(p,active) {
     ball(root,.18,'#d5ba8c',0,.8,0);
     return {root,update:()=>{}};
   }
-  shadow(root,0,0,.45,.35);
+  shadow(root,0,0,.55,.45);
   const body=group(root);
-  // Franek helper in denim overalls & straw hat
-  cylinder(body,.18,.14,.6,'#3d678a',0,.45,0);
-  cylinder(body,.19,.18,.35,'#d65b43',0,.85,0);
-  ball(body,.16,'#eed3b3',0,1.12,0);
+  // Franek helper: friendly gardener in denim overalls, plaid shirt & straw hat
+  // Legs and boots
+  box(body,.13,.35,.16,'#3d678a',-.12,.18,0);
+  box(body,.13,.35,.16,'#3d678a',.12,.18,0);
+  box(body,.14,.12,.22,'#5a3d28',-.12,.06,.03);
+  box(body,.14,.12,.22,'#5a3d28',.12,.06,.03);
+  // Overalls torso
+  box(body,.42,.45,.28,'#467199',0,.55,0);
+  cylinder(body,.18,.2,.35,'#df6c4f',0,.82,0);
+  // Head & face
+  const head=group(body,0,1.15,0);
+  ball(head,.2,'#f4d9bf',0,0,0,1,1.05,.95);
+  // Eyes & rosy cheeks
+  for(const s of [-1,1]){
+    ball(head,.025,'#2b2219',s*.07,.02,.17);
+    ball(head,.035,'#f09b8d',s*.12,-.04,.15);
+  }
   // Straw hat
-  cylinder(body,.36,.36,.04,'#dcba78',0,1.24,0);
-  cylinder(body,.22,.22,.15,'#c9a35e',0,1.32,0);
-  // Watering can in hand
-  const can=group(body,.28,.55,.15);
-  cylinder(can,.12,.14,.24,'#52888d',0,0,0);
-  const spout=cylinder(can,.03,.05,.26,'#52888d',.12,.1,0);spout.rotation.z=-.7;
+  cylinder(head,.48,.48,.04,'#e5c583',0,.16,0);
+  cylinder(head,.28,.28,.18,'#d3aa5e',0,.26,0);
+  // Watering can in hands
+  const can=group(body,.32,.55,.18);
+  cylinder(can,.13,.15,.26,'#4e8489',0,0,0);
+  const spout=cylinder(can,.03,.05,.28,'#4e8489',.14,.12,0);spout.rotation.z=-.75;
+  const handle=new T.Mesh(new T.TorusGeometry(.1,.02,6,12),material('#4e8489'));handle.position.set(-.12,.06,0);can.add(handle);
   function update(time){
-    body.position.y=Math.abs(Math.sin(time*3))*.04;
-    can.rotation.z=Math.sin(time*2.5)*.25;
+    body.position.y=Math.abs(Math.sin(time*2.5))*.03;
+    can.rotation.z=Math.sin(time*2)*.2;
+    head.rotation.y=Math.sin(time*.9)*.25;
   }
   return {root,body,update};
 }
+
 export function visitor(p,index=0) {
   const root=group(p);
+  root.userData.place='stall';
   const body=group(root);
-  const colors=['#4d7c67','#885a8a','#b37341'];
-  const cloakColor=colors[index%colors.length];
-  cylinder(body,.2,.16,.7,cloakColor,0,.5,0);
-  ball(body,.16,'#eed8be',0,1.05,0);
-  // Traveler backpack / hood
-  box(body,.3,.4,.25,'#6d4e38',0,.6,-.22);
-  cylinder(body,.24,.24,.06,'#8a6e53',0,1.18,0);
-  shadow(root,0,0,.45,.35);
-  return {root,body,phase:index*2.1};
-}
-export function owl(p) {
-  const root=group(p,-6.5,0,-6.2);root.userData.place='owl';shadow(root,0,0,.45,.35);
-  cylinder(root,.12,.14,1.4,palette.wood,0,.7,0);
-  const cross=cylinder(root,.08,.08,.7,palette.lightWood,0,1.35,0);cross.rotation.z=Math.PI/2;
-  const bird=group(root,0,1.42,0);
-  ball(bird,.28,'#8c5e39',0,.22,0,.9,1.15,.9);
-  ball(bird,.2,'#f6ecd7',0,.2,.14,.8,1,.5);
-  const head=group(bird,0,.48,0);
-  ball(head,.24,'#9c6a42',0,0,0,1.05,.9,1);
-  for(const side of [-1,1]){
-    ball(head,.09,'#fdf7ea',side*.09,.04,.18);
-    ball(head,.05,'#2e241d',side*.09,.04,.23);
-    ball(head,.018,'#ffffff',side*.09-.015,.055,.26);
-    const ear=box(head,.06,.15,.06,'#7d4e2a',side*.15,.2,-.02);ear.rotation.z=-side*.3;
+  const coatColors=['#4a7b64','#7c527e','#b86d3b','#4f6e91'];
+  const hatColors=['#8a6e53','#5e4638','#a3835e','#3c556b'];
+  const coat=coatColors[index%coatColors.length];
+  const hat=hatColors[index%hatColors.length];
+
+  // Traveler boots and legs
+  box(body,.12,.3,.15,'#49392c',-.11,.15,0);
+  box(body,.12,.3,.15,'#49392c',.11,.15,0);
+  // Warm traveler coat
+  cylinder(body,.22,.18,.65,coat,0,.55,0);
+  cylinder(body,.24,.22,.28,coat,0,.82,0);
+  // Traveler backpack
+  box(body,.34,.42,.26,'#684b36',0,.65,-.24);
+  cylinder(body,.08,.08,.32,'#987b5a',0,.86,-.24).rotation.z=Math.PI/2;
+  // Head & traveler hat
+  const head=group(body,0,1.14,0);
+  ball(head,.19,'#f5ddc5',0,0,0);
+  for(const s of [-1,1]){
+    ball(head,.024,'#2a201b',s*.065,.02,.16);
+    ball(head,.03,'#efa294',s*.11,-.03,.14);
   }
-  const beak=cylinder(head,0,.04,.09,'#e89e3a',0,-.02,.25);beak.rotation.x=Math.PI/2;
-  for(const side of [-1,1]){const wing=ball(bird,.22,'#7a4a27',side*.25,.2,-.02,.45,1.2,.85);wing.rotation.z=side*.2;}
+  cylinder(head,.44,.44,.04,hat,0,.15,0);
+  cylinder(head,.26,.24,.16,hat,0,.24,0);
+  shadow(root,0,0,.5,.4);
+
+  function update(time,offset=0){
+    body.position.y=Math.abs(Math.sin((time+offset)*3))*.035;
+    head.rotation.y=Math.sin((time+offset)*1.2)*.3;
+  }
+  return {root,body,head,update,phase:index*1.8};
+}
+
+export function owl(p, x = -4.5, z = -2.8) {
+  const root=group(p,x,0,z);root.userData.place='owl';shadow(root,0,0,.5,.4);
+  // Carved wooden post with base and crossbar
+  cylinder(root,.14,.18,.3,palette.wood,0,.15,0);
+  cylinder(root,.11,.13,1.45,palette.wood,0,.85,0);
+  const cross=cylinder(root,.09,.09,.8,palette.lightWood,0,1.52,0);cross.rotation.z=Math.PI/2;
+  // Little lantern on one side of post
+  const lantern=group(root,-.35,1.38,0);
+  cylinder(lantern,.06,.06,.15,'#3a3328',0,0,0);
+  ball(lantern,.045,'#ffea88',0,0,0);
+  // The Wise Owl Klara
+  const bird=group(root,0,1.6,0);
+  // Body and breast plumage
+  ball(bird,.3,'#825532',0,.24,0,.92,1.18,.92);
+  ball(bird,.22,'#fbf3e2',0,.22,.12,.82,1.02,.55);
+  // Head
+  const head=group(bird,0,.52,0);
+  ball(head,.26,'#926038',0,0,0,1.06,.94,1.02);
+  // Big expressive owl eyes with golden rings & pupils
+  for(const side of [-1,1]){
+    ball(head,.11,'#ffe875',side*.1,.05,.19);
+    ball(head,.08,'#ffffff',side*.1,.05,.22);
+    ball(head,.052,'#26190e',side*.1,.05,.26);
+    ball(head,.02,'#ffffff',side*.1-.015,.068,.285);
+    const feather=box(head,.06,.18,.06,'#6f4322',side*.16,.24,-.02);feather.rotation.z=-side*.35;
+  }
+  // Beak
+  const beak=cylinder(head,0,.045,.11,'#f0a032',0,-.03,.28);beak.rotation.x=Math.PI/2;
+  // Wings
+  const wings=[];
+  for(const side of [-1,1]){
+    const wing=ball(bird,.24,'#704322',side*.28,.22,-.02,.45,1.25,.88);
+    wing.rotation.z=side*.22;
+    wings.push(wing);
+  }
   function update(time){
-    head.rotation.y=Math.sin(time*.8)*.55+Math.sin(time*2.1)*.15;
-    head.rotation.x=Math.sin(time*1.4)*.08;
-    bird.position.y=1.42+Math.sin(time*2.2)*.015;
+    head.rotation.y=Math.sin(time*.7)*.6+Math.sin(time*2.3)*.15;
+    head.rotation.x=Math.sin(time*1.3)*.09;
+    bird.position.y=1.6+Math.sin(time*2.2)*.018;
+    wings[0].rotation.z=-.22+Math.sin(time*4)*.08;
+    wings[1].rotation.z=.22-Math.sin(time*4)*.08;
   }
   return {root,bird,head,update};
 }
