@@ -66,6 +66,35 @@ function duck(parent) {
   return { g, head, torso, dip: 0 };
 }
 
+function chicken(parent, seed) {
+  const root = new T.Group(); parent.add(root);
+  const white = std('#fffdf5'), red = std('#d94336'), orange = std('#f38d26'), legCol = std('#e59a35');
+  const body = new T.Group(); root.add(body);
+  mesh(body, SPH, white, 0, .24, 0, .18, .2, .24);
+  // Wings
+  const wings = [-1, 1].map(s => {
+    const w = mesh(body, SPH, white, s * .17, .24, 0, .04, .13, .16);
+    w.rotation.z = s * .15;
+    return w;
+  });
+  // Tail feathers
+  const tail = mesh(body, new T.ConeGeometry(.07, .2, 5), white, 0, .32, -.2);
+  tail.rotation.x = -1.1;
+  // Head & comb
+  const head = new T.Group(); head.position.set(0, .38, .16); body.add(head);
+  mesh(head, SPH, white, 0, 0, 0, .11, .13, .12);
+  mesh(head, BOX, red, 0, .13, 0, .035, .09, .12); // red comb
+  mesh(head, new T.ConeGeometry(.035, .1, 4), orange, 0, -.01, .14).rotation.x = Math.PI / 2; // beak
+  mesh(head, SPH, red, 0, -.08, .08, .03, .05, .03); // wattle
+  for (const s of [-1, 1]) mesh(head, SPH, std('#111'), s * .06, .025, .08, .015);
+  // Legs
+  const legs = [-1, 1].map(s => mesh(body, CYL, legCol, s * .07, .08, 0, .018, .16, .018));
+  // Shadow
+  const shadow = new T.Mesh(new T.CircleGeometry(.24, 14), new T.MeshBasicMaterial({ color: '#1d3322', transparent: true, opacity: .22, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = .02; root.add(shadow);
+  return { root, body, head, wings, legs, seed, state: 'idle', until: 0, target: new T.Vector3(), yaw: 0, peckTime: 0 };
+}
+
 function makeGlowTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -103,6 +132,16 @@ export function createAmbient(scene, { walkable, quality }) {
       s.root.position.set(px + (r() - .5) * rad, 0, pz + (r() - .5) * rad); s.root.scale.setScalar(.85 + r() * .25);
       s.until = r() * 3; flock.push(s);
     }
+  });
+
+  // Chickens strutting on the farm
+  const chickenSpots = [[3.5, 3.8, 1.8], [6.2, 5.5, 2.0], [-1.5, 4.2, 1.5]];
+  const chickens = chickenSpots.map(([cx, cz, rad], i) => {
+    const ch = chicken(root, 77 + i);
+    ch.home = [cx, cz, rad];
+    ch.root.position.set(cx + (r() - .5) * rad, 0, cz + (r() - .5) * rad);
+    ch.until = r() * 2;
+    return ch;
   });
 
   // Ducks paddling on the ponds.
@@ -234,6 +273,45 @@ export function createAmbient(scene, { walkable, quality }) {
       }
       if (s.state === 'walk' || s.state === 'hop') s.head.rotation.x = 0;
       s.root.rotation.y = s.yaw;
+    }
+
+    // Chicken updates
+    for (const ch of chickens) {
+      const p = ch.root.position;
+      if (ch.state === 'idle' && time > ch.until) {
+        if (r() < .45) {
+          ch.state = 'peck';
+          ch.peckTime = 0;
+        } else {
+          for (let tries = 0; tries < 6; tries++) {
+            const [hx, hz, rad] = ch.home, a = r() * 6.28, d = r() * rad;
+            ch.target.set(hx + Math.cos(a) * d, 0, hz + Math.sin(a) * d);
+            if (walkable(ch.target.x, ch.target.z)) { ch.state = 'walk'; break; }
+          }
+          ch.until = time + 1.5 + r() * 3;
+        }
+      }
+
+      if (ch.state === 'peck') {
+        ch.peckTime += dt * 5;
+        ch.head.rotation.x = Math.abs(Math.sin(ch.peckTime * Math.PI)) * .65; // pecking down
+        if (ch.peckTime >= 2.5) { ch.state = 'idle'; ch.until = time + 1.5 + r() * 2.5; ch.head.rotation.x = 0; }
+      } else if (ch.state === 'walk') {
+        tmp.copy(ch.target).sub(p); const len = tmp.length();
+        if (len < .08) { ch.state = 'idle'; ch.until = time + 1 + r() * 3; }
+        else {
+          tmp.normalize(); p.addScaledVector(tmp, Math.min(len, dt * .65));
+          const want = Math.atan2(tmp.x, tmp.z); ch.yaw += Math.atan2(Math.sin(want - ch.yaw), Math.cos(want - ch.yaw)) * Math.min(1, dt * 6);
+          ch.legs.forEach((l, i) => { l.rotation.x = Math.sin(time * 14 + i * Math.PI) * .45; });
+          ch.body.position.y = Math.abs(Math.sin(time * 14)) * .02;
+          ch.head.position.z = .16 + Math.sin(time * 14) * .03; // chicken head-bobbing stride
+        }
+      } else {
+        ch.legs.forEach(l => { l.rotation.x = 0; });
+        ch.body.position.y = 0;
+        ch.head.rotation.x = Math.sin(time * 2 + ch.seed) * .08;
+      }
+      ch.root.rotation.y = ch.yaw;
     }
 
     // Ducks updates

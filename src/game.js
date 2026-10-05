@@ -189,7 +189,7 @@ export function normalize(raw = {}) {
   s.penLevel = count(raw.penLevel ?? 1, 3);
   s.orchardLevel = count(raw.orchardLevel ?? (raw.world?.orchard ? 1 : 0), 3);
   s.name = String(raw.name || '').slice(0, 20);
-  s.avatar = raw.avatar === 'boy' ? 'boy' : 'girl';
+  s.avatar = typeof raw.avatar === 'string' && raw.avatar ? raw.avatar : 'girl';
   s.plantedCrop = raw.plantedCrop === 'wheat' ? 'wheat' : 'carrots';
 
   for (const k of ['pen', 'rabbits', 'planted', 'watered', 'helper', 'stall']) {
@@ -445,6 +445,43 @@ export function transact(state, action, now = Date.now()) {
       break;
     }
 
+    // Lake Fishing & Pearls
+    case 'lakeDock': case 'fish': {
+      if (!s.world.lake) return fail('Najpierw napraw most na Lazurowe Jezioro.');
+      if (now - (s.world.lastLake || 0) < 30000) {
+        const waitSec = Math.ceil((30000 - (now - s.world.lastLake)) / 1000);
+        return fail(`Rybki w jeziorze odpoczywają (${waitSec}s).`);
+      }
+      s.world.lastLake = now;
+      s.coins += 6;
+      message = 'Złowiono lśniącą złotą rybkę z Lazurowego Jeziora! (+6 monet)';
+      break;
+    }
+    case 'lakePearls': {
+      if (!s.world.lake) return fail('Najpierw napraw most na Lazurowe Jezioro.');
+      if (now - (s.world.lastPearls || 0) < 45000) {
+        const waitSec = Math.ceil((45000 - (now - (s.world.lastPearls || 0))) / 1000);
+        return fail(`Perły jeszcze lśnią na dnie zatoczki (${waitSec}s).`);
+      }
+      s.world.lastPearls = now;
+      s.coins += 8;
+      message = 'Wyłowiono lśniącą perłę z Perłowej Zatoczki! (+8 monet)';
+      break;
+    }
+
+    // Clouds Observatory
+    case 'observatory': {
+      if (!s.world.clouds) return fail('Najpierw otwórz ścieżkę na Gwiezdną Polanę.');
+      if (now - (s.world.lastObservatory || 0) < 45000) {
+        const waitSec = Math.ceil((45000 - (now - s.world.lastObservatory)) / 1000);
+        return fail(`Teleskop jest nastawiany na nową konstelację (${waitSec}s).`);
+      }
+      s.world.lastObservatory = now;
+      s.coins += 10;
+      message = 'Odkryto spadającą gwiazdę przez teleskop! (+10 monet)';
+      break;
+    }
+
     // Windmill (Meadow) - Repair / Milling (Section 9)
     case 'windmill': {
       if (!s.world.meadow) return fail('Najpierw otwórz drogę na Słoneczną Łąkę.');
@@ -682,6 +719,19 @@ export function transact(state, action, now = Date.now()) {
       break;
     }
 
+    // Wardrobe & Outfit customization
+    case 'set-avatar': {
+      s.avatar = s.avatar.startsWith('boy') ? 'girl' : 'boy';
+      message = `Przebrano postać (${s.avatar === 'girl' ? 'Pola' : 'Tomek'})!`;
+      break;
+    }
+    case 'avatar:girl': case 'avatar:girl-green': case 'avatar:girl-yellow': case 'avatar:girl-blue':
+    case 'avatar:boy': case 'avatar:boy-green': case 'avatar:boy-yellow': case 'avatar:boy-blue': {
+      s.avatar = action.replace('avatar:', '');
+      message = 'Wybrano nowy strój w garderobie!';
+      break;
+    }
+
     // Guest Hospitality (Section 14: 1 guest, 1 room, exact rewards)
     case 'host-guest:tea': {
       if (s.houseLevel < 3) return fail('Wymaga Domu odkrywcy (Poziom 3) z pokojem gościnnym.');
@@ -864,6 +914,33 @@ export function actionFor(place, s) {
       return s.world?.windmill
         ? { label: 'Zmiel mąkę', hint: `Młyn · 2 pszenice → 1 worek mąki (masz: ${s.flour || 0} mąki).`, cost: { wheat: 2 }, action: 'mill-flour', icon: 'flour' }
         : { label: 'Napraw młyn', hint: 'Naprawa wiatraka pozwoli mleć pszenicę na mąkę.', cost: COSTS.windmill, action: 'windmill', disabled: !s.world?.meadow, icon: 'windmill' };
+
+    case 'lakeDock':
+      return {
+        label: 'Złów rybkę',
+        hint: 'Złota Przystań · połów rybek z pomostu (+6 monet).',
+        action: 'lakeDock',
+        disabled: !s.world?.lake,
+        icon: 'stall'
+      };
+
+    case 'lakePearls':
+      return {
+        label: 'Wyłów perłę',
+        hint: 'Perłowa Zatoczka · lśniące perły z czystego jeziora (+8 monet).',
+        action: 'lakePearls',
+        disabled: !s.world?.lake,
+        icon: 'crystal'
+      };
+
+    case 'observatory':
+      return {
+        label: 'Spójrz przez teleskop',
+        hint: 'Obserwatorium · podglądanie gwiazd na nocnym niebie (+10 monet).',
+        action: 'observatory',
+        disabled: !s.world?.clouds,
+        icon: 'star'
+      };
 
     case 'forest':
       return { label: 'Zbierz drewno', hint: '2 kawałki drewna do plecaka.', action: 'forest', icon: 'wood' };

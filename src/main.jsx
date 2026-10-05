@@ -149,6 +149,10 @@ function App() {
   const [frame, setFrame] = useState({ near: null, moving: false, busy: false, labels: {} });
   const [selected, setSelected] = useState(null);
   const [modal, setModal] = useState(null);
+  useEffect(() => {
+    window.__openModal = setModal;
+    return () => { delete window.__openModal; };
+  }, []);
   const [houseTab, setHouseTab] = useState('workshop'); // 'workshop' | 'kitchen' | 'guests'
   const [notice, setNotice] = useState(null);
   const [shopMessage, setShopMessage] = useState('');
@@ -469,29 +473,49 @@ function App() {
       {/* BACKPACK / INVENTORY MODAL (Section 17) */}
       {modal === 'backpack' && (
         <Modal title="Twój Plecak Odkrywcy" subtitle="WSZYSTKIE ZASOBY I NARZĘDZIA" onClose={closeModal}>
-          <div style={{ marginBottom: '14px' }}>
-            <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#4a6f54', textTransform: 'uppercase' }}>Surowce (9):</h4>
+          <div style={{ marginBottom: '18px' }}>
+            <div className="inventory-section-title">
+              <Icon name="backpack" size={16} /> Surowce zebrane w krainach:
+            </div>
             <Resources state={game} all />
           </div>
 
-          <div style={{ marginTop: '16px', background: '#f8faf6', border: '1.5px solid #dce8d6', borderRadius: '14px', padding: '12px' }}>
-            <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#3f6349', textTransform: 'uppercase' }}>Narzędzia i wyposażenie:</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
-              <div style={{ background: '#fff', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Icon name="leaf" size={20} />
-                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Siekierka ✓</span>
+          <div className="candy-card warm-banner">
+            <div className="inventory-section-title" style={{ color: '#7a5a35' }}>
+              <Icon name="pickaxe" size={16} /> Narzędzia i wyposażenie farmy:
+            </div>
+            <div className="inventory-tools-grid">
+              <div className="tool-slot unlocked">
+                <span className="tool-slot-icon"><Icon name="leaf" size={20} /></span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700 }}>Siekierka</div>
+                  <div style={{ fontSize: '10px', color: '#438450', fontWeight: 600 }}>Drewno ✓</div>
+                </div>
               </div>
-              <div style={{ background: '#fff', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Icon name="leaf" size={20} />
-                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Konewka ✓</span>
+              <div className="tool-slot unlocked">
+                <span className="tool-slot-icon"><Icon name="leaf" size={20} /></span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700 }}>Konewka</div>
+                  <div style={{ fontSize: '10px', color: '#438450', fontWeight: 600 }}>Nawadnianie ✓</div>
+                </div>
               </div>
-              <div style={{ background: game.tools?.pickaxe ? '#eaf5e6' : '#f5f5f5', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px', opacity: game.tools?.pickaxe ? 1 : 0.6 }}>
-                <Icon name="pickaxe" size={20} />
-                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Kilof {game.tools?.pickaxe ? '✓' : '(brak)'}</span>
+              <div className={`tool-slot ${game.tools?.pickaxe ? 'unlocked' : 'locked'}`}>
+                <span className="tool-slot-icon"><Icon name="pickaxe" size={20} /></span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700 }}>Kilof górniczy</div>
+                  <div style={{ fontSize: '10px', color: game.tools?.pickaxe ? '#438450' : '#8c7b6c', fontWeight: 600 }}>
+                    {game.tools?.pickaxe ? 'Kryształy ✓' : 'Do zrobienia'}
+                  </div>
+                </div>
               </div>
-              <div style={{ background: game.tools?.basket ? '#eaf5e6' : '#f5f5f5', padding: '8px 10px', borderRadius: '10px', border: '1px solid #d5e2cf', display: 'flex', alignItems: 'center', gap: '8px', opacity: game.tools?.basket ? 1 : 0.6 }}>
-                <Icon name="backpack" size={20} />
-                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Kosz {game.tools?.basket ? '✓' : '(brak)'}</span>
+              <div className={`tool-slot ${game.tools?.basket ? 'unlocked' : 'locked'}`}>
+                <span className="tool-slot-icon"><Icon name="backpack" size={20} /></span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700 }}>Kosz wyprawowy</div>
+                  <div style={{ fontSize: '10px', color: game.tools?.basket ? '#438450' : '#8c7b6c', fontWeight: 600 }}>
+                    {game.tools?.basket ? 'Wyprawy ✓' : 'Do zrobienia'}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -554,29 +578,28 @@ function App() {
 
         return (
           <Modal title="Bezuch i Karmelka" subtitle="KRÓLICZA RODZINKA I ZAGRODA" onClose={closeModal}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#f8fdf4', border: '1.5px solid #d4e7c7', borderRadius: '16px', padding: '12px 16px', marginBottom: '14px' }}>
-              <div style={{ width: '56px', height: '56px', background: '#e5f3dc', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b7dba2' }}>
+            <div className="candy-card hero-banner" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+              <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e1f5d6', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2.5px solid #a8dba2', boxShadow: '0 3px 0 #95cb8e' }}>
                 <Icon name="rabbit" size={36} />
               </div>
               <div style={{ flex: 1 }}>
-                <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#2d5936' }}>Para Rodziców: Bezuch i Karmelka</h3>
-                <p style={{ margin: 0, fontSize: '12px', color: '#577c60', lineHeight: '1.4' }}>
+                <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#2d5936', fontWeight: 700 }}>Para Rodziców: Bezuch i Karmelka</h3>
+                <p style={{ margin: 0, fontSize: '12px', color: '#577c60', lineHeight: '1.4', fontWeight: 500 }}>
                   Stała para mieszkańców farmy. Karm ich marchewkami, by powitać na świecie puszyste maluszki!
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fcfbf7', border: '1.5px solid #e8e2d0', borderRadius: '12px', padding: '10px 14px', marginBottom: '14px' }}>
+            <div className="candy-card warm-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
-                <span style={{ fontSize: '11px', color: '#7a7566', textTransform: 'uppercase', fontWeight: 'bold' }}>Pojemność zagrody:</span>
-                <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#334c38' }}>
+                <span style={{ fontSize: '11px', color: '#8c6a38', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '.06em' }}>Pojemność zagrody:</span>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#334c38', marginTop: '2px' }}>
                   {game.babies} / {capacity} maluszków (Poziom {game.penLevel})
                 </div>
               </div>
               {game.penLevel < 3 && (
                 <button
                   className="secondary"
-                  style={{ fontSize: '12px', padding: '6px 12px' }}
                   onClick={() => perform('pen')}
                 >
                   Powiększ zagrodę
@@ -586,10 +609,10 @@ function App() {
             </div>
 
             <div className="shop-items" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <article style={{ background: '#fcf9f2', borderColor: '#e6dec5' }}>
-                <span className="product-icon" style={{ background: '#f3ebd4' }}><Icon name="carrot" size={28} /></span>
+              <article style={{ background: '#fffcf7', borderColor: '#f2e5d0' }}>
+                <span className="product-icon" style={{ background: '#f5ebd2' }}><Icon name="carrot" size={28} /></span>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '14px', color: '#684a16' }}>Nakarm parę rodziców (2 marchewki)</h3>
+                  <h3 style={{ fontSize: '15px', color: '#684a16' }}>Nakarm parę rodziców (2 marchewki)</h3>
                   <p style={{ fontSize: '12px' }}>
                     {game.nextBirthAt ? `Maluszek już w drodze (${remaining}s)!` : isFull ? 'Zagroda pełna – powiększ zagrodę lub oddaj maluszka do adopcji.' : `Czas: ${game.totalBred === 0 ? '45s' : '90s'}`}
                   </p>
@@ -598,23 +621,23 @@ function App() {
                   className="primary"
                   disabled={Boolean(game.nextBirthAt) || isFull || game.carrots < 2}
                   onClick={() => perform('feed')}
-                  style={{ fontSize: '12px', padding: '8px 14px' }}
+                  style={{ fontSize: '13px', padding: '10px 16px' }}
                 >
                   {game.nextBirthAt ? `${remaining}s` : 'Nakarm'}
                 </button>
               </article>
 
-              <article style={{ background: '#f5faf4', borderColor: '#d3e8cf' }}>
-                <span className="product-icon" style={{ background: '#e1f2dc' }}><Icon name="rabbit" size={28} /></span>
+              <article style={{ background: '#f8fdf6', borderColor: '#d3ebd0' }}>
+                <span className="product-icon" style={{ background: '#e1f5dc' }}><Icon name="rabbit" size={28} /></span>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '14px', color: '#2d5e38' }}>Nowy dom dla maluszka</h3>
+                  <h3 style={{ fontSize: '15px', color: '#2d5e38' }}>Nowy dom dla maluszka</h3>
                   <p style={{ fontSize: '12px' }}>Przekaż wybranego maluszka nowej kochającej rodzinie · +5 monet</p>
                 </div>
                 <button
                   className="secondary"
                   disabled={game.babies < 1}
                   onClick={() => perform('sell-baby')}
-                  style={{ fontSize: '12px', padding: '8px 14px' }}
+                  style={{ fontSize: '13px', padding: '10px 16px' }}
                 >
                   Adopcja (+5)
                 </button>
@@ -636,57 +659,60 @@ function App() {
             <Resources state={game} all />
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '8px', margin: '14px 0 10px', borderBottom: '2px solid #e1ebdc', paddingBottom: '8px' }}>
+            <nav className="candy-tabs" aria-label="Sekcje domu">
               <button
-                className={houseTab === 'workshop' ? 'primary' : 'secondary'}
-                style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '10px' }}
+                className={`candy-tab ${houseTab === 'workshop' ? 'active' : ''}`}
                 onClick={() => setHouseTab('workshop')}
               >
-                Warsztat
+                <Icon name="pickaxe" size={16} /> Warsztat
               </button>
               {game.houseLevel >= 2 && (
                 <button
-                  className={houseTab === 'kitchen' ? 'primary' : 'secondary'}
-                  style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '10px' }}
+                  className={`candy-tab ${houseTab === 'kitchen' ? 'active' : ''}`}
                   onClick={() => setHouseTab('kitchen')}
                 >
-                  Kuchnia
+                  <Icon name="flour" size={16} /> Kuchnia
                 </button>
               )}
               {game.houseLevel >= 3 && (
                 <button
-                  className={houseTab === 'guests' ? 'primary' : 'secondary'}
-                  style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '10px' }}
+                  className={`candy-tab ${houseTab === 'guests' ? 'active' : ''}`}
                   onClick={() => setHouseTab('guests')}
                 >
-                  Pokoje Gościnne
+                  <Icon name="house" size={16} /> Pokoje Gościnne
                 </button>
               )}
-            </div>
+              <button
+                className={`candy-tab ${houseTab === 'wardrobe' ? 'active' : ''}`}
+                onClick={() => setHouseTab('wardrobe')}
+              >
+                <Icon name="leaf" size={16} /> Garderoba
+              </button>
+            </nav>
 
             {/* TAB: WORKSHOP */}
             {houseTab === 'workshop' && (
               <div>
-                <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#4a6f54' }}>Wytwarzanie narzędzi i wyposażenia:</h4>
+                <div className="inventory-section-title">Wytwarzanie narzędzi i wyposażenia:</div>
                 <div className="shop-items">
-                  <article style={{ background: '#fdfbf7', borderColor: '#e6ded0' }}>
-                    <span className="product-icon" style={{ background: '#efe7d6' }}><Icon name="pickaxe" size={28} /></span>
+                  <article style={{ background: '#fffdfa', borderColor: '#f2e5d0' }}>
+                    <span className="product-icon" style={{ background: '#f5ebd2' }}><Icon name="pickaxe" size={28} /></span>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '14px' }}>Kilof górniczy</h3>
+                      <h3 style={{ fontSize: '15px' }}>Kilof górniczy</h3>
                       <p style={{ fontSize: '12px' }}>Wymagany do wydobycia błękitnych kryształów na Wzgórzach</p>
                     </div>
-                    <button disabled={Boolean(game.tools?.pickaxe)} className="primary" onClick={() => perform('unlock:quarry')} style={{ fontSize: '12px' }}>
+                    <button disabled={Boolean(game.tools?.pickaxe)} className="primary" onClick={() => perform('unlock:quarry')} style={{ fontSize: '13px', padding: '10px 16px' }}>
                       {game.tools?.pickaxe ? 'Posiadany ✓' : 'Zrób kilof'}
                     </button>
                   </article>
 
-                  <article style={{ background: '#fdfbf7', borderColor: '#e6ded0' }}>
-                    <span className="product-icon" style={{ background: '#efe7d6' }}><Icon name="backpack" size={28} /></span>
+                  <article style={{ background: '#fffdfa', borderColor: '#f2e5d0' }}>
+                    <span className="product-icon" style={{ background: '#f5ebd2' }}><Icon name="backpack" size={28} /></span>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '14px' }}>Kosz wyprawowy</h3>
+                      <h3 style={{ fontSize: '15px' }}>Kosz wyprawowy</h3>
                       <p style={{ fontSize: '12px' }}>Wykonany z 3 drewna do dalszych wypraw</p>
                     </div>
-                    <button disabled={Boolean(game.tools?.basket)} className="primary" onClick={() => perform('unlock:lake')} style={{ fontSize: '12px' }}>
+                    <button disabled={Boolean(game.tools?.basket)} className="primary" onClick={() => perform('unlock:lake')} style={{ fontSize: '13px', padding: '10px 16px' }}>
                       {game.tools?.basket ? 'Posiadany ✓' : 'Wypleć (3 drewna)'}
                     </button>
                   </article>
@@ -697,15 +723,15 @@ function App() {
             {/* TAB: KITCHEN */}
             {houseTab === 'kitchen' && (
               <div>
-                <h4 style={{ margin: '0 0 8px', fontSize: '13px', color: '#4a6f54' }}>Kuchnia i pieczenie pieczywa:</h4>
+                <div className="inventory-section-title">Kuchnia i pieczenie pieczywa:</div>
                 <div className="shop-items">
-                  <article style={{ background: '#fefdf7', borderColor: '#eae0c8' }}>
+                  <article style={{ background: '#fffdfa', borderColor: '#f2e5d0' }}>
                     <span className="product-icon" style={{ background: '#f8eed4' }}><Icon name="flour" size={28} /></span>
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '14px' }}>Świeże pieczywo dla gości</h3>
+                      <h3 style={{ fontSize: '15px' }}>Świeże pieczywo dla gości</h3>
                       <p style={{ fontSize: '12px' }}>Wypiek bochenka z 1 mąki do poczęstunku turystów</p>
                     </div>
-                    <button disabled={game.flour < 1} className="primary" onClick={() => say('Masz gotową mąkę do przygotowania poczęstunku dla gościa!')} style={{ fontSize: '12px' }}>
+                    <button disabled={game.flour < 1} className="primary" onClick={() => say('Masz gotową mąkę do przygotowania poczęstunku dla gościa!')} style={{ fontSize: '13px', padding: '10px 16px' }}>
                       {game.flour >= 1 ? 'Mąka gotowa' : 'Brak mąki'}
                     </button>
                   </article>
@@ -717,72 +743,109 @@ function App() {
             {houseTab === 'guests' && (
               <div>
                 {!connected ? (
-                  <p style={{ fontSize: '13px', color: '#7a5a3a' }}>
-                    Odbuduj most do Wzgórz lub Łąki na mapie, by goście mogli tu dotrzeć!
-                  </p>
+                  <div className="candy-card warm-banner" style={{ textAlign: 'center', padding: '16px' }}>
+                    <p style={{ fontSize: '13px', color: '#7a5a3a', margin: 0, fontWeight: 600 }}>
+                      Odbuduj most do Wzgórz lub Łąki na mapie, by goście mogli tu dotrzeć!
+                    </p>
+                  </div>
                 ) : isResting ? (
-                  <div style={{ textAlign: 'center', padding: '14px 0' }}>
-                    <p style={{ fontSize: '13px', color: '#5b7a65', margin: '0 0 8px' }}>
+                  <div className="candy-card warm-banner" style={{ textAlign: 'center', padding: '16px 12px' }}>
+                    <p style={{ fontSize: '13px', color: '#5b7a65', margin: '0 0 10px', fontWeight: 600 }}>
                       Pokój gościnny jest wietrzony po wizycie. Kolejny gość zbliża się drogą!
                     </p>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#396345', background: '#e4f0de', padding: '4px 12px', borderRadius: '12px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#396345', background: '#e4f0de', border: '1.5px solid #cce5c4', padding: '5px 14px', borderRadius: '999px', boxShadow: '0 2px 0 #badaaf' }}>
                       Nowy gość za: {waitSec}s
                     </span>
                   </div>
                 ) : (
                   <div>
-                    <div style={{ background: '#f5f9f2', border: '1.5px solid #d5e5cf', borderRadius: '14px', padding: '12px', marginBottom: '12px' }}>
-                      <h3 style={{ margin: '0 0 4px', fontSize: '15px', color: '#2b5137' }}>{currentGuest.name} ({currentGuest.origin})</h3>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#496b52', fontStyle: 'italic' }}>{currentGuest.greeting}</p>
+                    <div className="candy-card hero-banner" style={{ marginBottom: '14px' }}>
+                      <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#2b5137', fontWeight: 700 }}>{currentGuest.name} ({currentGuest.origin})</h3>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#496b52', fontStyle: 'italic', fontWeight: 500 }}>„{currentGuest.greeting}”</p>
                     </div>
 
                     <div className="shop-items" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <article style={{ background: '#fcfdfa' }}>
+                      <article style={{ background: '#ffffff', borderColor: '#ecdcc8' }}>
                         <span className="product-icon"><Icon name="house" size={26} /></span>
                         <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: 0, fontSize: '13px' }}>Sam nocleg i herbatka</h4>
-                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +8 monet</span>
+                          <h4 style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 700 }}>Sam nocleg i herbatka</h4>
+                          <span style={{ fontSize: '12px', color: '#396b44', fontWeight: 600 }}>Zapłata: +8 monet</span>
                         </div>
-                        <button className="secondary" onClick={() => perform('host-guest:tea')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                        <button className="secondary" onClick={() => perform('host-guest:tea')} style={{ fontSize: '12px', padding: '8px 14px' }}>
                           Ugość (8 monet)
                         </button>
                       </article>
 
-                      <article style={{ background: '#fcfdfa' }}>
+                      <article style={{ background: '#ffffff', borderColor: '#ecdcc8' }}>
                         <span className="product-icon"><Icon name="carrot" size={26} /></span>
                         <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: 0, fontSize: '13px' }}>Poczęstunek marchewkowy (3 marchewki)</h4>
-                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +16 monet</span>
+                          <h4 style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 700 }}>Poczęstunek marchewkowy (3 marchewki)</h4>
+                          <span style={{ fontSize: '12px', color: '#396b44', fontWeight: 600 }}>Zapłata: +16 monet</span>
                         </div>
-                        <button className="primary" disabled={game.carrots < 3} onClick={() => perform('host-guest:carrots')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                        <button className="primary" disabled={game.carrots < 3} onClick={() => perform('host-guest:carrots')} style={{ fontSize: '12px', padding: '8px 14px' }}>
                           Poczęstuj (16 monet)
                         </button>
                       </article>
 
-                      <article style={{ background: '#fcfdfa' }}>
+                      <article style={{ background: '#ffffff', borderColor: '#ecdcc8' }}>
                         <span className="product-icon"><Icon name="apple" size={26} /></span>
                         <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: 0, fontSize: '13px' }}>Deser jabłkowy (2 jabłka)</h4>
-                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +18 monet</span>
+                          <h4 style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 700 }}>Deser jabłkowy (2 jabłka)</h4>
+                          <span style={{ fontSize: '12px', color: '#396b44', fontWeight: 600 }}>Zapłata: +18 monet</span>
                         </div>
-                        <button className="primary" disabled={game.apples < 2} onClick={() => perform('host-guest:apples')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                        <button className="primary" disabled={game.apples < 2} onClick={() => perform('host-guest:apples')} style={{ fontSize: '12px', padding: '8px 14px' }}>
                           Poczęstuj (18 monet)
                         </button>
                       </article>
 
-                      <article style={{ background: '#fcfdfa' }}>
+                      <article style={{ background: '#ffffff', borderColor: '#ecdcc8' }}>
                         <span className="product-icon"><Icon name="flour" size={26} /></span>
                         <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: 0, fontSize: '13px' }}>Ciepłe pieczywo (1 mąka)</h4>
-                          <span style={{ fontSize: '11px', color: '#396b44' }}>Zapłata: +18 monet</span>
+                          <h4 style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 700 }}>Ciepłe pieczywo (1 mąka)</h4>
+                          <span style={{ fontSize: '12px', color: '#396b44', fontWeight: 600 }}>Zapłata: +18 monet</span>
                         </div>
-                        <button className="primary" disabled={game.flour < 1} onClick={() => perform('host-guest:bread')} style={{ fontSize: '12px', padding: '6px 12px' }}>
+                        <button className="primary" disabled={game.flour < 1} onClick={() => perform('host-guest:bread')} style={{ fontSize: '12px', padding: '8px 14px' }}>
                           Upiecz i ugość (18 monet)
                         </button>
                       </article>
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* TAB: WARDROBE */}
+            {houseTab === 'wardrobe' && (
+              <div>
+                <div className="inventory-section-title" style={{ margin: '0 0 12px' }}>
+                  Wybierz postać i ulubiony strój:
+                </div>
+                <div className="wardrobe-grid">
+                  {[
+                    { id: 'girl', name: 'Pola · Klasyczna czerwień', color: '#e65a52', icon: '🌸' },
+                    { id: 'girl-green', name: 'Pola · Leśna zieleń', color: '#509c52', icon: '🍃' },
+                    { id: 'girl-yellow', name: 'Pola · Słoneczna żółć', color: '#e5a532', icon: '🌻' },
+                    { id: 'girl-blue', name: 'Pola · Lazurowy błękit', color: '#428dc7', icon: '🌊' },
+                    { id: 'boy', name: 'Tomek · Turkusowa bluza', color: '#3fa2a3', icon: '🧢' },
+                    { id: 'boy-green', name: 'Tomek · Leśny sweter', color: '#509c52', icon: '🌲' },
+                    { id: 'boy-yellow', name: 'Tomek · Ciepła żółć', color: '#e5a532', icon: '☀️' },
+                    { id: 'boy-blue', name: 'Tomek · Granatowa kurtka', color: '#428dc7', icon: '⛵' }
+                  ].map(outfit => {
+                    const isCurrent = (game.avatar || 'girl') === outfit.id;
+                    return (
+                      <button
+                        key={outfit.id}
+                        className={`outfit-card ${isCurrent ? 'active' : ''}`}
+                        onClick={() => perform(`avatar:${outfit.id}`)}
+                      >
+                        <span className="outfit-icon">{outfit.icon}</span>
+                        <span className="outfit-name">{outfit.name}</span>
+                        <span className="outfit-swatch" style={{ background: outfit.color }} />
+                        {isCurrent && <span className="outfit-badge">Wybrany ✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </Modal>
@@ -925,49 +988,43 @@ function App() {
 
         return (
           <Modal title="Mądra Sowa Klara" subtitle="ZAGADKI I TAJEMNICE PRZYRODY" onClose={closeModal}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: '#f5f8f1', border: '1.5px solid #dbe6d2', borderRadius: '16px', padding: '14px 18px', marginBottom: '14px' }}>
-              <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e1ecd6', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px solid #b9d7a6' }}>
+            <div className="candy-card owl-banner" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+              <div style={{ width: '56px', height: '56px', minWidth: '56px', background: '#e8e2fa', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2.5px solid #c7bbf2', boxShadow: '0 3px 0 #b3a5e6' }}>
                 <Icon name="owl" size={36} />
               </div>
               <div>
-                <h4 style={{ margin: '0 0 4px', fontSize: '15px', color: '#2d5138' }}>Sowa Klara · Przewodniczka</h4>
-                <p style={{ margin: 0, fontSize: '12px', color: '#5b7863', lineHeight: '1.4' }}>
+                <h4 style={{ margin: '0 0 4px', fontSize: '16px', color: '#3d3166', fontWeight: 700 }}>Sowa Klara · Przewodniczka</h4>
+                <p style={{ margin: 0, fontSize: '12px', color: '#685994', lineHeight: '1.4', fontWeight: 500 }}>
                   „Huhu! Znam sekrety lasu, łąki i gwiazd. Rozwiąż zagadkę przyrodniczą!”
                 </p>
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px' }}>
-              <span style={{ fontSize: '12px', color: '#4a6f54', fontWeight: '700' }}>
+              <span style={{ fontSize: '12px', color: '#574880', fontWeight: '700' }}>
                 Zagadka {riddle.id} z {OWL_RIDDLES.length}
               </span>
-              <span style={{ fontSize: '12px', background: '#ebf4e6', color: '#385e42', padding: '3px 10px', borderRadius: '12px', fontWeight: '600' }}>
+              <span style={{ fontSize: '12px', background: '#eee8fc', color: '#4a3b78', border: '1.5px solid #dcd1f7', padding: '4px 12px', borderRadius: '999px', fontWeight: '700' }}>
                 Rozwiązane: {solvedCount}/{OWL_RIDDLES.length} ⭐
               </span>
             </div>
 
-            <div style={{ background: '#fdfcf7', border: '1.5px solid #e5dec9', borderRadius: '16px', padding: '18px', margin: '0 0 16px' }}>
-              <h3 style={{ fontSize: '16px', color: '#3c4e3e', lineHeight: '1.5', margin: '0 0 14px' }}>
+            <div className="riddle-speech">
+              <h3 className="riddle-question">
                 „{riddle.question}”
               </h3>
 
-              <div style={{ display: 'grid', gap: '10px' }}>
+              <div style={{ display: 'grid', gap: '8px' }}>
                 {riddle.options.map((opt, idx) => {
                   const isSelected = owlAnswerState?.selected === idx;
                   const isCorrect = idx === riddle.answer;
-                  let btnBg = '#fff';
-                  let btnBorder = '#d5dfd1';
-                  let btnColor = '#2d4233';
+                  let stateClass = '';
 
                   if (owlAnswerState) {
                     if (isCorrect && (isSelected || owlAnswerState.correct || isSolved)) {
-                      btnBg = '#e3f6dc';
-                      btnBorder = '#7bc668';
-                      btnColor = '#1f5f14';
+                      stateClass = 'correct';
                     } else if (isSelected && !owlAnswerState.correct) {
-                      btnBg = '#fde8e4';
-                      btnBorder = '#e58f83';
-                      btnColor = '#942b1f';
+                      stateClass = 'wrong';
                     }
                   }
 
@@ -975,23 +1032,13 @@ function App() {
                     <button
                       key={idx}
                       onClick={() => handleAnswer(idx)}
-                      style={{
-                        padding: '12px 16px',
-                        borderRadius: '12px',
-                        border: `2px solid ${btnBorder}`,
-                        background: btnBg,
-                        color: btnColor,
-                        fontWeight: '600',
-                        fontSize: '14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer',
-                        textAlign: 'left'
-                      }}
+                      className={`riddle-option-btn ${stateClass}`}
                     >
-                      <span>{String.fromCharCode(65 + idx)}. {opt}</span>
-                      {owlAnswerState && isCorrect && (isSelected || isSolved || owlAnswerState.correct) && <Icon name="check" size={18} />}
+                      <span style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className="riddle-badge">{String.fromCharCode(65 + idx)}</span>
+                        {opt}
+                      </span>
+                      {owlAnswerState && isCorrect && (isSelected || isSolved || owlAnswerState.correct) && <Icon name="check" size={20} />}
                     </button>
                   );
                 })}
@@ -1000,12 +1047,15 @@ function App() {
               {owlAnswerState && (
                 <div style={{
                   marginTop: '14px',
-                  padding: '12px 14px',
-                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  borderRadius: '16px',
+                  border: `2px solid ${owlAnswerState.correct ? '#9ce2a6' : '#f8b6ac'}`,
                   background: owlAnswerState.correct ? '#ecfbe8' : '#fdf2f0',
                   color: owlAnswerState.correct ? '#23591a' : '#882b1f',
                   fontSize: '13px',
-                  lineHeight: '1.4'
+                  fontWeight: 600,
+                  lineHeight: '1.45',
+                  boxShadow: `0 3px 0 ${owlAnswerState.correct ? '#b1e5ba' : '#f4c5bf'}`
                 }}>
                   <b>{owlAnswerState.correct ? '🎉 Wyśmienicie! ' : '💡 Wskazówka: '}</b>
                   {owlAnswerState.fact}
@@ -1014,13 +1064,13 @@ function App() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button onClick={prevRiddle} style={{ background: '#f0f5ec', border: '1px solid #d3e2ce', borderRadius: '10px', padding: '10px 14px', color: '#385e42', fontWeight: '600', fontSize: '12px' }}>
+              <button onClick={prevRiddle} className="secondary" style={{ padding: '8px 14px', fontSize: '12px' }}>
                 ◀ Poprzednia
               </button>
-              <div style={{ fontSize: '12px', color: '#355b3f', fontWeight: 'bold' }}>
+              <div style={{ fontSize: '13px', color: '#7a5a2a', fontWeight: '700', background: '#fff5dc', border: '1.5px solid #fae2a8', borderRadius: '12px', padding: '6px 12px' }}>
                 Nagroda: +{riddle.reward.coins} monety
               </div>
-              <button onClick={nextRiddle} className="primary" style={{ padding: '10px 16px', fontSize: '12px' }}>
+              <button onClick={nextRiddle} className="primary" style={{ padding: '10px 18px', fontSize: '13px' }}>
                 Następna ▶
               </button>
             </div>
@@ -1047,16 +1097,15 @@ function App() {
           </form>
 
           {/* Export / Import Safe Progression Tools */}
-          <div style={{ background: '#f8faf6', border: '1.5px solid #dce8d6', borderRadius: '14px', padding: '12px 14px' }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: '13px', color: '#3f6349' }}>Kopia zapasowa postępów (Eksport / Import):</h4>
-            <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#6a8470', lineHeight: '1.4' }}>
+          <div className="candy-card warm-banner" style={{ marginTop: '16px' }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: '14px', color: '#594025', fontWeight: 700 }}>Kopia zapasowa postępów (Eksport / Import):</h4>
+            <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#7a5e42', lineHeight: '1.45', fontWeight: 500 }}>
               Możesz pobrać swój stan gry jako plik .json i wczytać go na innym telefonie lub komputerze.
             </p>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 className="secondary"
-                style={{ fontSize: '12px', padding: '8px 12px' }}
                 onClick={() => exportGameSave(game)}
               >
                 Pobierz zapis (.json)
@@ -1064,7 +1113,6 @@ function App() {
               <button
                 type="button"
                 className="secondary"
-                style={{ fontSize: '12px', padding: '8px 12px' }}
                 onClick={() => fileInputRef.current?.click()}
               >
                 Wczytaj plik zapisu

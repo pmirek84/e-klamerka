@@ -322,7 +322,7 @@ export function createWorld(host, callbacks) {
       });
     }
   }
-  function animateAction(kind){busyUntil=time+1.1;path=[];burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':'#f6d68a');audio.chime();}
+  function animateAction(kind){busyUntil=time+1.1;path=[];burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':kind==='lakeDock'?'#4fc3f7':kind==='observatory'?'#ba68c8':'#f6d68a');audio.chime();}
   let paused=false, frameTime=16, slowFor=0, skyInfo={night:0,horizon:null};
   function frame(now){
     if(disposed)return;frameTime=frameTime*.9+(now-last)*.1;const dt=Math.min(.1,(now-last)/1000);last=now;time+=dt;

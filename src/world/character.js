@@ -22,11 +22,17 @@ const G = {
 };
 
 export function createHero(parent, avatar = 'girl') {
-  const girl = avatar !== 'boy';
+  const isBoy = String(avatar).startsWith('boy');
+  const girl = !isBoy;
   const skin = '#f7d2b4';
+  let topColor = girl ? '#e65a52' : '#3fa2a3';
+  if (String(avatar).includes('green')) topColor = '#509c52';
+  if (String(avatar).includes('yellow')) topColor = '#e5a532';
+  if (String(avatar).includes('blue')) topColor = '#428dc7';
+
   const C = girl
-    ? { top: '#e65a52', bottom: '#e65a52', shoe: '#8b4a2d', hair: '#6e3b22', bag: '#f2b443', accent: '#fff4e6' }
-    : { top: '#3fa2a3', bottom: '#41598f', shoe: '#5b3a28', hair: '#5a3620', bag: '#f2b443', accent: '#fff4e6' };
+    ? { top: topColor, bottom: topColor, shoe: '#8b4a2d', hair: '#6e3b22', bag: '#f2b443', accent: '#fff4e6' }
+    : { top: topColor, bottom: '#41598f', shoe: '#5b3a28', hair: '#5a3620', bag: '#f2b443', accent: '#fff4e6' };
 
   const root = new T.Group(); root.scale.setScalar(1.15); parent.add(root);
   const shadow = new T.Mesh(new T.CircleGeometry(.42, 24), new T.MeshBasicMaterial({ color: '#1d3322', transparent: true, opacity: .28, depthWrite: false }));
