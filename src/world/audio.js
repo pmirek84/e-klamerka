@@ -199,6 +199,78 @@ export function createAudio() {
     });
   }
 
+  function cast() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Whoosh
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 800; f.Q.value = 2;
+    const g = ctx.createGain(); g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.001, t + .2);
+    src.connect(f).connect(g).connect(master); src.start(t, 0, .22);
+    // Soft water landing splash
+    setTimeout(() => water(), 180);
+  }
+
+  function bite() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Exclamation alert ping
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(1174, t);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.15, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + .25);
+    o.connect(g).connect(master); o.start(t); o.stop(t + .26);
+    // Sudden splash
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.type = 'triangle'; o2.frequency.setValueAtTime(440, t); o2.frequency.exponentialRampToValueAtTime(140, t + .12);
+    g2.gain.setValueAtTime(.12, t); g2.gain.exponentialRampToValueAtTime(.001, t + .14);
+    o2.connect(g2).connect(master); o2.start(t); o2.stop(t + .15);
+  }
+
+  function reel() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Rapid cute wooden ratchet click
+    [580, 720].forEach((fq, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .025;
+      o.type = 'triangle'; o.frequency.setValueAtTime(fq, s);
+      g.gain.setValueAtTime(.08, s); g.gain.exponentialRampToValueAtTime(.0005, s + .03);
+      o.connect(g).connect(master); o.start(s); o.stop(s + .035);
+    });
+  }
+
+  function sizzle() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Sizzling pan / pot bubbles
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 1.8;
+    const g = ctx.createGain(); g.gain.setValueAtTime(.001, t); g.gain.linearRampToValueAtTime(.12, t + .05); g.gain.exponentialRampToValueAtTime(.0005, t + .5);
+    src.connect(f).connect(g).connect(master); src.start(t, 0, .55);
+    // Little boiling pops
+    [620, 840, 760].forEach((fq, i) => {
+      const o = ctx.createOscillator(), og = ctx.createGain(), s = t + .08 + i * .09;
+      o.type = 'sine'; o.frequency.setValueAtTime(fq, s); o.frequency.exponentialRampToValueAtTime(fq * .6, s + .05);
+      og.gain.setValueAtTime(.06, s); og.gain.exponentialRampToValueAtTime(.0005, s + .06);
+      o.connect(og).connect(master); o.start(s); o.stop(s + .07);
+    });
+  }
+
+  function meow() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Cute kitty meow / chirp
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(740, t);
+    o.frequency.exponentialRampToValueAtTime(1080, t + .12);
+    o.frequency.exponentialRampToValueAtTime(860, t + .28);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(.11, t + .03);
+    g.gain.exponentialRampToValueAtTime(.0005, t + .3);
+    o.connect(g).connect(master);
+    o.start(t); o.stop(t + .32);
+  }
+
   function setMuted(v) {
     muted = v; localStorage.setItem(MUTE_KEY, v ? '1' : '0');
     if (master) master.gain.setTargetAtTime(v ? 0 : .7, ctx.currentTime, .1);
@@ -219,6 +291,11 @@ export function createAudio() {
     chop,
     mine,
     fanfare,
+    cast,
+    bite,
+    reel,
+    sizzle,
+    meow,
     setMuted,
     get muted() { return muted; },
     dispose

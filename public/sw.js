@@ -1,5 +1,5 @@
 // Service Worker for E-Klamerka 3D PWA
-const CACHE = 'eklamerka-v0.4.0-1791194397267';
+const CACHE = 'eklamerka-v0.4.0-1791201544881';
 const CORE_ASSETS = [
   './',
   './index.html',

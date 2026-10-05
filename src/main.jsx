@@ -18,8 +18,11 @@ import {
   houseCost,
   penCost,
   landCost,
-  COSTS
+  COSTS,
+  FISH_SPECIES,
+  COOKING_RECIPES
 } from './game.js';
+import { FishingModal } from './FishingModal.jsx';
 import { Icon } from './icons.jsx';
 import './style.css';
 import { WorldMap } from './WorldMap.jsx';
@@ -34,7 +37,8 @@ const resourceNames = {
   apples: 'jabłka',
   flour: 'mąka',
   crystals: 'kryształy',
-  coins: 'monety'
+  coins: 'monety',
+  fish: 'rybki'
 };
 
 const resourceIcons = {
@@ -47,6 +51,7 @@ const resourceIcons = {
   flour: 'flour',
   crystals: 'crystal',
   coins: 'coins',
+  fish: 'stall',
   helper: 'helper',
   stall: 'stall',
   windmill: 'windmill',
@@ -58,7 +63,7 @@ const resourceIcons = {
 function Resources({ state, all = false, onOpenBackpack }) {
   // HUD: max 3 contextual resources + coins (Section 17)
   const keys = all
-    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins']
+    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish']
     : ['wood', 'stone', state.plantedCrop === 'wheat' || state.wheat > 0 ? 'wheat' : 'carrots', 'coins'];
 
   return (
@@ -212,15 +217,31 @@ function App() {
     }, 1800);
   }, []);
 
-  const perform = useCallback((action) => {
+  const perform = useCallback((action, params = {}) => {
     const prev = gameRef.current;
-    const result = transact(prev, action);
+    const result = transact(prev, action, Date.now(), params);
     if (result.ok) {
       commit(result.state);
       const next = result.state;
 
       // Rich reward badges + sounds based on action
-      if (action.startsWith('plant:')) {
+      if (action === 'catch-fish') {
+        const sp = params?.species || FISH_SPECIES[0];
+        spawnReward(`+${sp.coins} Monet i ${sp.name}!`, sp.icon || '🐟', '#3ba4f5');
+      } else if (action === 'pet-cat') {
+        spawnReward('♥ Puszek mruczy!', '🐾', '#ff5c8a');
+        worldRef.current?.playSound('meow');
+      } else if (action.startsWith('cook:')) {
+        spawnReward('Ugotowano potrawę!', '🍳', '#ff9f43');
+        worldRef.current?.playSound('sizzle');
+      } else if (action.startsWith('eat:')) {
+        spawnReward('⚡ Bieg z wiatrem!', '💨', '#ffd152');
+        worldRef.current?.playSound('pop', 1.25);
+      } else if (action.startsWith('sell-dish')) {
+        const diff = (next.coins || 0) - (prev.coins || 0);
+        spawnReward(`+${diff > 0 ? diff : ''} Monet!`, '🪙', '#f8a836');
+        worldRef.current?.playSound('coin');
+      } else if (action.startsWith('plant:')) {
         const crop = action.split(':')[1] === 'carrots' ? 'Marchewki' : 'Zboże';
         spawnReward(`Zasiano: ${crop}!`, '🌱', '#5ec77a');
         worldRef.current?.playSound('pop');
@@ -256,9 +277,6 @@ function App() {
       } else if (action.startsWith('unlock') || action.startsWith('upgrade') || action.startsWith('build')) {
         spawnReward('Ukończono budowę!', '🎉', '#f8a836');
         worldRef.current?.playSound('fanfare');
-      } else if (action.startsWith('cook:')) {
-        spawnReward('Ugotowano posiłek!', '🍲', '#f8a836');
-        worldRef.current?.playSound('harvest');
       } else {
         worldRef.current?.playSound('pop');
       }
@@ -349,10 +367,22 @@ function App() {
       openModal('garden');
       return;
     }
+    if (task.action === 'fishing-modal') {
+      openModal('fishing');
+      return;
+    }
+    if (task.action === 'pet-cat') {
+      perform('pet-cat');
+      worldRef.current?.animateAction('pet');
+      return;
+    }
     if (task.action === 'owl-modal') {
       setOwlAnswerState(null);
-      const unsolved = OWL_RIDDLES.find(r => !game.solvedRiddles?.includes(r.id));
-      if (unsolved) setOwlRiddleId(unsolved.id);
+      const remaining = OWL_RIDDLES.filter(r => !game.solvedRiddles?.includes(r.id));
+      const chosen = remaining.length > 0
+        ? remaining[Math.floor(Math.random() * remaining.length)]
+        : OWL_RIDDLES[Math.floor(Math.random() * OWL_RIDDLES.length)];
+      if (chosen) setOwlRiddleId(chosen.id);
       openModal('owl');
       return;
     }
@@ -452,6 +482,12 @@ function App() {
               <span><small>{frame.clock.phase.toLocaleUpperCase('pl')}</small><b>{frame.clock.label}</b></span>
             </div>
           )}
+          {game.speedBoostUntil > Date.now() && (
+            <div className="speed-buff-pill" title="Zwiększona prędkość poruszania się!">
+              <span>⚡</span>
+              <span><b>Bieg z wiatrem</b> ({Math.max(1, Math.ceil((game.speedBoostUntil - Date.now()) / 1000))}s)</span>
+            </div>
+          )}
           <button onClick={() => worldRef.current?.returnHome()}><Icon name="house" size={16} /> Do domu</button>
           {frame.moving && <button onClick={() => worldRef.current?.stop()}>Zatrzymaj</button>}
         </div>
@@ -528,13 +564,7 @@ function App() {
               <Icon name={canAct ? 'check' : 'arrow'} size={19} />
             </button>
           </section>
-        ) : (
-          <div className="welcome-hint">
-            <span className="hint-spark">✧</span>
-            <strong>Twoja farma 3D</strong>
-            <span>Dotknij dowolnego miejsca lub etykiety, aby podejść.</span>
-          </div>
-        )}
+        ) : null}
 
         <nav className="camera-controls" aria-label="Sterowanie kamerą">
           <button title="Widok z góry / za postacią" aria-label="Przełącz widok z góry" onClick={() => worldRef.current?.home()}><Icon name="compass" /></button>
@@ -545,13 +575,6 @@ function App() {
           <button className="desktop-only" title="Przybliż" aria-label="Przybliż" onClick={() => worldRef.current?.zoom(-0.12)}><Icon name="plus" /></button>
           <button className="desktop-only" title="Oddal" aria-label="Oddal" onClick={() => worldRef.current?.zoom(0.12)}><Icon name="minus" /></button>
         </nav>
-      </div>
-
-      <div className="world-caption">
-        <Icon name="leaf" size={15} />
-        <span>{REGIONS[currentRegion].name.toLocaleUpperCase('pl')}</span>
-        <span className="saved-dot" />
-        {storageWarning ? 'Zapis niedostępny' : 'Zapis na urządzeniu (v0.4)'}
       </div>
 
       {!ready && (
@@ -609,6 +632,31 @@ function App() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* AQUARIUM & FISH COLLECTION */}
+          <div className="aquarium-container">
+            <div className="inventory-section-title" style={{ color: '#246b7a', margin: '14px 0 6px' }}>
+              🐟 Akwarium i Twoje Połowy (Złowiono łącznie: {game.fishCaught?.total || 0} szt.):
+            </div>
+            <div className="aquarium-grid">
+              {FISH_SPECIES.map(fish => {
+                const count = game.fishCaught?.[fish.id] || 0;
+                const record = game.fishRecords?.[fish.id];
+                return (
+                  <div key={fish.id} className="fish-species-card" style={{ opacity: count > 0 ? 1 : 0.65 }}>
+                    <div className="fish-species-icon">{fish.icon}</div>
+                    <div className="fish-species-info">
+                      <h5>{fish.name}</h5>
+                      <div className="fish-species-meta">
+                        <span>Złowiono: <b>{count} szt.</b></span>
+                        <span>{record ? `Największa: ${record} cm` : 'Jeszcze nie złowiona'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </Modal>
@@ -815,18 +863,86 @@ function App() {
             {/* TAB: KITCHEN */}
             {houseTab === 'kitchen' && (
               <div>
-                <div className="inventory-section-title">Kuchnia i pieczenie pieczywa:</div>
-                <div className="shop-items">
-                  <article style={{ background: '#fffdfa', borderColor: '#f2e5d0' }}>
-                    <span className="product-icon" style={{ background: '#f8eed4' }}><Icon name="flour" size={28} /></span>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '15px' }}>Świeże pieczywo dla gości</h3>
-                      <p style={{ fontSize: '12px' }}>Wypiek bochenka z 1 mąki do poczęstunku turystów</p>
-                    </div>
-                    <button disabled={game.flour < 1} className="primary" onClick={() => say('Masz gotową mąkę do przygotowania poczęstunku dla gościa!')} style={{ fontSize: '13px', padding: '10px 16px' }}>
-                      {game.flour >= 1 ? 'Mąka gotowa' : 'Brak mąki'}
-                    </button>
-                  </article>
+                <div className="candy-card hero-banner" style={{ marginBottom: '14px' }}>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '16px', color: '#2b5137', fontWeight: 700 }}>
+                    🍳 Wiejska Kuchnia & Kociołek
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#496b52', lineHeight: '1.4' }}>
+                    Gotuj ciepłe posiłki ze swoich zbiorów i połowów! Dania dają potężny Bieg z wiatrem (szybki chód), a podróżnicy sowicie za nie płacą!
+                  </p>
+                </div>
+
+                <div className="inventory-section-title" style={{ margin: '0 0 8px' }}>
+                  Przepisy kulinarne do ugotowania:
+                </div>
+                <div className="kitchen-recipes-grid">
+                  {COOKING_RECIPES.map(r => {
+                    const canAfford = Object.entries(r.cost).every(([k, n]) => (game[k] || 0) >= n);
+                    return (
+                      <article key={r.id} className="recipe-card">
+                        <span className="recipe-icon">{r.icon}</span>
+                        <div className="recipe-info">
+                          <h4>{r.name}</h4>
+                          <p className="recipe-desc">{r.desc}</p>
+                          <span className="recipe-effect">{r.effectDesc}</span>
+                          <Cost cost={r.cost} state={game} />
+                        </div>
+                        <button
+                          className="primary"
+                          disabled={!canAfford}
+                          onClick={() => perform(`cook:${r.id}`)}
+                          style={{ fontSize: '12px', padding: '8px 14px', whiteSpace: 'nowrap' }}
+                        >
+                          Ugotuj 🍳
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+
+                {/* PANTRY SECTION */}
+                <div className="pantry-card">
+                  <div className="inventory-section-title" style={{ color: '#684a1e', margin: 0 }}>
+                    🧺 Twoja Spiżarnia (Gotowe dania na wynos):
+                  </div>
+                  <div className="pantry-grid">
+                    {COOKING_RECIPES.map(r => {
+                      const count = game.dishes?.[r.id] || 0;
+                      if (count <= 0) return null;
+                      return (
+                        <div key={r.id} className="pantry-item">
+                          <span style={{ fontSize: '20px' }}>{r.icon}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#382b19' }}>{r.name}</div>
+                            <div style={{ fontSize: '11px', color: '#6d8350' }}>Ilość: <b>{count} szt.</b></div>
+                          </div>
+                          <div className="pantry-actions">
+                            <button
+                              className="secondary"
+                              onClick={() => perform(`eat:${r.id}`)}
+                              title="Zjedz, aby zyskać Bieg z wiatrem"
+                              style={{ fontSize: '11px', padding: '6px 10px' }}
+                            >
+                              Zjedz 😋
+                            </button>
+                            <button
+                              className="primary"
+                              onClick={() => perform(`sell-dish:${r.id}`)}
+                              title={`Sprzedaj za ${r.sellPrice} monet`}
+                              style={{ fontSize: '11px', padding: '6px 10px' }}
+                            >
+                              +{r.sellPrice} 🪙
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {!Object.values(game.dishes || {}).some(v => v > 0) && (
+                      <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#7a6a52', fontStyle: 'italic' }}>
+                        Spiżarnia jest jeszcze pusta. Ugotuj pierwsze potrawy powyżej!
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1078,6 +1194,14 @@ function App() {
           setOwlAnswerState(null);
         };
 
+        const randomRiddle = () => {
+          const remaining = OWL_RIDDLES.filter(r => r.id !== riddle.id && !game.solvedRiddles?.includes(r.id));
+          const pickPool = remaining.length > 0 ? remaining : OWL_RIDDLES.filter(r => r.id !== riddle.id);
+          const picked = pickPool[Math.floor(Math.random() * pickPool.length)] || OWL_RIDDLES[0];
+          setOwlRiddleId(picked.id);
+          setOwlAnswerState(null);
+        };
+
         return (
           <Modal title="Mądra Sowa Klara" subtitle="ZAGADKI I TAJEMNICE PRZYRODY" onClose={closeModal}>
             <div className="candy-card owl-banner" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
@@ -1087,14 +1211,14 @@ function App() {
               <div>
                 <h4 style={{ margin: '0 0 4px', fontSize: '16px', color: '#3d3166', fontWeight: 700 }}>Sowa Klara · Przewodniczka</h4>
                 <p style={{ margin: 0, fontSize: '12px', color: '#685994', lineHeight: '1.4', fontWeight: 500 }}>
-                  „Huhu! Znam sekrety lasu, łąki i gwiazd. Rozwiąż zagadkę przyrodniczą!”
+                  „Huhu! W mojej leśnej bibliotece mam aż 30 zagadek o zwierzętach, roślinach i gwiazdach!”
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 4px', flexWrap: 'wrap', gap: '8px' }}>
               <span style={{ fontSize: '12px', color: '#574880', fontWeight: '700' }}>
-                Zagadka {riddle.id} z {OWL_RIDDLES.length}
+                Zagadka {riddle.id} z {OWL_RIDDLES.length} {isSolved ? '✓ (Rozwiązana)' : '⭐'}
               </span>
               <span style={{ fontSize: '12px', background: '#eee8fc', color: '#4a3b78', border: '1.5px solid #dcd1f7', padding: '4px 12px', borderRadius: '999px', fontWeight: '700' }}>
                 Rozwiązane: {solvedCount}/{OWL_RIDDLES.length} ⭐
@@ -1118,6 +1242,8 @@ function App() {
                     } else if (isSelected && !owlAnswerState.correct) {
                       stateClass = 'wrong';
                     }
+                  } else if (isSolved && isCorrect) {
+                    stateClass = 'correct';
                   }
 
                   return (
@@ -1130,7 +1256,7 @@ function App() {
                         <span className="riddle-badge">{String.fromCharCode(65 + idx)}</span>
                         {opt}
                       </span>
-                      {owlAnswerState && isCorrect && (isSelected || isSolved || owlAnswerState.correct) && <Icon name="check" size={20} />}
+                      {((owlAnswerState && isCorrect && (isSelected || isSolved || owlAnswerState.correct)) || (isSolved && isCorrect)) && <Icon name="check" size={20} />}
                     </button>
                   );
                 })}
@@ -1155,14 +1281,14 @@ function App() {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', flexWrap: 'wrap' }}>
               <button onClick={prevRiddle} className="secondary" style={{ padding: '8px 14px', fontSize: '12px' }}>
                 ◀ Poprzednia
               </button>
-              <div style={{ fontSize: '13px', color: '#7a5a2a', fontWeight: '700', background: '#fff5dc', border: '1.5px solid #fae2a8', borderRadius: '12px', padding: '6px 12px' }}>
-                Nagroda: +{riddle.reward.coins} monety
-              </div>
-              <button onClick={nextRiddle} className="primary" style={{ padding: '10px 18px', fontSize: '13px' }}>
+              <button onClick={randomRiddle} className="secondary" style={{ padding: '8px 14px', fontSize: '12px', background: '#f5eeff', borderColor: '#d3c4f7', color: '#533c87', fontWeight: 700 }}>
+                🎲 Losowa zagadka
+              </button>
+              <button onClick={nextRiddle} className="primary" style={{ padding: '9px 18px', fontSize: '13px' }}>
                 Następna ▶
               </button>
             </div>
@@ -1219,6 +1345,16 @@ function App() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* FISHING INTERACTIVE MODAL */}
+      {modal === 'fishing' && (
+        <FishingModal
+          game={game}
+          onCatch={(species, length) => perform('catch-fish', { species, length })}
+          onClose={closeModal}
+          playSound={(name, p) => worldRef.current?.playSound(name, p)}
+        />
       )}
     </main>
   );

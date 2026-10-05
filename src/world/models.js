@@ -434,3 +434,71 @@ export function rabbit(p,index,baby=false) {
 export function person(p, avatar = 'girl') {
   return createHero(p, avatar);
 }
+
+export function cat(p, x = -1.7, z = 1.8) {
+  const root = group(p, x, 0, z);
+  root.userData.place = 'cat';
+  shadow(root, 0, 0, .45, .38);
+
+  const body = group(root);
+  // Ginger tabby cat body with white tummy/bib
+  const ginger = '#e88232', darkStripe = '#be5918', white = '#fff8ee', pink = '#f59a9e';
+  ball(body, .21, ginger, 0, .21, 0, 1.05, .98, 1.28);
+  ball(body, .13, white, 0, .19, .13, .9, .95, .6);
+  ball(body, .11, darkStripe, 0, .26, -.06, .9, .3, .9);
+
+  // 4 cute white paws
+  const paws = [];
+  for (const sx of [-.12, .12]) {
+    for (const sz of [-.12, .14]) {
+      const paw = ball(body, .06, white, sx, .055, sz, .9, .7, 1.1);
+      paws.push(paw);
+    }
+  }
+
+  // Head
+  const head = group(body, 0, .35, .18);
+  ball(head, .18, ginger, 0, 0, 0, 1.08, .94, .98);
+  // White muzzle
+  ball(head, .10, white, 0, -.035, .11, 1.15, .72, .75);
+  // Pink nose
+  ball(head, .024, pink, 0, -.01, .185);
+
+  // Big expressive eyes
+  const eyes = [];
+  for (const s of [-1, 1]) {
+    const e = group(head, s * .075, .035, .15);
+    ball(e, .034, '#241d18', 0, 0, 0); // eye pupil
+    ball(e, .011, '#ffffff', -.009, .01, .018); // reflection shine
+    eyes.push(e);
+  }
+
+  // Ears (perky triangles with pink inner fuzz)
+  const ears = [];
+  for (const s of [-1, 1]) {
+    const ear = group(head, s * .1, .14, 0);
+    const outer = cylinder(ear, 0, .065, .12, ginger, 0, 0, 0, 4);
+    outer.rotation.y = Math.PI / 4; outer.rotation.z = -s * .25;
+    const inner = cylinder(ear, 0, .04, .08, pink, 0, -.01, .018, 4);
+    inner.rotation.y = Math.PI / 4; inner.rotation.z = -s * .25;
+    ears.push(ear);
+  }
+
+  // Curled tail
+  const tail = group(body, 0, .22, -.22);
+  cylinder(tail, .035, .04, .18, ginger, 0, .08, -.04).rotation.x = -.8;
+  cylinder(tail, .025, .035, .16, ginger, 0, .19, -.08).rotation.x = -.2;
+  ball(tail, .032, white, 0, .26, -.07); // white tip
+
+  function update(time, petted = false) {
+    body.position.y = Math.sin(time * 2.5) * .012; // breathing purr
+    tail.rotation.y = Math.sin(time * 2.0) * .35 + (petted ? Math.sin(time * 6) * .2 : 0);
+    head.rotation.y = Math.sin(time * .7) * .22;
+    head.rotation.x = Math.sin(time * 1.1) * .06;
+    if (petted) {
+      ears.forEach((e, i) => { e.rotation.z = (i === 0 ? -1 : 1) * Math.sin(time * 8) * .15; });
+    }
+  }
+
+  return { root, body, head, tail, ears, update };
+}

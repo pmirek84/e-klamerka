@@ -478,18 +478,10 @@ button svg { flex-shrink: 0; }
 }
 
 
-.welcome-hint {
-  align-self: center;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: #4f6e5a;
-  padding: 10px 14px;
+.welcome-hint,
+.world-caption {
+  display: none !important;
 }
-.welcome-hint strong { font-family: inherit; font-size: 20px; font-weight: 700; color: #2b4538; }
-.welcome-hint > span:last-child { font-size: 12px; font-weight: 500; }
-.hint-spark { font-size: 20px; line-height: 1; color: #f8a836; }
 
 .camera-controls {
   display: grid;
@@ -517,22 +509,6 @@ button svg { flex-shrink: 0; }
   transform: translateY(2px);
   box-shadow: 0 1px 0 #e2d2bb;
 }
-
-.world-caption {
-  position: absolute;
-  bottom: max(10px, env(safe-area-inset-bottom));
-  left: 24px;
-  right: 24px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #6a8877;
-  pointer-events: none;
-}
-.world-caption > span:first-of-type { letter-spacing: .08em; font-size: 10px; font-weight: 700; margin-right: auto; text-transform: uppercase; }
-.saved-dot { width: 6px; height: 6px; border-radius: 50%; background: #48a068; }
 
 .movement, .gesture-hint, .keyboard-hint { display: none !important; }
 
@@ -1376,4 +1352,505 @@ input:focus { border-color: #f8a836; outline: none; box-shadow: inset 0 2px 4px 
   margin: 10px 0 0;
   font-weight: 600;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   FISHING MINI-GAME STYLES
+   ══════════════════════════════════════════════════════════════════════════════ */
+.fishing-modal {
+  max-width: 540px;
+}
+.fishing-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.water-pond {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: radial-gradient(circle at 50% 60%, #50b6db 0%, #2f8ab5 65%, #1d6085 100%);
+  border-radius: 26px;
+  border: 3.5px solid #82d7f7;
+  box-shadow: inset 0 4px 14px rgba(0, 40, 70, 0.25), 0 8px 0 #206d91, 0 16px 32px rgba(0,0,0,0.12);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.water-wave {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  border-radius: 40%;
+  pointer-events: none;
+}
+.wave-1 {
+  background: rgba(255, 255, 255, 0.08);
+  animation: wave-rotate 9s infinite linear;
+  top: -50%;
+  left: -50%;
+}
+.wave-2 {
+  background: rgba(180, 240, 255, 0.06);
+  animation: wave-rotate 14s infinite linear reverse;
+  top: -60%;
+  left: -40%;
+}
+@keyframes wave-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.water-lily {
+  position: absolute;
+  font-size: 22px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+  animation: float-lily 4s ease-in-out infinite alternate;
+}
+.lily-1 { top: 25px; left: 30px; }
+.lily-2 { bottom: 30px; right: 40px; animation-delay: 1.8s; }
+@keyframes float-lily {
+  0% { transform: translateY(0px) rotate(0deg); }
+  100% { transform: translateY(-4px) rotate(5deg); }
+}
+
+.bobber-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+}
+.bobber-wrapper.floating {
+  animation: bobber-float 2.4s ease-in-out infinite;
+}
+.bobber-wrapper.biting {
+  animation: bobber-bite 0.25s ease-in-out infinite alternate;
+}
+@keyframes bobber-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes bobber-bite {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(14px) scale(0.95); }
+}
+
+.fishing-line {
+  width: 1.5px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.45);
+}
+.cork-bobber {
+  width: 22px;
+  height: 32px;
+  border-radius: 50% 50% 45% 45%;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid #ffffff;
+}
+.bobber-top {
+  flex: 1;
+  background: #ff4757;
+}
+.bobber-bottom {
+  flex: 1;
+  background: #ffffff;
+}
+.bobber-ripple {
+  position: absolute;
+  bottom: -4px;
+  width: 44px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  animation: ripple-expand 1.8s infinite;
+}
+@keyframes ripple-expand {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.fish-shadow {
+  position: absolute;
+  bottom: 35px;
+  left: 20%;
+  opacity: 0.45;
+  filter: blur(1px) drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+  font-size: 28px;
+  animation: fish-swim 4s ease-in-out infinite alternate;
+}
+@keyframes fish-swim {
+  0% { transform: translateX(0) scaleX(1); }
+  45% { transform: translateX(80px) scaleX(1); }
+  55% { transform: translateX(80px) scaleX(-1); }
+  100% { transform: translateX(0) scaleX(-1); }
+}
+
+.bite-alert {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #ff4757, #ff6b81);
+  color: #fff;
+  border: 3.5px solid #ffffff;
+  border-radius: 24px;
+  padding: 12px 24px;
+  box-shadow: 0 6px 0 #c82333, 0 14px 28px rgba(0,0,0,0.3);
+  text-align: center;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bite-exclamation {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+.bite-prompt {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff176;
+}
+
+.fishing-status-bar {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #436952;
+  min-height: 24px;
+}
+.fishing-status-bar p { margin: 0; }
+.pulse-text { animation: pulse-opacity 1.5s infinite; }
+@keyframes pulse-opacity { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+
+/* REEL MINI GAME */
+.reel-gauge-card {
+  background: #ffffff;
+  border: 2.5px solid #d4ebcf;
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 0 #c2e2bd;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tension-track {
+  position: relative;
+  width: 100%;
+  height: 38px;
+  background: #eef6ec;
+  border-radius: 19px;
+  border: 2px solid #b7dfaf;
+  overflow: hidden;
+}
+.tension-sweet-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #a8e6cf, #56ab2f);
+  border-left: 2px solid #388e3c;
+  border-right: 2px solid #388e3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tension-sweet-zone span {
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.tension-pointer {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  transition: left 0.05s linear;
+  z-index: 3;
+}
+
+.catch-meter-wrapper {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  background: #f1ebd8;
+  border-radius: 10px;
+  border: 2px solid #decfaa;
+  overflow: hidden;
+}
+.catch-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9966, #ff5e62);
+  transition: width 0.1s ease-out;
+  border-radius: 8px;
+}
+.catch-meter-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #4a3622;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.7);
+}
+.reel-pulse-btn {
+  font-size: 14px;
+  padding: 11px;
+  letter-spacing: 0.02em;
+}
+
+/* CAUGHT SHOWCASE */
+.caught-showcase {
+  background: linear-gradient(180deg, #fefdfb 0%, #f7f9f2 100%);
+  border: 3px solid #84cc89;
+  border-radius: 24px;
+  padding: 18px 20px;
+  box-shadow: 0 6px 0 #72bd77, 0 14px 28px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+.record-badge {
+  position: absolute;
+  top: -12px;
+  background: linear-gradient(135deg, #f9d423, #ff4e50);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 0 #d93d3f;
+  animation: pulse-beacon 1.4s infinite;
+}
+.caught-avatar-frame {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #e0f7fa 0%, #80deea 100%);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 0 #4dd0e1, 0 8px 16px rgba(0,0,0,0.1);
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+.caught-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #274d32;
+}
+.caught-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.rarity-pill {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.length-pill, .reward-pill {
+  background: #ffffff;
+  border: 1.5px solid #d4e2cf;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: #3b5f45;
+}
+.caught-desc {
+  font-size: 12px;
+  color: #557960;
+  margin: 0;
+  font-style: italic;
+  max-width: 380px;
+}
+.big-btn {
+  font-size: 14px;
+  padding: 12px 24px;
+}
+.strike-btn {
+  background: linear-gradient(180deg, #ff4757, #ee2c3c) !important;
+  box-shadow: 0 4px 0 #b31e2b !important;
+  animation: strike-wiggle 0.2s infinite alternate;
+}
+@keyframes strike-wiggle {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   KITCHEN & COOKING RECIPES STYLES
+   ══════════════════════════════════════════════════════════════════════════════ */
+.kitchen-recipes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.recipe-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 2px solid #ecdcc8;
+  border-radius: 18px;
+  padding: 10px 14px;
+  box-shadow: 0 3px 0 #e4d4be;
+  transition: transform 0.15s ease;
+}
+.recipe-card:hover {
+  transform: translateY(-1px);
+}
+.recipe-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 14px;
+  background: #fbf3e2;
+  border: 2px solid #ecd8b3;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  box-shadow: 0 2px 0 #e2caa0;
+}
+.recipe-info {
+  flex: 1;
+  min-width: 0;
+}
+.recipe-info h4 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3b2c1d;
+}
+.recipe-desc {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: #7a6652;
+  line-height: 1.3;
+}
+.recipe-effect {
+  font-size: 11px;
+  font-weight: 700;
+  color: #3e814a;
+}
+.pantry-card {
+  background: #fbf8f0;
+  border: 2px solid #e8dcbf;
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: 0 4px 0 #dfd1b0;
+}
+.pantry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.pantry-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1.5px solid #ded0b2;
+  border-radius: 14px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 0 #d4c5a3;
+}
+.pantry-actions {
+  display: flex;
+  gap: 5px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   AQUARIUM & FISH COLLECTION IN BACKPACK
+   ══════════════════════════════════════════════════════════════════════════════ */
+.aquarium-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.aquarium-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.fish-species-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 2px solid #cce5ec;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 3px 0 #bbdce5;
+}
+.fish-species-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 12px;
+  background: #e3f5fb;
+  border: 1.5px solid #bee3ee;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+.fish-species-info {
+  flex: 1;
+  min-width: 0;
+}
+.fish-species-info h5 {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f4e5b;
+}
+.fish-species-meta {
+  font-size: 11px;
+  color: #4a7583;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* SPEED BUFF PILL ON HUD */
+.speed-buff-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #ffcc00, #ff9900);
+  color: #422900;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 3px 0 #cc7a00, 0 6px 14px rgba(255, 153, 0, 0.3);
+  animation: buff-pulse 1.8s infinite alternate;
+}
+@keyframes buff-pulse {
+  0% { transform: scale(0.98); }
+  100% { transform: scale(1.02); filter: drop-shadow(0 0 6px rgba(255, 204, 0, 0.6)); }
+}
+
 

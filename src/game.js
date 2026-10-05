@@ -17,12 +17,12 @@ export const OWL_RIDDLES = [
   {
     id: 1,
     category: 'animals',
-    question: 'Mam długie puszyste uszy, uwielbiam chrupać marchewki i wesoło kicami po polanie. Kim jestem?',
+    question: 'Mam długie puszyste uszy, uwielbiam chrupać marchewki i wesoło kicam po polanie. Kim jestem?',
     options: ['Królik', 'Wilk', 'Wiewiórka'],
     answer: 0,
     reward: { coins: 2 },
     hint: 'Zwróć uwagę na długie uszy i zamiłowanie do marchewek.',
-    fact: 'Brawo! Króliki słyszą dźwięki z ogromnych odległości i uwielbiają kicać!'
+    fact: 'Brawo! Króliki słyszą dźwięki z ogromnych odległości i potrafią skakać na wysokość metra!'
   },
   {
     id: 2,
@@ -32,7 +32,7 @@ export const OWL_RIDDLES = [
     answer: 1,
     reward: { coins: 2 },
     hint: 'To owoc rosnący na jabłoni.',
-    fact: 'Świetnie! Jedno jabłko dziennie daje mnóstwo witamin i siły do zabawy!'
+    fact: 'Świetnie! Jabłka mają mnóstwo witamin, a na świecie istnieje ponad 7500 ich odmian!'
   },
   {
     id: 3,
@@ -42,7 +42,7 @@ export const OWL_RIDDLES = [
     answer: 0,
     reward: { coins: 2 },
     hint: 'Rośliny potrzebują światła do fotosyntezy oraz nawodnienia.',
-    fact: 'Mądra odpowiedź! Rośliny piją wodę z ziemi i łapią ciepłe promyki słońca!'
+    fact: 'Mądra odpowiedź! Rośliny piją wodę z ziemi i łapią ciepłe promyki słońca, by rosnąć!'
   },
   {
     id: 4,
@@ -52,7 +52,7 @@ export const OWL_RIDDLES = [
     answer: 0,
     reward: { coins: 2 },
     hint: 'To twardy, błyszczący minerał o niebieskiej barwie.',
-    fact: 'Znakomicie! Błękitne kryształy rozświetlają całą krainę i mają magiczny blask!'
+    fact: 'Znakomicie! Naturalne kryształy rosną w skałach przez setki tysięcy lat!'
   },
   {
     id: 5,
@@ -62,7 +62,7 @@ export const OWL_RIDDLES = [
     answer: 1,
     reward: { coins: 2 },
     hint: 'Wykorzystuje siłę wiatru do obracania żaren.',
-    fact: 'Wspaniale! Wiatrak wykorzystuje czystą siłę wiatru do pracy na farmie!'
+    fact: 'Wspaniale! Wiatrak wykorzystuje czystą, ekologiczną siłę wiatru do pracy na farmie!'
   },
   {
     id: 6,
@@ -72,7 +72,247 @@ export const OWL_RIDDLES = [
     answer: 1,
     reward: { coins: 2 },
     hint: 'To nocny ptak o wielkich oczach, Twoja skrzydlata przewodniczka.',
-    fact: 'Huhu! To właśnie ja – Mądra Sowa Klara, Twoja skrzydlata przyjaciółka!'
+    fact: 'Huhu! To właśnie ja – Mądra Sowa Klara, Twoja skrzydlata przyjaciółka z polany!'
+  },
+  {
+    id: 7,
+    category: 'insects',
+    question: 'Pracuję niestrudzenie na łące, zbieram słodki nektar z kwiatów i robię z niego złocisty miód. Kto to?',
+    options: ['Pszczoła miodna', 'Biedronka', 'Ślimak'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Mieszka w ulu i głośno bzyczy.',
+    fact: 'Świetnie! Jedna pszczoła w ciągu życia produkuje zaledwie jedną łyżeczkę miodu – każda kropelka jest skarbem!'
+  },
+  {
+    id: 8,
+    category: 'animals',
+    question: 'Mam rude puszyste futerko, wspaniały ogon i zręcznie skaczę po gałęziach chwytając żołędzie i orzechy.',
+    options: ['Wiewiórka', 'Dziki dzik', 'Kret'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Mieszka w dziuplach i chowa zapasy na zimę.',
+    fact: 'Znakomicie! Wiewiórki sadzą miliony nowych drzew każdego roku, zapominając, gdzie zakopały orzeszki!'
+  },
+  {
+    id: 9,
+    category: 'nature',
+    question: 'W nocy świeci na niebie srebrzystym blaskiem i czasami wygląda jak okrągły talerz, a czasami jak rogalik. Co to?',
+    options: ['Księżyc', 'Lampa naftowa', 'Chmura'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Naturalny satelita naszej Ziemi, widoczny w bezchmurną noc.',
+    fact: 'Prawda! Fazy Księżyca zależą od tego, jak oświetla go Słońce podczas jego wędrówki dookoła Ziemi!'
+  },
+  {
+    id: 10,
+    category: 'insects',
+    question: 'Mam czerwone skrzydełka w czarne kropki i pomagam ogrodnikom, zjadając małe mszyce z liści. Kim jestem?',
+    options: ['Biedronka', 'Osa', 'Mucha'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'To uroczy mały chrząszczyk o czerwonych skrzydełkach.',
+    fact: 'Doskonale! Biedronka siedmiokropka to największy sprzymierzeniec ekologicznego ogrodu!'
+  },
+  {
+    id: 11,
+    category: 'water',
+    question: 'Pływam w stawie, mam zielone ubarwienie, głośno kumkam i robię wielkie skoki prosto na liść nenufaru.',
+    options: ['Żaba', 'Wydra', 'Rybka'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Jej dzieci to kijanki pływające w wodzie.',
+    fact: 'Brawo! Żaby piją wodę całą powierzchnią swojej skóry, zamiast pić ją pyszczkiem!'
+  },
+  {
+    id: 12,
+    category: 'forest',
+    question: 'Mam tysiące małych igiełek na grzbiecie, w razie niebezpieczeństwa zwijam się w kłującą kulkę. Kto to?',
+    options: ['Jeż', 'Szop pracz', 'Królik'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Tupie cicho nocą w liściach pod krzewami.',
+    fact: 'Bardzo dobrze! Dorosły jeż ma na grzbiecie nawet do 7000 igieł, które chronią go przed drapieżnikami!'
+  },
+  {
+    id: 13,
+    category: 'plants',
+    question: 'Złote pole szumi na letnim wietrze. Z moich ziaren po zmieleniu w młynie powstaje biała mąka na chleb. Co to?',
+    options: ['Pszenica', 'Trawa z trawnika', 'Mchy'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'To najważniejsze zboże chlebowe.',
+    fact: 'Wspaniale! Pszenica jest uprawiana przez ludzi od ponad 10 tysięcy lat!'
+  },
+  {
+    id: 14,
+    category: 'nature',
+    question: 'Pojawiam się na niebie po deszczu, kiedy nagle zaświeci słońce. Mam siedem pięknych kolorowych wstęg. Co to?',
+    options: ['Tęcza', 'Zorza polarna', 'Latawiec'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Powstaje, gdy światło słoneczne załamuje się w kropelkach deszczu.',
+    fact: 'Cudownie! Każda tęcza jest w rzeczywistości pełnym okręgiem, ale z ziemi widzimy tylko jej górny łuk!'
+  },
+  {
+    id: 15,
+    category: 'insects',
+    question: 'Gdy zapada letni zmrok, migoczę w trawie zielonkawym, chłodnym światełkiem niczym mała gwiazdka. Kim jestem?',
+    options: ['Świetlik', 'Komar', 'Pająk'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'To chrząszcz potrafiący świecić w ciemności.',
+    fact: 'Niesamowite! Światło świetlika powstaje bez wytwarzania ciepła – to jedno z najbardziej wydajnych źródeł światła w przyrodzie!'
+  },
+  {
+    id: 16,
+    category: 'forest',
+    question: 'Stukam dziobem w pnie starych drzew jak leśny lekarz, wyszukując owady ukryte pod korą. Jaki to ptak?',
+    options: ['Dzięcioł', 'Wróbel', 'Jaskółka'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Ma charakterystyczny czerwony pióropusz na główce.',
+    fact: 'Świetna wiedza! Głowa dzięcioła ma specjalną amortyzację chroniącą jego mózg przed wstrząsami przy stukaniu!'
+  },
+  {
+    id: 17,
+    category: 'plants',
+    question: 'Obracam swój wielki żółty kwiat za wędrującym po niebie słońcem, a moje czarne nasiona uwielbiają sikorki.',
+    options: ['Słonecznik', 'Tulipan', 'Kaktus'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Jego nazwa pochodzi wprost od słońca.',
+    fact: 'Znakomicie! Młode słoneczniki wykonują ruch zwany heliotropizmem – codziennie śledzą bieg słońca ze wschodu na zachód!'
+  },
+  {
+    id: 18,
+    category: 'animals',
+    question: 'Buduję tamy na leśnych potokach ze ścinanych gałęzi i mam szeroki, spłaszczony ogon niczym wiosło. Kto to?',
+    options: ['Bóbr', 'Wydra', 'Borsuk'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Ma pomarańczowe zęby, którymi z łatwością ścina drzewa.',
+    fact: 'Fantastycznie! Zęby bobra zawierają żelazo, dzięki czemu są niezwykle twarde i mają charakterystyczny pomarańczowy kolor!'
+  },
+  {
+    id: 19,
+    category: 'nature',
+    question: 'Błyszczące, chłodne kropelki wody, które rankiem osiadają na liściach i trawie, zanim słońce je ogrzeje. Co to?',
+    options: ['Rosa', 'Grad', 'Śnieg'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Powstaje w nocy, gdy wilgotne powietrze ochładza się przy ziemi.',
+    fact: 'Prawda! Rosa jest kluczowym źródłem wody dla wielu drobnych owadów i mchów w upalne letnie dni!'
+  },
+  {
+    id: 20,
+    category: 'forest',
+    question: 'Nazywają mnie królem lasu. Mam rozłożystą koronę z pofałdowanymi liśćmi i rodzę jesienne żołędzie. Jakie to drzewo?',
+    options: ['Dąb', 'Brzoza', 'Sosna'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Może żyć ponad tysiąc lat i ma bardzo twarde drewno.',
+    fact: 'Wspaniale! Stary dąb może dać schronienie i pożywienie ponad 500 różnym gatunkom owadów, ptaków i porostów!'
+  },
+  {
+    id: 21,
+    category: 'insects',
+    question: 'Zaczynam życie jako mała gąsienica, potem zasypiam w kokonie, by obudzić się z bajecznie kolorowymi skrzydłami. Co to?',
+    options: ['Motyl', 'Konik polny', 'Żuk'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Lata z kwiatka na kwiatek w słoneczne dni.',
+    fact: 'Brawo! Skrzydła motyla pokryte są tysiącami mikroskopijnych łusek, które odbijają światło niczym małe pryzmaty!'
+  },
+  {
+    id: 22,
+    category: 'animals',
+    question: 'Mam rude futro, biały pędzelek na ogonie i słynę w bajkach z niezwykłego sprytu. Kto to?',
+    options: ['Lis', 'Zając', 'Dzika świnia'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Mieszka w norach i ma doskonały węch.',
+    fact: 'Mądrze! Lisy potrafią słyszeć pisk myszy ukrytej pod metrową warstwą śniegu!'
+  },
+  {
+    id: 23,
+    category: 'water',
+    question: 'Mam wielkie białe lub różowe płatki, unoszę się na powierzchni jeziora, a moje korzenie sięgają mułu na dnie. Co to?',
+    options: ['Grzybienie białe (Lilia wodna)', 'Kaktus', 'Sosna'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Często siadają na niej małe zielone żabki.',
+    fact: 'Świetnie! Liście lilii wodnej mają specjalne woskowate pokrycie, dzięki któremu woda spływa z nich jak perły i nie toną!'
+  },
+  {
+    id: 24,
+    category: 'nature',
+    question: 'Spadam z nieba zimą w postaci białych, misternych kryształków. Każdy z nich ma sześć ramion i niepowtarzalny wzór. Co to?',
+    options: ['Płatek śniegu', 'Kamyk', 'Liść dębu'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Topnieje na dłoni zamieniając się w kroplę wody.',
+    fact: 'Znakomicie! W całej historii Ziemi prawdopodobnie nie było dwóch dokładnie identycznych płatków śniegu!'
+  },
+  {
+    id: 25,
+    category: 'animals',
+    question: 'Daję pyszne białe mleko, lubię spokojnie paść się na łące pełnej soczystej koniczyny i robię „muuuu”. Kto to?',
+    options: ['Krowa', 'Koń', 'Owca'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Z jej mleka robimy maślankę, sery i masło.',
+    fact: 'Bardzo dobrze! Krowy mają swoich najlepszych przyjaciół w stadzie i stają się spokojniejsze, gdy są blisko siebie!'
+  },
+  {
+    id: 26,
+    category: 'forest',
+    question: 'Rośnie w wilgotnym mchu pod drzewami, ma brązowy kapelusz na grubym trzonie i pięknie pachnie w zupie. Co to?',
+    options: ['Borowik (Prawdziwek)', 'Muchomor czerwony', 'Szyszka'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Król leśnych grzybów jadalnych.',
+    fact: 'Wspaniale! Grzybnia borowika żyje w ścisłej przyjaźni z korzeniami drzew leśnych, pomagając im pobierać składniki mineralne!'
+  },
+  {
+    id: 27,
+    category: 'nature',
+    question: 'Nocne niebo przecina jasna smuga światła. Ludzie mówią, że gdy ją zobaczysz, warto pomyśleć życzenie. Co to?',
+    options: ['Spadająca gwiazda (Meteor)', 'Samolot', 'Księżyc'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'To drobina kosmicznego pyłu wpadająca w atmosferę.',
+    fact: 'Magiczna wiedza! Prędkość meteoru wpadającego w ziemską atmosferę może wynosić ponad 200 tysięcy kilometrów na godzinę!'
+  },
+  {
+    id: 28,
+    category: 'insects',
+    question: 'Budujemy wielkie podziemne mrowiska z igieł sosnowych. Choć jestem malutka, potrafię unieść ciężar 20 razy większy od siebie.',
+    options: ['Mrówka', 'Żuk gnojowy', 'Pchła'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Żyje w zorganizowanym państwie z królową.',
+    fact: 'Niezwykłe! Mrówki są jednymi z najsilniejszych istot na Ziemi w stosunku do swojej masy ciała!'
+  },
+  {
+    id: 29,
+    category: 'animals',
+    question: 'Mam długi czerwony dziób i czerwone nogi. Przylatuję na wiosnę z ciepłych krajów i buduję gniazdo na dachach.',
+    options: ['Bocian biały', 'Wrona', 'Gołąb'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Głośno klekocze i zwiastuje nadejście wiosny.',
+    fact: 'Brawo! Bociany potrafią pokonać ponad 10 tysięcy kilometrów podczas jesiennej wędrówki do ciepłej Afryki!'
+  },
+  {
+    id: 30,
+    category: 'animals',
+    question: 'Jestem jedynym ssakiem, który naprawdę potrafi latać. Dzień przesypiam zawieszony głową w dół w jaskini, a nocą poluję na komary.',
+    options: ['Nietoperz', 'Wiewiórka latająca', 'Sowa'],
+    answer: 0,
+    reward: { coins: 2 },
+    hint: 'Orientuje się w ciemności za pomocą echolokacji.',
+    fact: 'Wspaniale! Jeden mały nietoperz potrafi zjeść nawet 1000 dokuczliwych komarów w ciągu zaledwie jednej godziny!'
   }
 ];
 
@@ -119,12 +359,117 @@ export const TOURIST_GUESTS = [
   }
 ];
 
+export const FISH_SPECIES = [
+  {
+    id: 'gold',
+    name: 'Złota Rybka Słoneczna',
+    rarity: 'Pospolita',
+    rarityColor: '#438450',
+    minLen: 14,
+    maxLen: 24,
+    coins: 6,
+    icon: '🐟',
+    desc: 'Lśni w wodzie niczym złota moneta. Łatwa do złowienia i bardzo przyjazna.'
+  },
+  {
+    id: 'carp',
+    name: 'Błękitny Karpik Jeziorny',
+    rarity: 'Pospolita',
+    rarityColor: '#2b78b8',
+    minLen: 22,
+    maxLen: 38,
+    coins: 9,
+    icon: '🐠',
+    desc: 'Pływa przy dnie Lazurowego Jeziora. Ma piękne, szafirowe łuski.'
+  },
+  {
+    id: 'trout',
+    name: 'Tęczowy Pstrąg Perłowy',
+    rarity: 'Rzadka',
+    rarityColor: '#9b42b8',
+    minLen: 32,
+    maxLen: 52,
+    coins: 16,
+    icon: '🐡',
+    desc: 'Skacze ponad falami o zachodzie słońca. Prawdziwa ozdoba każdego akwarium!'
+  },
+  {
+    id: 'pike',
+    name: 'Gwiezdny Szczupak Zmierzchu',
+    rarity: 'Legendarna',
+    rarityColor: '#e0840b',
+    minLen: 55,
+    maxLen: 88,
+    coins: 30,
+    icon: '✨',
+    desc: 'Rzadki drapieżnik głębin, którego łuski świecą w ciemności niczym gwiazdy.'
+  }
+];
+
+export const COOKING_RECIPES = [
+  {
+    id: 'bread',
+    name: 'Chrupiący Chlebek Wiejski',
+    desc: 'Ciepły bochenek prosto z pieca. Daje siłę do szybkiego biegania!',
+    icon: '🍞',
+    cost: { flour: 1 },
+    effect: 'speed',
+    effectDesc: '+40% prędkości chodu (45s)',
+    sellPrice: 12,
+    buffDuration: 45000
+  },
+  {
+    id: 'applePie',
+    name: 'Słoneczna Szarlotka',
+    desc: 'Pachnący cynamonem i jabłkami placek ze słonecznego sadu.',
+    icon: '🥧',
+    cost: { apples: 2, flour: 1 },
+    effect: 'coins',
+    effectDesc: 'Ulubiony deser podróżników (sprzedaż: +22 monety)',
+    sellPrice: 22,
+    buffDuration: 60000
+  },
+  {
+    id: 'carrotSoup',
+    name: 'Kremowa Zupka Marchewkowa',
+    desc: 'Aromatyczna, gęsta zupa z najświeższych marchewek z ogrodu.',
+    icon: '🍲',
+    cost: { carrots: 3 },
+    effect: 'speed',
+    effectDesc: '+40% prędkości chodu (60s)',
+    sellPrice: 14,
+    buffDuration: 60000
+  },
+  {
+    id: 'grilledFish',
+    name: 'Pieczona Rybka z Ziołami',
+    desc: 'Świeżo złowiona rybka opieczona na pachnącym drewnie.',
+    icon: '🐟',
+    cost: { fish: 1, wood: 1 },
+    effect: 'coins',
+    effectDesc: 'Przysmak w kramie (sprzedaż: +25 monet)',
+    sellPrice: 25,
+    buffDuration: 75000
+  },
+  {
+    id: 'starCookies',
+    name: 'Gwiezdne Ciasteczka Miodowe',
+    desc: 'Lśniące ciastka obsypane gwiezdnym pyłem z obserwatorium.',
+    icon: '✨',
+    cost: { flour: 1, apples: 1, crystals: 1 },
+    effect: 'all',
+    effectDesc: 'Super-przyspieszenie (90s) i +45 monet przy sprzedaży',
+    sellPrice: 45,
+    buffDuration: 90000
+  }
+];
+
 export const INITIAL = {
   saveVersion: SAVE_VERSION,
   world: NEW_WORLD,
   name: '',
   avatar: 'girl',
-  // 9 Core Resources (v0.4)
+  // Core Resources
   wood: 4,
   stone: 3,
   carrots: 0,
@@ -134,6 +479,14 @@ export const INITIAL = {
   flour: 0,
   crystals: 0,
   coins: 8,
+  fish: 0,
+  // Dishes & Cooking
+  dishes: { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0 },
+  speedBoostUntil: 0,
+  // Fishing Logs & Pet
+  fishCaught: { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 },
+  fishRecords: {},
+  petPats: 0,
   // Buildings & Upgrades
   houseLevel: 0, // 0: None, 1: Chatka, 2: Dom gospodarza, 3: Dom odkrywcy
   landLevel: 0,  // 0: 1 grządka, 1: 2 grządki, 2: 3 grządki, 3: 4 grządki
@@ -180,7 +533,7 @@ const count = (value, max = 999999) => Math.min(max, Math.max(0, Math.floor(Numb
 export function normalize(raw = {}) {
   const s = { ...INITIAL };
   s.saveVersion = SAVE_VERSION;
-  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'babies', 'totalBred']) {
+  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish', 'babies', 'totalBred', 'petPats']) {
     s[k] = count(raw[k] ?? s[k]);
   }
   s.world = normalizeWorld(raw.world);
@@ -191,6 +544,26 @@ export function normalize(raw = {}) {
   s.name = String(raw.name || '').slice(0, 20);
   s.avatar = typeof raw.avatar === 'string' && raw.avatar ? raw.avatar : 'girl';
   s.plantedCrop = raw.plantedCrop === 'wheat' ? 'wheat' : 'carrots';
+
+  // Dishes & cooking
+  s.dishes = {
+    bread: count(raw.dishes?.bread),
+    applePie: count(raw.dishes?.applePie),
+    carrotSoup: count(raw.dishes?.carrotSoup),
+    grilledFish: count(raw.dishes?.grilledFish),
+    starCookies: count(raw.dishes?.starCookies)
+  };
+  s.speedBoostUntil = Number.isFinite(raw.speedBoostUntil) ? raw.speedBoostUntil : 0;
+
+  // Fishing log
+  s.fishCaught = {
+    gold: count(raw.fishCaught?.gold),
+    carp: count(raw.fishCaught?.carp),
+    trout: count(raw.fishCaught?.trout),
+    pike: count(raw.fishCaught?.pike),
+    total: count(raw.fishCaught?.total)
+  };
+  s.fishRecords = raw.fishRecords && typeof raw.fishRecords === 'object' ? { ...raw.fishRecords } : {};
 
   for (const k of ['pen', 'rabbits', 'planted', 'watered', 'helper', 'stall']) {
     s[k] = Boolean(raw[k]);
@@ -329,13 +702,17 @@ export function landCost(level) {
   return COSTS.land3;
 }
 
-export function transact(state, action, now = Date.now()) {
+export function transact(state, action, now = Date.now(), params = {}) {
   const s = {
     ...state,
     crystals: state.crystals || 0,
     apples: state.apples || 0,
     wheat: state.wheat || 0,
     flour: state.flour || 0,
+    fish: state.fish || 0,
+    dishes: { ...(state.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0 }) },
+    fishCaught: { ...(state.fishCaught || { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 }) },
+    fishRecords: { ...(state.fishRecords || {}) },
     world: normalizeWorld(state.world),
     tools: { ...state.tools }
   };
@@ -802,6 +1179,71 @@ export function transact(state, action, now = Date.now()) {
       break;
     }
 
+    // Fishing Action
+    case 'catch-fish': {
+      const sp = (params && params.species) ? params.species : FISH_SPECIES[0];
+      const len = (params && params.length) ? params.length : 18;
+      const coinGain = sp.coins || 6;
+      s.coins += coinGain;
+      s.fish = (s.fish || 0) + 1;
+      s.fishCaught = s.fishCaught || { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 };
+      s.fishCaught[sp.id] = (s.fishCaught[sp.id] || 0) + 1;
+      s.fishCaught.total = (s.fishCaught.total || 0) + 1;
+      s.fishRecords = s.fishRecords || {};
+      if (!s.fishRecords[sp.id] || len > s.fishRecords[sp.id]) {
+        s.fishRecords[sp.id] = len;
+      }
+      message = `Wspaniały połów! Złowiono: ${sp.name} (${len} cm) · +${coinGain} monet!`;
+      break;
+    }
+
+    // Cooking & Dining Actions
+    case 'cook:bread': case 'cook:applePie': case 'cook:carrotSoup': case 'cook:grilledFish': case 'cook:starCookies': {
+      const rId = action.split(':')[1];
+      const recipe = COOKING_RECIPES.find(r => r.id === rId);
+      if (!recipe) return fail('Nieznany przepis.');
+      if (!pay(recipe.cost)) return fail('Brakuje składników do ugotowania tej potrawy.');
+      s.dishes = s.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0 };
+      s.dishes[rId] = (s.dishes[rId] || 0) + 1;
+      message = `Ugotowano: ${recipe.name}! Danie trafiło do spiżarni.`;
+      break;
+    }
+
+    case 'eat:bread': case 'eat:applePie': case 'eat:carrotSoup': case 'eat:grilledFish': case 'eat:starCookies': {
+      const rId = action.split(':')[1];
+      const recipe = COOKING_RECIPES.find(r => r.id === rId);
+      if (!recipe) return fail('Nieznane danie.');
+      if (!s.dishes || (s.dishes[rId] || 0) < 1) return fail('Nie masz tej potrawy w spiżarni.');
+      s.dishes[rId]--;
+      const dur = recipe.buffDuration || 45000;
+      s.speedBoostUntil = now + dur;
+      message = `Zjedzono: ${recipe.name}! Bieg z wiatrem aktywny na ${Math.round(dur / 1000)}s! ⚡`;
+      break;
+    }
+
+    case 'sell-dish:bread': case 'sell-dish:applePie': case 'sell-dish:carrotSoup': case 'sell-dish:grilledFish': case 'sell-dish:starCookies': {
+      const rId = action.split(':')[1];
+      const recipe = COOKING_RECIPES.find(r => r.id === rId);
+      if (!recipe) return fail('Nieznane danie.');
+      if (!s.dishes || (s.dishes[rId] || 0) < 1) return fail('Nie masz tej potrawy do sprzedania.');
+      s.dishes[rId]--;
+      s.coins += recipe.sellPrice;
+      message = `Sprzedano: ${recipe.name} · +${recipe.sellPrice} monet!`;
+      break;
+    }
+
+    // Cat Petting
+    case 'pet-cat': {
+      s.petPats = (s.petPats || 0) + 1;
+      const phrases = [
+        'Kotek Puszek mruczy głośno i ociera się o Twoje buty! ♥',
+        'Puszek rozkosznie przeciąga łapki i puszcza wesołe mruczenie! 🐾',
+        'Puszek patrzy wielkimi błyszczącymi ślepkami i prosi o jeszcze! ✨'
+      ];
+      message = phrases[s.petPats % phrases.length];
+      break;
+    }
+
     // Periodic Tick (1 sec interval)
     case 'tick': {
       let updated = false;
@@ -868,6 +1310,7 @@ export function transact(state, action, now = Date.now()) {
 export const PLACES = {
   ...WORLD_PLACES,
   house: { title: 'Twój dom', short: 'Dom', x: -3, z: -2, approach: [-3, 1.5], label: [-3, 4.8, -2] },
+  cat: { title: 'Kotek Puszek', short: 'Puszek ♥', x: -1.7, z: 1.8, approach: [-1.7, 2.5], label: [-1.7, 1.3, 1.8] },
   forest: { title: 'Leśna ścieżka', short: 'Las', x: -9, z: -4, approach: [-7, -1.3], label: [-8.7, 4, -4] },
   mine: { title: 'Kryształowe skały', short: 'Kopalnia', x: 6.8, z: -5.5, approach: [5.5, -3.3], label: [6.6, 3.6, -5.5] },
   garden: { title: 'Ogród uprawny', short: 'Ogród', x: -4.8, z: 5, approach: [-2.8, 5.5], label: [-5, 1.2, 5] },
@@ -881,6 +1324,14 @@ export const PLACES = {
 
 export function actionFor(place, s) {
   switch (place) {
+    case 'cat':
+      return {
+        label: 'Pogłaszcz kotka',
+        hint: `Puszek mruczy z zadowolenia (${s.petPats || 0} pogłaskań).`,
+        action: 'pet-cat',
+        icon: 'rabbit'
+      };
+
     case 'quarryGate': case 'meadowGate': case 'lakeGate': case 'cloudsGate': {
       const id = place === 'quarryGate' ? 'quarry' : place === 'meadowGate' ? 'meadow' : place === 'lakeGate' ? 'lake' : 'clouds';
       const r = REGIONS[id];
@@ -917,9 +1368,9 @@ export function actionFor(place, s) {
 
     case 'lakeDock':
       return {
-        label: 'Złów rybkę',
-        hint: 'Złota Przystań · połów rybek z pomostu (+6 monet).',
-        action: 'lakeDock',
+        label: 'Zarzuć wędkę 🎣',
+        hint: 'Złota Przystań · połów lśniących rybek z pomostu.',
+        action: 'fishing-modal',
         disabled: !s.world?.lake,
         icon: 'stall'
       };

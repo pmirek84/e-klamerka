@@ -1,5 +1,5 @@
 import * as T from 'three';
-import { palette as C, material, box, ball, cylinder, group, bake, tree, house, pen, garden, shop, rabbit, person, stall, helper, visitor, owl, windowGlass } from './models.js';
+import { palette as C, material, box, ball, cylinder, group, bake, tree, house, pen, garden, shop, rabbit, person, stall, helper, visitor, owl, cat, windowGlass } from './models.js';
 import { PLACES } from '../game.js';
 import { REGIONS, regionAt, insideWorld, visiblePlace, unlocked } from './regions.js';
 import { findPath } from './navigation.js';
@@ -29,7 +29,7 @@ export function createWorld(host, callbacks) {
   const camera=new T.PerspectiveCamera(42,1,.1,900);let yaw=.35,zoom=1,targetZoom=1,overview=false,worldOverview=false;
   const look=new T.Vector3(0,1,6), desiredLook=new T.Vector3(), offset=new T.Vector3();
   let width=1,height=1, state={}, raf=0, disposed=false, last=performance.now(),time=0,lastUi=0;
-  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,stallObj,helperObj,owlObj,guestTourist,player,worldChanges;let lastRegion=null;
+  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,stallObj,helperObj,owlObj,catObj,guestTourist,player,worldChanges;let lastRegion=null;
   // Trees, ponds, lanterns and the campfire block walking; ponds are new water carved into the plateaus.
   const obstacles=[...[[ -35,-4],[-31,-4],[-26,-5],[-23,-2],[-36,1],[-34,6],[-29,6],[-24,5],[25,4],[37,3],[26,-6]].map(([x,z])=>({x,z,w:.8,d:.8})),
     {x:1.9,z:-7.8,w:5.6,d:3.6},{x:2.5,z:33.2,w:9.2,d:8.8},
@@ -116,6 +116,7 @@ export function createWorld(host, callbacks) {
     if(!stallObj||prev.stall!==next.stall){disposeObject(stallObj);stallObj=stall(dynamic,next.stall);targets.push(stallObj);}
     if(!helperObj||prev.helper!==next.helper){if(helperObj?.root)disposeObject(helperObj.root);helperObj=helper(dynamic,next.helper);if(helperObj?.root)targets.push(helperObj.root);}
     if(!owlObj){owlObj=owl(dynamic,1.6,-5.0);targets.push(owlObj.root);}
+    if(!catObj){catObj=cat(dynamic,-1.7,1.8);targets.push(catObj.root);}
     if(!player||prev.avatar!==next.avatar){if(player)player.root.removeFromParent();player=person(scene,next.avatar);player.root.position.copy(pos);player.onStep=footstep;}
     if(!walkable(pos.x,pos.z)){
       let safe=null;
@@ -402,10 +403,15 @@ export function createWorld(host, callbacks) {
       const inputZ=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);
       if(inputX||inputZ){path=[];overview=false;worldOverview=false;const length=Math.max(1,Math.hypot(inputX,inputZ));dx=(inputX*Math.cos(yaw)+inputZ*Math.sin(yaw))/length;dz=(-inputX*Math.sin(yaw)+inputZ*Math.cos(yaw))/length;}
       else if(path.length){const v=path[0].clone().sub(pos);if(v.length()<.15)path.shift();else{v.normalize();dx=v.x;dz=v.z;}}
-      const ox=pos.x,oz=pos.z,step=Math.min(dt*3.4,path.length?pos.distanceTo(path[0]):Infinity);
+      const isSpeedBoosted = (state?.speedBoostUntil || 0) > Date.now();
+      const speedMult = isSpeedBoosted ? 1.42 : 1.0;
+      const ox=pos.x,oz=pos.z,step=Math.min(dt*3.4*speedMult,path.length?pos.distanceTo(path[0]):Infinity);
       if(walkable(pos.x+dx*step,pos.z))pos.x+=dx*step;
       if(walkable(pos.x,pos.z+dz*step))pos.z+=dz*step;
       speed=Math.hypot(pos.x-ox,pos.z-oz)/Math.max(dt,.001);
+      if(isSpeedBoosted && speed > .1 && Math.random() < .2) {
+        burst(pos.x + (Math.random() - .5) * .3, pos.z + (Math.random() - .5) * .3, '#ffd152', 'star');
+      }
     }
     if(player){
       player.root.position.copy(pos);
@@ -427,6 +433,7 @@ export function createWorld(host, callbacks) {
 
     if(helperObj?.update) helperObj.update(time);
     if(owlObj?.update) owlObj.update(time);
+    if(catObj?.update) catObj.update(time);
     if(guestTourist?.update) guestTourist.update(time, 1.8);
     for(const v of visitors){
       if(v.update) v.update(time, v.phase);
@@ -509,6 +516,11 @@ export function createWorld(host, callbacks) {
       else if (name === 'chop') audio.chop();
       else if (name === 'mine') audio.mine();
       else if (name === 'fanfare') audio.fanfare();
+      else if (name === 'cast') audio.cast();
+      else if (name === 'bite') audio.bite();
+      else if (name === 'reel') audio.reel();
+      else if (name === 'sizzle') audio.sizzle();
+      else if (name === 'meow') audio.meow();
       else audio.chime();
     },
     getPlayerScreenPos() {
