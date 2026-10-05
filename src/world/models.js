@@ -1,6 +1,8 @@
 import * as T from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { fluffyTree } from './nature.js';
+import { createHero } from './character.js';
 
 const materials = new Map(), geometries = new Map();
 export const palette = { grass: '#77a856', deepGrass: '#719d55', edge: '#d4b991', wood: '#ac7245', lightWood: '#d5a369', cream: '#fff0cd', roof: '#3d8491', roofEdge: '#246773', soil: '#79513e', stone: '#98a7a7', pink: '#cf6481' };
@@ -43,22 +45,16 @@ export function bake(g) {
   for(const {mat,geos} of batches.values()) {const geometry=mergeGeometries(geos);if(geometry){const m=new T.Mesh(geometry,mat);m.castShadow=true;m.receiveShadow=true;g.add(m);}geos.forEach(x=>x.dispose());}
   preserved.forEach(m=>g.add(m));return g;
 }
-export function tree(p,x,z,scale=1,variant=0) {
-  const g=group(p,x,0,z);g.scale.setScalar(scale);shadow(g,0,0,1.4,1.2);
-  cylinder(g,.21,.34,2.2,palette.wood,0,1.1,0);
-  const branch=cylinder(g,.10,.17,1.2,palette.wood,.3,1.7,0);branch.rotation.z=-.5;
-  const colors=['#508b4c','#6b9b4d','#8ab25b'];
-  ball(g,1.1,colors[variant%3],0,2.55,0,1,.98,1);
-  ball(g,.9,colors[(variant+1)%3],-.65,2.3,.1);
-  ball(g,.95,colors[variant%3],.65,2.55,-.1);
-  ball(g,.9,'#99ba63',.1,3.25,-.15,1,.85,1);
-  if(variant%2===0)for(let i=0;i<5;i++) {const a=i*2.4;ball(g,.11,'#e89a64',Math.cos(a)*.93,2.25+(i%3)*.22,Math.sin(a)*.9);}
-  return g;
+export function tree(p,x,z,scale=1,variant=0,opts={}) {
+  // Stylised lumpy foliage; kept the old signature so every caller gets the new look.
+  return fluffyTree(p,x,z,scale*1.05,variant,opts);
 }
+// Window glass glows warmly at night (intensity driven by the day/night cycle).
+export const windowGlass = () => material('#ffd98a',{emissive:'#ffb347',emissiveIntensity:0});
 function windowPane(p,x,y,z,w=.7,h=.85) {
   box(p,w+.16,h+.16,.13,palette.cream,x,y,z);
   box(p,w,h,.14,'#294c57',x,y,z+.07);
-  box(p,w-.08,h-.1,.05,'#ffc76e',x,y,z+.155);
+  mesh(p,geo(`b${w-.08},${h-.1},.05,.035`,()=>new RoundedBoxGeometry(w-.08,h-.1,.05,1,.02)),'#ffd98a',x,y,z+.155,{emissive:'#ffb347',emissiveIntensity:0});
   box(p,.055,h,.07,palette.cream,x,y,z+.2);box(p,w,.055,.07,palette.cream,x,y,z+.2);
   box(p,w+.28,.09,.32,palette.lightWood,x,y-h/2-.06,z+.16);
 }
@@ -343,103 +339,7 @@ export function rabbit(p,index,baby=false) {
   const feet=[];for(const x of [-.2,.2])for(const z of [-.23,.24]){const foot=group(body,x,.14,z);ball(foot,.13,c,0,0,.04,.7,.65,1.45);feet.push(foot);}
   root.scale.setScalar(baby?.58:1);return { root, body, ears, feet, phase:index*1.71, baby };
 }
-import girlFrontUrl from '../girl-walk-front.png';
-import girlRightUrl from '../girl-walk-right.png';
-import girlLeftUrl from '../girl-walk-left.png';
-import boyFrontUrl from '../boy-walk-front.png';
-import boyRightUrl from '../boy-walk-right.png';
-import boyLeftUrl from '../boy-walk-left.png';
-
+// 3D chibi hero replaces the old flat sprite billboard.
 export function person(p, avatar = 'girl') {
-  const root = group(p);
-  const isGirl = avatar === 'girl';
-  const loader = new T.TextureLoader();
-
-  function loadTex(url) {
-    const t = loader.load(url);
-    t.colorSpace = T.SRGBColorSpace;
-    t.wrapS = T.ClampToEdgeWrapping;
-    t.wrapT = T.ClampToEdgeWrapping;
-    t.generateMipmaps = true;
-    t.minFilter = T.LinearMipmapLinearFilter;
-    t.magFilter = T.LinearFilter;
-    t.repeat.set(0.25, 1);
-    t.offset.set(0, 0);
-    return t;
-  }
-
-  const frontTex = loadTex(isGirl ? girlFrontUrl : boyFrontUrl);
-  const rightTex = loadTex(isGirl ? girlRightUrl : boyRightUrl);
-  const leftTex = loadTex(isGirl ? girlLeftUrl : boyLeftUrl);
-
-  const geo = new T.PlaneGeometry(1.7, 2.25);
-  geo.translate(0, 1.12, 0);
-
-  const mat = new T.MeshStandardMaterial({
-    map: frontTex,
-    transparent: true,
-    alphaTest: 0.1,
-    roughness: 0.65,
-    metalness: 0.05,
-    side: T.DoubleSide
-  });
-
-  const spriteMesh = new T.Mesh(geo, mat);
-  spriteMesh.castShadow = true;
-  spriteMesh.receiveShadow = false;
-  root.add(spriteMesh);
-
-  const blob = shadow(root, 0, 0, 0.58, 0.42, 0.38);
-
-  let currentMap = frontTex;
-  let currentFrame = -1;
-
-  function update({ moving, speed, dx, dz, time, cameraYaw, busy }) {
-    spriteMesh.rotation.y = cameraYaw;
-
-    if (moving && speed > 0.04) {
-      const relX = dx * Math.cos(cameraYaw) - dz * Math.sin(cameraYaw);
-      const relZ = dx * Math.sin(cameraYaw) + dz * Math.cos(cameraYaw);
-
-      let targetTex = frontTex;
-      if (Math.abs(relX) > Math.abs(relZ) * 0.5) {
-        targetTex = relX > 0 ? rightTex : leftTex;
-      }
-
-      if (mat.map !== targetTex) {
-        mat.map = targetTex;
-        mat.needsUpdate = true;
-      }
-
-      const frameIndex = Math.floor((time * 8.5) % 4);
-
-      if (currentFrame !== frameIndex || mat.map !== currentMap) {
-        currentMap = targetTex;
-        currentFrame = frameIndex;
-        targetTex.repeat.set(0.25, 1);
-        targetTex.offset.set(frameIndex * 0.25, 0);
-      }
-
-      spriteMesh.position.y = Math.abs(Math.sin(time * 10)) * 0.09;
-    } else {
-      if (mat.map !== frontTex || currentFrame !== 0) {
-        frontTex.repeat.set(0.25, 1);
-        frontTex.offset.set(0, 0);
-        mat.map = frontTex;
-        mat.needsUpdate = true;
-        currentMap = frontTex;
-        currentFrame = 0;
-      }
-      spriteMesh.position.y = Math.sin(time * 2.2) * 0.025;
-    }
-
-    if (busy) {
-      spriteMesh.rotation.z = Math.sin(time * 16) * 0.07;
-    } else {
-      spriteMesh.rotation.z = 0;
-    }
-  }
-
-  return { root, spriteMesh, blob, update, tool: { visible: false } };
+  return createHero(p, avatar);
 }
-

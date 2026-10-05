@@ -369,6 +369,12 @@ function App() {
 
       {!modal && (
         <div className="travel-tools">
+          {frame.clock && (
+            <div className={`clock-pill ${frame.clock.night ? 'night' : ''}`} aria-label={`Godzina w grze: ${frame.clock.label}`}>
+              <span className="clock-orb" aria-hidden="true">{frame.clock.night ? '☾' : '☀'}</span>
+              <span><small>{frame.clock.phase.toLocaleUpperCase('pl')}</small><b>{frame.clock.label}</b></span>
+            </div>
+          )}
           <button onClick={() => worldRef.current?.returnHome()}><Icon name="house" size={16} /> Do domu</button>
           {frame.moving && <button onClick={() => worldRef.current?.stop()}>Zatrzymaj</button>}
         </div>
@@ -435,7 +441,10 @@ function App() {
         )}
 
         <nav className="camera-controls" aria-label="Sterowanie kamerą">
-          <button title="Wyśrodkuj widok" aria-label="Pokaż farmę" onClick={() => worldRef.current?.home()}><Icon name="compass" /></button>
+          <button title="Widok z góry / za postacią" aria-label="Przełącz widok z góry" onClick={() => worldRef.current?.home()}><Icon name="compass" /></button>
+          <button title={frame.muted ? 'Włącz dźwięki' : 'Wycisz dźwięki'} aria-label={frame.muted ? 'Włącz dźwięki' : 'Wycisz dźwięki'} onClick={() => worldRef.current?.toggleSound()} className="sound-toggle">
+            <span aria-hidden="true">{frame.muted ? '🔇' : '🔊'}</span>
+          </button>
           <button className="desktop-only" title="Obróć kamerę" aria-label="Obróć kamerę" onClick={() => worldRef.current?.turn(Math.PI / 4)}><Icon name="rotate" /></button>
           <button className="desktop-only" title="Przybliż" aria-label="Przybliż" onClick={() => worldRef.current?.zoom(-0.12)}><Icon name="plus" /></button>
           <button className="desktop-only" title="Oddal" aria-label="Oddal" onClick={() => worldRef.current?.zoom(0.12)}><Icon name="minus" /></button>

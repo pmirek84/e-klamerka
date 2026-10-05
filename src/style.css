@@ -32,7 +32,7 @@ button svg { flex-shrink: 0; }
 
 .world { position: absolute; inset: 0; touch-action: none; }
 .world canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-.vignette { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(#d9e7dc44, transparent 22%, transparent 77%, #c3d9d270); }
+.vignette { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(#ffffff22, transparent 18%, transparent 82%, #10302014); }
 
 .hud {
   position: absolute;
@@ -164,6 +164,28 @@ button svg { flex-shrink: 0; }
   background: #fffbeddf;
   box-shadow: var(--shadow);
 }
+.clock-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fffbed, #fff3d6);
+  box-shadow: var(--shadow);
+  transition: background .8s ease, color .8s ease;
+}
+.clock-pill small { display: block; font-size: 8px; letter-spacing: .14em; font-weight: 800; color: #a08250; line-height: 1; }
+.clock-pill b { font-size: 15px; font-variant-numeric: tabular-nums; color: #3d584a; line-height: 1.1; }
+.clock-orb {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 15px;
+  background: radial-gradient(circle at 35% 35%, #fff6b0, #ffc94d); color: #b86b0f;
+  box-shadow: 0 0 12px #ffc94d88;
+}
+.clock-pill.night { background: linear-gradient(135deg, #2c3f70, #1c2a55); }
+.clock-pill.night small { color: #a9b6e8; }
+.clock-pill.night b { color: #f2f4ff; }
+.clock-pill.night .clock-orb { background: radial-gradient(circle at 35% 35%, #ffffff, #c9d3ff); color: #55609a; box-shadow: 0 0 12px #c9d3ff88; }
+.sound-toggle span { font-size: 17px; line-height: 1; }
 
 .world-labels {
   position: absolute;
