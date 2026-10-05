@@ -149,10 +149,19 @@ function App() {
   const [frame, setFrame] = useState({ near: null, moving: false, busy: false, labels: {} });
   const [selected, setSelected] = useState(null);
   const [modal, setModal] = useState(null);
-  useEffect(() => {
-    window.__openModal = setModal;
-    return () => { delete window.__openModal; };
+  const openModal = useCallback((name) => {
+    worldRef.current?.playSound('pop', 1.15);
+    setModal(name);
   }, []);
+  const closeModal = useCallback(() => {
+    worldRef.current?.playSound('pop', 0.85);
+    setModal(null);
+  }, []);
+
+  useEffect(() => {
+    window.__openModal = openModal;
+    return () => { delete window.__openModal; };
+  }, [openModal]);
   const [houseTab, setHouseTab] = useState('workshop'); // 'workshop' | 'kitchen' | 'guests'
   const [notice, setNotice] = useState(null);
   const [shopMessage, setShopMessage] = useState('');
@@ -185,13 +194,79 @@ function App() {
     worldRef.current?.setGame(next);
   }
 
+  const [floatingRewards, setFloatingRewards] = useState([]);
+
+  const spawnReward = useCallback((text, icon = '✦', color = '#5ec77a') => {
+    const screenPos = worldRef.current?.getPlayerScreenPos();
+    const fallbackX = window.innerWidth / 2;
+    const fallbackY = window.innerHeight * 0.55;
+    const px = (screenPos?.visible && screenPos?.x > 40 && screenPos?.x < window.innerWidth - 40) ? screenPos.x : fallbackX;
+    const py = (screenPos?.visible && screenPos?.y > 100 && screenPos?.y < window.innerHeight - 80) ? screenPos.y : fallbackY;
+    const id = Date.now() + Math.random();
+    const x = px + (Math.random() - 0.5) * 40;
+    const y = py - 40 + (Math.random() - 0.5) * 20;
+
+    setFloatingRewards(prev => [...prev.slice(-5), { id, text, icon, color, x, y }]);
+    setTimeout(() => {
+      setFloatingRewards(prev => prev.filter(r => r.id !== id));
+    }, 1800);
+  }, []);
+
   const perform = useCallback((action) => {
-    const result = transact(gameRef.current, action);
-    if (result.ok) commit(result.state);
+    const prev = gameRef.current;
+    const result = transact(prev, action);
+    if (result.ok) {
+      commit(result.state);
+      const next = result.state;
+
+      // Rich reward badges + sounds based on action
+      if (action.startsWith('plant:')) {
+        const crop = action.split(':')[1] === 'carrots' ? 'Marchewki' : 'Zboże';
+        spawnReward(`Zasiano: ${crop}!`, '🌱', '#5ec77a');
+        worldRef.current?.playSound('pop');
+      } else if (action === 'water') {
+        spawnReward('Podlano grządkę!', '💧', '#3ba4f5');
+        worldRef.current?.playSound('water');
+      } else if (action === 'harvest') {
+        const crop = prev.planted;
+        const icon = crop === 'carrots' ? '🥕' : '🌾';
+        const name = crop === 'carrots' ? '+2 Marchewki!' : '+2 Zboże!';
+        spawnReward(name, icon, '#ff7b63');
+        worldRef.current?.playSound('harvest');
+      } else if (action === 'chop') {
+        spawnReward('+1 Drewno!', '🪵', '#d49b4d');
+        worldRef.current?.playSound('chop');
+      } else if (action === 'mine') {
+        const hasQuarry = next.world?.quarry;
+        spawnReward(hasQuarry ? '+1 Kryształ!' : '+1 Kamień!', hasQuarry ? '💎' : '🪨', '#4fc3f7');
+        worldRef.current?.playSound('mine');
+      } else if (action.startsWith('feed:')) {
+        spawnReward('♥ Króliczek nakarmiony!', '🐰', '#ff6b8b');
+        worldRef.current?.playSound('squeak');
+      } else if (action.startsWith('pet:')) {
+        spawnReward('♥ Pieszczoch się cieszy!', '✨', '#ff6b8b');
+        worldRef.current?.playSound('squeak');
+      } else if (action.startsWith('sell')) {
+        const diff = (next.coins || 0) - (prev.coins || 0);
+        spawnReward(`+${diff > 0 ? diff : ''} Monet!`, '🪙', '#f8a836');
+        worldRef.current?.playSound('coin');
+      } else if (action.startsWith('buy')) {
+        spawnReward('Kupiono pomyślnie!', '🛍️', '#62c370');
+        worldRef.current?.playSound('pop');
+      } else if (action.startsWith('unlock') || action.startsWith('upgrade') || action.startsWith('build')) {
+        spawnReward('Ukończono budowę!', '🎉', '#f8a836');
+        worldRef.current?.playSound('fanfare');
+      } else if (action.startsWith('cook:')) {
+        spawnReward('Ugotowano posiłek!', '🍲', '#f8a836');
+        worldRef.current?.playSound('harvest');
+      } else {
+        worldRef.current?.playSound('pop');
+      }
+    }
     if (action.startsWith('buy') || action.startsWith('sell')) setShopMessage(result.message);
     say(result.message, result.ok);
     return result;
-  }, [say]);
+  }, [say, spawnReward]);
 
   useEffect(() => {
     let world;
@@ -250,35 +325,35 @@ function App() {
     }
     if (task.action === 'shop') {
       setShopMessage('');
-      setModal('shop');
+      openModal('shop');
       return;
     }
     if (task.action === 'stall-modal') {
-      setModal('stall');
+      openModal('stall');
       return;
     }
     if (task.action === 'helper-status') {
-      setModal('helper');
+      openModal('helper');
       return;
     }
     if (task.action === 'house-modal') {
       setHouseTab(game.houseLevel >= 3 ? 'guests' : game.houseLevel >= 2 ? 'kitchen' : 'workshop');
-      setModal('house');
+      openModal('house');
       return;
     }
     if (active === 'pen' && game.pen) {
-      setModal('pen');
+      openModal('pen');
       return;
     }
     if (active === 'garden' && !game.planted) {
-      setModal('garden');
+      openModal('garden');
       return;
     }
     if (task.action === 'owl-modal') {
       setOwlAnswerState(null);
       const unsolved = OWL_RIDDLES.find(r => !game.solvedRiddles?.includes(r.id));
       if (unsolved) setOwlRiddleId(unsolved.id);
-      setModal('owl');
+      openModal('owl');
       return;
     }
     const result = perform(task.action);
@@ -289,8 +364,6 @@ function App() {
   visitRef.current = id => {
     if (id !== 'farm') perform(`visit:${id}`);
   };
-
-  const closeModal = useCallback(() => setModal(null), []);
 
   const handleImportSave = (e) => {
     const file = e.target.files?.[0];
@@ -341,16 +414,16 @@ function App() {
       <div className="vignette" />
 
       <header className="hud">
-        <button className="identity" onClick={() => { setName(game.name); setAvatar(game.avatar); setModal('profile'); }} aria-label="Zmień imię i postać">
+        <button className="identity" onClick={() => { setName(game.name); setAvatar(game.avatar); openModal('profile'); }} aria-label="Zmień imię i postać">
           <span className="brand-mark"><Icon name="peg" size={27} /></span>
           <span>
             <small>e-klamerka · v0.4</small>
             <strong>{game.name ? `Farma · ${game.name}` : 'Twoja mała farma'}<span className="edit-dot">✎</span></strong>
           </span>
         </button>
-        <Resources state={game} onOpenBackpack={() => setModal('backpack')} />
+        <Resources state={game} onOpenBackpack={() => openModal('backpack')} />
         <div className="header-actions">
-          <button className="map-shortcut" aria-label="Otwórz mapę świata" onClick={() => setModal('map')}>
+          <button className="map-shortcut" aria-label="Otwórz mapę świata" onClick={() => openModal('map')}>
             <Icon name="map" />
             <span>Mapa świata</span>
           </button>
@@ -414,6 +487,25 @@ function App() {
         <div className={`toast ${!notice.ok ? 'warning' : ''}`} role="status">
           <Icon name={notice.ok ? 'check' : 'leaf'} size={20} />
           {notice.message}
+        </div>
+      )}
+
+      {floatingRewards.length > 0 && (
+        <div className="floating-rewards-layer" aria-hidden="true">
+          {floatingRewards.map(r => (
+            <div
+              key={r.id}
+              className="candy-reward-float"
+              style={{
+                left: `${r.x}px`,
+                top: `${r.y}px`,
+                '--accent': r.color
+              }}
+            >
+              <span className="reward-icon">{r.icon}</span>
+              <span className="reward-text">{r.text}</span>
+            </div>
+          ))}
         </div>
       )}
 

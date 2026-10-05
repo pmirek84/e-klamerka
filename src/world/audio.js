@@ -72,6 +72,133 @@ export function createAudio() {
     });
   }
 
+  function pop(pitch = 1) {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(650 * pitch, t);
+    o.frequency.exponentialRampToValueAtTime(220 * pitch, t + .07);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(.12, t + .008);
+    g.gain.exponentialRampToValueAtTime(.0005, t + .08);
+    o.connect(g).connect(master);
+    o.start(t); o.stop(t + .09);
+  }
+
+  function harvest() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Cheerful ascending 3-note marimba chord (G4, B4, D5, G5)
+    [392.00, 493.88, 587.33, 783.99].forEach((fq, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .055;
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(fq, s);
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(.11, s + .008);
+      g.gain.exponentialRampToValueAtTime(.0004, s + .28);
+      o.connect(g).connect(master);
+      o.start(s); o.stop(s + .3);
+    });
+  }
+
+  function water() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Bubbly water droplet frequency drops
+    [740, 880].forEach((fq, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .08;
+      o.type = 'sine';
+      o.frequency.setValueAtTime(fq, s);
+      o.frequency.exponentialRampToValueAtTime(fq * .45, s + .09);
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(.13, s + .01);
+      g.gain.exponentialRampToValueAtTime(.0005, s + .12);
+      o.connect(g).connect(master);
+      o.start(s); o.stop(s + .13);
+    });
+  }
+
+  function coin() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Dual bright metallic coin ring
+    [1760, 2637].forEach((fq, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .06;
+      o.type = 'sine';
+      o.frequency.setValueAtTime(fq, s);
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(.08, s + .006);
+      g.gain.exponentialRampToValueAtTime(.0003, s + .32);
+      o.connect(g).connect(master);
+      o.start(s); o.stop(s + .35);
+    });
+  }
+
+  function squeak() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Cute bunny squeak / chirpy inflection
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(1250, t);
+    o.frequency.exponentialRampToValueAtTime(1920, t + .08);
+    o.frequency.exponentialRampToValueAtTime(1600, t + .14);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(.07, t + .02);
+    g.gain.exponentialRampToValueAtTime(.0004, t + .18);
+    o.connect(g).connect(master);
+    o.start(t); o.stop(t + .2);
+  }
+
+  function chop() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(220, t);
+    o.frequency.exponentialRampToValueAtTime(80, t + .08);
+    g.gain.setValueAtTime(.18, t);
+    g.gain.exponentialRampToValueAtTime(.0005, t + .1);
+    o.connect(g).connect(master);
+    o.start(t); o.stop(t + .11);
+    // Subtle wood snap click
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 2.5;
+    const ng = ctx.createGain(); ng.gain.setValueAtTime(.15, t); ng.gain.exponentialRampToValueAtTime(.001, t + .06);
+    src.connect(f).connect(ng).connect(master); src.start(t, 0, .07);
+  }
+
+  function mine() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Crystal chime ping
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(1864, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(.09, t + .006);
+    g.gain.exponentialRampToValueAtTime(.0002, t + .45);
+    o.connect(g).connect(master);
+    o.start(t); o.stop(t + .48);
+  }
+
+  function fanfare() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Triumphant chord fanfare
+    [523.25, 659.25, 783.99, 1046.50].forEach((fq, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .09;
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(fq, s);
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(.11, s + .012);
+      g.gain.exponentialRampToValueAtTime(.0004, s + .65);
+      o.connect(g).connect(master);
+      o.start(s); o.stop(s + .7);
+    });
+  }
+
   function setMuted(v) {
     muted = v; localStorage.setItem(MUTE_KEY, v ? '1' : '0');
     if (master) master.gain.setTargetAtTime(v ? 0 : .7, ctx.currentTime, .1);
@@ -79,5 +206,21 @@ export function createAudio() {
 
   function dispose() { ctx?.close(); ctx = null; }
 
-  return { start, update, step, chime, setMuted, get muted() { return muted; }, dispose };
+  return {
+    start,
+    update,
+    step,
+    chime,
+    pop,
+    harvest,
+    water,
+    coin,
+    squeak,
+    chop,
+    mine,
+    fanfare,
+    setMuted,
+    get muted() { return muted; },
+    dispose
+  };
 }

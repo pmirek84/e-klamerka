@@ -302,27 +302,94 @@ export function createWorld(host, callbacks) {
     return T.MathUtils.clamp((1-m)*1.6,0,1);
   }
   const starGeo = new T.OctahedronGeometry(.13, 0);
-  function burst(x, z, baseColor) {
-    const palette = [baseColor, '#ffe066', '#ff85a1', '#70e000', '#ffffff'];
-    for(let i = 0; i < 15; i++) {
+  const coinGeo = new T.CylinderGeometry(.12, .12, .04, 10);
+  const dropGeo = new T.SphereGeometry(.1, 8, 8);
+  const woodGeo = new T.BoxGeometry(.14, .08, .1);
+  const heartGeo = new T.SphereGeometry(.11, 8, 8); heartGeo.scale(1.2, 1, .9);
+
+  function burst(x, z, baseColor, type = 'star') {
+    let geo = starGeo;
+    let palette = [baseColor, '#ffe066', '#ff85a1', '#70e000', '#ffffff'];
+    let count = 16;
+    let gravity = 9.5;
+    let lift = 2.8;
+
+    if (type === 'heart') {
+      geo = heartGeo;
+      palette = ['#ff4d6d', '#ff758f', '#ff8fa3', '#fff0f3'];
+      count = 8;
+      gravity = 2.2;
+      lift = 1.6;
+    } else if (type === 'coin') {
+      geo = coinGeo;
+      palette = ['#ffd166', '#ffb703', '#ffe49e'];
+      count = 12;
+      gravity = 11;
+      lift = 3.6;
+    } else if (type === 'water') {
+      geo = dropGeo;
+      palette = ['#00b4d8', '#48cae4', '#90e0ef', '#ffffff'];
+      count = 14;
+      gravity = 8;
+      lift = 2.4;
+    } else if (type === 'chop') {
+      geo = woodGeo;
+      palette = ['#a06f35', '#c89650', '#7a4e23', '#dfb072'];
+      count = 12;
+    }
+
+    for (let i = 0; i < count; i++) {
       const col = palette[i % palette.length];
-      const m = new T.Mesh(starGeo, new T.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .45, roughness: .35 }));
-      m.position.set(x + (random() - .5) * .35, .65, z + (random() - .5) * .35);
+      const m = new T.Mesh(geo, new T.MeshStandardMaterial({
+        color: col,
+        emissive: col,
+        emissiveIntensity: type === 'heart' ? .6 : .4,
+        roughness: type === 'coin' ? .2 : .4
+      }));
+      m.position.set(x + (random() - .5) * .35, .75, z + (random() - .5) * .35);
       m.scale.setScalar(0);
       scene.add(m);
       const angle = random() * Math.PI * 2;
-      const speed = 1.4 + random() * 2.2;
+      const speed = type === 'heart' ? (0.6 + random() * 0.9) : (1.4 + random() * 2.2);
       fx.push({
         m,
-        v: new T.Vector3(Math.cos(angle) * speed, 2.8 + random() * 2.6, Math.sin(angle) * speed),
-        rot: new T.Vector3((random() - .5) * 10, (random() - .5) * 10, (random() - .5) * 10),
+        v: new T.Vector3(Math.cos(angle) * speed, lift + random() * (type === 'heart' ? 1.0 : 2.2), Math.sin(angle) * speed),
+        rot: new T.Vector3((random() - .5) * 12, (random() - .5) * 12, (random() - .5) * 12),
+        gravity,
+        type,
         started: time,
-        dur: .85 + random() * .3,
-        end: time + .85 + random() * .3,
+        dur: .85 + random() * .35,
+        end: time + .85 + random() * .35,
       });
     }
   }
-  function animateAction(kind){busyUntil=time+1.1;path=[];burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':kind==='lakeDock'?'#4fc3f7':kind==='observatory'?'#ba68c8':'#f6d68a');audio.chime();}
+
+  function animateAction(kind = 'general') {
+    busyUntil = time + 1.1;
+    path = [];
+    let baseCol = '#f6d68a';
+    let fxType = 'star';
+
+    if (kind === 'mine' || kind.includes('mine')) {
+      baseCol = '#a6c7dc'; fxType = 'star'; audio.mine();
+    } else if (kind === 'garden' || kind.includes('harvest')) {
+      baseCol = '#e9b668'; fxType = 'star'; audio.harvest();
+    } else if (kind === 'water' || kind.includes('water')) {
+      baseCol = '#4fc3f7'; fxType = 'water'; audio.water();
+    } else if (kind === 'chop' || kind.includes('chop') || kind === 'forest') {
+      baseCol = '#b58550'; fxType = 'chop'; audio.chop();
+    } else if (kind === 'pen' || kind.includes('feed') || kind.includes('pet')) {
+      baseCol = '#ff758f'; fxType = 'heart'; audio.squeak();
+    } else if (kind.includes('buy') || kind.includes('sell') || kind.includes('coins')) {
+      baseCol = '#ffca3a'; fxType = 'coin'; audio.coin();
+    } else if (kind.includes('unlock') || kind.includes('upgrade') || kind.includes('build')) {
+      baseCol = '#ff9f1c'; fxType = 'star'; audio.fanfare();
+    } else {
+      audio.chime();
+    }
+
+    burst(pos.x, pos.z, baseCol, fxType);
+  }
   let paused=false, frameTime=16, slowFor=0, skyInfo={night:0,horizon:null};
   function frame(now){
     if(disposed)return;frameTime=frameTime*.9+(now-last)*.1;const dt=Math.min(.1,(now-last)/1000);last=now;time+=dt;
@@ -377,7 +444,7 @@ export function createWorld(host, callbacks) {
       const age = time - f.started;
       const life = 1 - (f.end - time) / f.dur;
       f.m.position.addScaledVector(f.v, dt);
-      f.v.y -= 9.5 * dt;
+      f.v.y -= (f.gravity || 9.5) * dt;
       f.m.rotation.x += f.rot.x * dt;
       f.m.rotation.y += f.rot.y * dt;
       const popScale = age < .12 ? (age / .12) * 1.3 : Math.max(0, 1.3 * (1 - life));
@@ -432,6 +499,22 @@ export function createWorld(host, callbacks) {
   }
   raf=requestAnimationFrame(frame);
   const api={setGame,select,performDirectAction,turn,zoom:setZoom,home(){worldOverview=false;overview=!overview;zoom=1;yaw=.35;},worldView(){worldOverview=true;overview=true;zoom=1;yaw=.12;},returnHome(){select('house');},stop(){path=[];selected=null;callbacks.onSelect(null);marker.visible=false;},follow(){overview=false;},pause(value){paused=value;clearInput();},animateAction,
+    playSound(name, arg) {
+      audio.start();
+      if (name === 'pop') audio.pop(arg);
+      else if (name === 'harvest') audio.harvest();
+      else if (name === 'water') audio.water();
+      else if (name === 'coin') audio.coin();
+      else if (name === 'squeak') audio.squeak();
+      else if (name === 'chop') audio.chop();
+      else if (name === 'mine') audio.mine();
+      else if (name === 'fanfare') audio.fanfare();
+      else audio.chime();
+    },
+    getPlayerScreenPos() {
+      const sPos = project([pos.x, 1.85, pos.z]);
+      return { x: sPos.x, y: sPos.y, visible: sPos.visible };
+    },
     toggleSound(){audio.start();audio.setMuted(!audio.muted);return audio.muted;},
     setHour(h){sky.setHour(h);},
     inspect(){return {region:lastRegion,routeLength:path.length,position:pos.toArray(),routeTo:(x,z)=>route(x,z).map(p=>p.toArray()),inside:(x,z)=>inside(x,z),camera:{yaw,zoom},fps:Math.round(1000/frameTime),calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,houseLevel:state.houseLevel,quality,clock:sky.clock(),project:(point)=>project(point)};},

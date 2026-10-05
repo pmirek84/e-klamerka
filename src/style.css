@@ -315,6 +315,66 @@ button svg { flex-shrink: 0; }
 }
 .toast.warning { background: #fff5e0; border-color: #fae1b4; color: #8c5d1a; }
 
+/* 3D Floating Reward Juice */
+.floating-rewards-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+  overflow: hidden;
+}
+.candy-reward-float {
+  position: absolute;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 253, 248, 0.98);
+  backdrop-filter: blur(10px);
+  border: 2.5px solid var(--accent, #f6ebd8);
+  border-radius: 999px;
+  padding: 6px 14px 6px 10px;
+  box-shadow: 0 4px 0 var(--accent, #ebdcc5), 0 10px 24px rgba(35, 65, 45, 0.16);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2b4538;
+  white-space: nowrap;
+  animation: candyFloatReward 1.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.reward-icon {
+  font-size: 16px;
+  line-height: 1;
+  display: inline-block;
+  animation: rewardIconBounce .8s ease infinite alternate;
+}
+@keyframes rewardIconBounce {
+  from { transform: scale(1) rotate(-4deg); }
+  to { transform: scale(1.18) rotate(4deg); }
+}
+@keyframes candyFloatReward {
+  0% {
+    transform: translate(-50%, 0) scale(0.65);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -18px) scale(1.15);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(-50%, -32px) scale(1);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(-50%, -58px) scale(1);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -84px) scale(0.85);
+    opacity: 0;
+  }
+}
+
 .bottom-hud {
   position: absolute;
   left: 24px;

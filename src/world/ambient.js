@@ -208,12 +208,25 @@ export function createAmbient(scene, { walkable, quality }) {
   const fireflies = new T.Points(ffGeo, new T.PointsMaterial({ map: glowTex, color: '#d8ff7a', size: .5, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending }));
   fireflies.frustumCulled = false; root.add(fireflies);
 
-  // Chimney smoke.
-  const smokeMat = new T.SpriteMaterial({ map: glowTex, color: '#f4f1ea', transparent: true, opacity: 0, depthWrite: false });
-  const puffs = Array.from({ length: 12 }, (_, i) => { const s = new T.Sprite(smokeMat.clone()); s.userData.t = i / 12 * 4; root.add(s); return s; });
+  // Creamy marshmallow chimney smoke puffs
+  const puffGeo = new T.DodecahedronGeometry(.26, 1);
+  const puffs = Array.from({ length: 10 }, (_, i) => {
+    const mat = new T.MeshStandardMaterial({
+      color: '#fffbf5',
+      roughness: .95,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    });
+    const m = new T.Mesh(puffGeo, mat);
+    m.userData.t = (i / 10) * 3.6;
+    m.userData.seed = i * 1.618;
+    root.add(m);
+    return m;
+  });
   const fireSparks = Array.from({ length: 6 }, (_, i) => { const s = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: '#ffb347', transparent: true, depthWrite: false, blending: T.AdditiveBlending })); s.userData.t = i / 6 * 1.5; root.add(s); return s; });
 
-  let houseLevel = 0;
+  let houseLevel = 1;
   const tmp = new T.Vector3();
   let lastRippleCheck = 0;
 
@@ -384,10 +397,16 @@ export function createAmbient(scene, { walkable, quality }) {
     }
     const h = houseLevel >= 2 ? 3.45 : 2.3;
     puffs.forEach(s => {
-      s.userData.t = (s.userData.t + dt) % 4; const t = s.userData.t / 4;
+      s.userData.t = (s.userData.t + dt) % 3.6;
+      const progress = s.userData.t / 3.6;
       s.visible = houseLevel > 0;
-      s.position.set(-1.95 + t * .9 + Math.sin(t * 6 + time) * .1, h + 1.75 + t * 3, -2.55 - t * .4);
-      s.scale.setScalar(.35 + t * 1.3); s.material.opacity = (1 - t) * .55 * Math.min(1, t * 6);
+      const sway = Math.sin(progress * 4 + s.userData.seed + time * 1.4) * .22;
+      s.position.set(-1.95 + sway + progress * .75, h + 1.8 + progress * 2.8, -2.55 - progress * .42);
+      const scale = .2 + Math.sin(progress * Math.PI) * .55;
+      s.scale.setScalar(scale);
+      s.rotation.y = time * .6 + s.userData.seed;
+      s.rotation.z = Math.sin(time + s.userData.seed) * .2;
+      s.material.opacity = Math.sin(progress * Math.PI) * .65;
     });
   }
   return { root, update, setHouseLevel(l) { houseLevel = l; } };
