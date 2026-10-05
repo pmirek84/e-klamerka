@@ -153,7 +153,14 @@ function App() {
   const actionRef = useRef(() => {});
   const [frame, setFrame] = useState({ near: null, moving: false, busy: false, labels: {} });
   const [selected, setSelected] = useState(null);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('modal') || null;
+    } catch {
+      return null;
+    }
+  });
   const openModal = useCallback((name) => {
     worldRef.current?.playSound('pop', 1.15);
     setModal(name);
@@ -161,6 +168,11 @@ function App() {
   const closeModal = useCallback(() => {
     worldRef.current?.playSound('pop', 0.85);
     setModal(null);
+    if (window.location.search.includes('modal=')) {
+      const url = new URL(window.location);
+      url.searchParams.delete('modal');
+      window.history.replaceState({}, '', url.toString());
+    }
   }, []);
 
   useEffect(() => {
