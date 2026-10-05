@@ -403,7 +403,7 @@ export function createWorld(host, callbacks) {
     audio.update({night,water:waterNearby(),moving:speed>.04});
 
     // 60 FPS Direct Label Synchronization (Eliminates DOM lag and wobble)
-    const labelWrap = host.querySelector('.world-labels');
+    const labelWrap = host.querySelector('.world-labels') || host.parentElement?.querySelector('.world-labels') || document.querySelector('.world-labels');
     if (labelWrap) {
       for (const [id, p] of Object.entries(PLACES)) {
         if (!visiblePlace(p, state)) continue;

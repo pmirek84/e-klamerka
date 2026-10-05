@@ -241,9 +241,12 @@ button svg { flex-shrink: 0; }
   overflow: hidden;
 }
 .place-label {
+  display: none;
   position: absolute;
+  top: 0;
+  left: 0;
   transform: translate(-50%, -50%);
-  transition: transform .15s ease, background .15s, box-shadow .15s, border-color .15s !important;
+  transition: background .15s, box-shadow .15s, border-color .15s;
   will-change: transform;
   background: rgba(255, 253, 248, 0.96);
   backdrop-filter: blur(8px);
@@ -255,7 +258,6 @@ button svg { flex-shrink: 0; }
   border-radius: 20px;
   padding: 6px 12px;
   white-space: nowrap;
-  display: flex;
   align-items: center;
   gap: 6px;
   pointer-events: auto;
@@ -499,9 +501,16 @@ button svg { flex-shrink: 0; }
   padding: 24px 26px;
   width: min(580px, 100%);
   max-height: calc(100dvh - 36px);
-  overflow: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #ecdac1 transparent;
   animation: candyPopIn .28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+.modal::-webkit-scrollbar { width: 6px; }
+.modal::-webkit-scrollbar-track { background: transparent; }
+.modal::-webkit-scrollbar-thumb { background: #ecdac1; border-radius: 8px; }
+.modal::-webkit-scrollbar-thumb:hover { background: #dfc8a8; }
 .modal > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .modal h2 { font-family: inherit; font-weight: 700; font-size: 24px; margin: 4px 0 0; color: #2b4538; }
 .modal .eyebrow {
@@ -952,60 +961,72 @@ input:focus { border-color: #f8a836; outline: none; box-shadow: inset 0 2px 4px 
 @keyframes toast-in { from { opacity: 0; margin-bottom: -8px; } to { opacity: 1; margin-bottom: 0; } }
 
 /* Responsive adjustments */
-@media (max-width: 850px) {
-  .hud { left: 14px; right: 14px; top: 14px; gap: 8px; }
-  .identity { min-width: 0; padding-right: 10px; }
-  .identity strong { font-size: 13px; }
-  .identity small { font-size: 8px; }
-  .brand-mark { width: 36px; height: 36px; }
-  .resources { padding: 10px 14px; gap: 10px; }
-  .resource { min-width: 0; gap: 3px; }
-  .resource b { font-size: 14px; }
-  .map-shortcut span { display: none; }
+/* Responsive adjustments */
+@media (max-width: 1120px) {
+  .map-shortcut span, .shop-shortcut span { display: none; }
+  .map-shortcut, .shop-shortcut { padding: 10px 14px; border-radius: 16px; }
+  .resources { padding: 8px 14px; gap: 12px; }
 }
 
-@media (max-width: 600px), (pointer: coarse) {
+@media (max-width: 880px) {
+  .hud { left: 16px; right: 16px; top: 14px; gap: 10px; }
+  .identity { min-width: 0; padding: 6px 12px 6px 8px; border-radius: 16px; }
+  .identity strong { font-size: 13px; }
+  .identity small { font-size: 9px; }
+  .brand-mark { width: 36px; height: 36px; }
+  .resources { padding: 6px 12px; gap: 8px; }
+  .resource { font-size: 14px; gap: 4px; min-width: 0; }
+  .resource b { font-size: 14px; }
+  .resource.coins { padding-left: 8px; }
+  .resource.backpack-btn { padding: 4px 8px; font-size: 12px; }
+  .quest-card { left: 16px; top: 88px; width: 220px; padding: 12px 14px; }
+  .bottom-hud { left: 16px; right: 16px; gap: 12px; }
+  .action-card { max-width: 520px; padding: 12px 14px; }
+  .camera-controls { grid-template-columns: repeat(2, 38px); gap: 6px; }
+  .camera-controls button { width: 38px; height: 38px; }
+}
+
+@media (max-width: 720px), (pointer: coarse) {
   .desktop-only { display: none !important; }
   .camera-controls { display: none !important; }
   .movement, .gesture-hint, .keyboard-hint { display: none !important; }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 720px) {
   .hud { flex-wrap: wrap; gap: 8px; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; }
-  .identity { order: 0; padding: 6px 10px; border-radius: 12px; max-width: calc(100% - 100px); }
+  .identity { order: 0; padding: 6px 10px; border-radius: 14px; max-width: calc(100% - 110px); }
   .identity strong { font-size: 12px; }
-  .brand-mark { width: 32px; height: 32px; border-radius: 8px; }
+  .brand-mark { width: 32px; height: 32px; border-radius: 10px; }
   .header-actions { order: 1; }
-  .map-shortcut, .shop-shortcut { width: 42px; height: 44px; border-radius: 12px; padding: 8px; justify-content: center; }
-  .shop-shortcut span { display: none; }
+  .map-shortcut, .shop-shortcut { width: 44px; height: 44px; border-radius: 14px; padding: 8px; justify-content: center; }
 
   .hud > .resources {
-    position: absolute;
-    top: 56px;
-    left: 0;
-    right: 0;
-    padding: 8px 12px;
-    gap: 14px;
+    position: static;
+    order: 2;
+    width: 100%;
+    justify-content: space-around;
+    padding: 7px 10px;
+    gap: 8px;
     min-height: 42px;
-    border-radius: 12px;
-    background: #fffbedf5;
+    border-radius: 16px;
+    background: rgba(255, 253, 248, 0.96);
   }
-  .resource b { font-size: 14px; }
+  .resource b { font-size: 13px; }
 
   /* Super slim, non-intrusive quest card on mobile */
   .quest-card {
     left: 12px;
     right: 12px;
-    top: 110px;
+    top: 118px;
     width: auto;
-    padding: 6px 12px;
-    border-radius: 12px;
+    padding: 7px 12px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    background: #fffbedf2;
-    box-shadow: 0 4px 14px #28453412;
+    background: rgba(255, 253, 248, 0.96);
+    box-shadow: 0 4px 14px rgba(40, 70, 50, 0.08);
   }
   .quest-card .eyebrow { display: none; }
   .quest-card h1 {
@@ -1032,8 +1053,8 @@ input:focus { border-color: #f8a836; outline: none; box-shadow: inset 0 2px 4px 
     gap: 3px;
   }
 
-  .travel-tools { top: 154px; right: 12px; }
-  .nursery { top: 154px; left: 12px; transform: none; font-size: 10px; padding: 5px 8px; border-radius: 12px; }
+  .travel-tools { top: 164px; right: 12px; }
+  .nursery { top: 164px; left: 12px; transform: none; font-size: 10px; padding: 5px 8px; border-radius: 12px; }
 
   .bottom-hud {
     bottom: max(14px, calc(env(safe-area-inset-bottom) + 8px));
@@ -1044,7 +1065,7 @@ input:focus { border-color: #f8a836; outline: none; box-shadow: inset 0 2px 4px 
   .action-card {
     width: 100%;
     padding: 10px 12px;
-    border-radius: 14px;
+    border-radius: 16px;
     gap: 8px;
   }
   .action-symbol { width: 36px; height: 40px; }
@@ -1061,6 +1082,28 @@ input:focus { border-color: #f8a836; outline: none; box-shadow: inset 0 2px 4px 
 
   .toast { bottom: 180px; font-size: 12px; padding: 9px 14px; }
   .place-label { font-size: 10px; padding: 5px 8px; }
+}
+
+/* Height-based responsive rules (e.g. 768p laptops, split-screen, or landscape) */
+@media (max-height: 760px) and (min-width: 721px) {
+  .quest-card { top: 86px; width: 230px; padding: 12px 14px; }
+  .quest-card h1 { font-size: 16px; margin: 4px 0 3px; }
+  .quest-card p { font-size: 11px; margin: 0 0 8px; line-height: 1.35; }
+  .quest-link { font-size: 11px; padding: 4px 10px; }
+  .bottom-hud { bottom: max(22px, calc(env(safe-area-inset-bottom) + 10px)); }
+  .action-card { padding: 11px 14px; }
+  .modal { max-height: calc(100dvh - 24px); padding: 18px 20px; }
+  .atlas { min-height: 180px; max-height: 230px; }
+}
+
+@media (max-height: 620px) and (min-width: 721px) {
+  .quest-card { top: 76px; padding: 8px 12px; width: 210px; }
+  .quest-card h1 { font-size: 14px; margin: 2px 0 4px; }
+  .quest-card p, .quest-progress { display: none !important; }
+  .bottom-hud { bottom: 10px; }
+  .action-card { padding: 8px 12px; }
+  .action-copy p { display: none; }
+  .modal { max-height: calc(100dvh - 16px); padding: 14px 16px; }
 }
 
 /* World Map Atlas & Nodes */
