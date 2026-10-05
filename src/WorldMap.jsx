@@ -74,28 +74,42 @@ export function WorldMap({ game, current, position, onTravel, onOverview }) {
           const isUnlocked = unlocked(id, game);
           return (
             <article key={id} className={`region-card ${isUnlocked ? 'unlocked' : 'locked'}`}>
-              <span className="region-mark" style={{ background: r.color }}>
-                <Icon name={r.icon} size={26} />
-              </span>
-              <div className="region-info">
-                <h3>{r.name}</h3>
-                <p>{r.subtitle}</p>
-                {!isUnlocked && r.cost && (
-                  <div className="map-price">
-                    <span className="price-label">Koszt mostu:</span>
-                    {Object.entries(r.cost).map(([k, n]) => (
-                      <span key={k} className="price-tag">
-                        <Icon name={k === 'crystals' ? 'crystal' : k} size={14} /> {n}
-                      </span>
-                    ))}
+              <div className="region-card-top">
+                <span className="region-mark" style={{ background: r.color }}>
+                  <Icon name={r.icon} size={26} />
+                </span>
+                <div className="region-info">
+                  <div className="region-status-badge">
+                    {isUnlocked ? '✓ Odkryta kraina' : '🔒 Wymaga mostu'}
                   </div>
-                )}
+                  <h3>{r.name}</h3>
+                  <p>{r.subtitle}</p>
+                </div>
               </div>
+
+              {!isUnlocked && r.cost && (
+                <div className="map-price">
+                  <span className="price-label">Potrzebne na budowę mostu:</span>
+                  <div className="price-tags-wrap">
+                    {Object.entries(r.cost).map(([k, n]) => {
+                      const currentAmount = game[k] || 0;
+                      const hasEnough = currentAmount >= n;
+                      return (
+                        <span key={k} className={`price-tag ${hasEnough ? 'ready' : 'missing'}`}>
+                          <Icon name={k === 'crystals' ? 'crystal' : k} size={14} />
+                          <span>{currentAmount}/{n}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <button
-                className={isUnlocked ? 'primary' : 'secondary'}
+                className={`region-action-btn ${isUnlocked ? 'primary' : 'secondary'}`}
                 onClick={() => onTravel(isUnlocked ? r.destination : r.gate)}
               >
-                {isUnlocked ? 'Wyrusz' : 'Do mostu'}
+                <span>{isUnlocked ? 'Wyrusz do krainy' : 'Przejdź do budowy mostu'}</span>
                 <Icon name="arrow" size={15} />
               </button>
             </article>
