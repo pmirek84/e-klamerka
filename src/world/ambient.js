@@ -38,24 +38,32 @@ function sheep(parent, seed) {
   const head = new T.Group(); head.position.set(0, .68, .5); body.add(head);
   mesh(head, SPH, face, 0, 0, .06, .17, .19, .2);
   mesh(head, blobGeometry(1, 5, .2), wool, 0, .14, 0, .18, .12, .16);
-  for (const s of [-1, 1]) { mesh(head, SPH, std('#ffffff'), s * .08, .04, .2, .045); mesh(head, SPH, std('#111111'), s * .08, .04, .235, .022); mesh(head, SPH, face, s * .18, .04, -.02, .09, .04, .05); }
+  const ears = [];
+  for (const s of [-1, 1]) {
+    mesh(head, SPH, std('#ffffff'), s * .08, .04, .2, .045);
+    mesh(head, SPH, std('#111111'), s * .08, .04, .235, .022);
+    const ear = mesh(head, SPH, face, s * .18, .04, -.02, .09, .04, .05);
+    ears.push(ear);
+  }
+  // Fluffy little tail
+  const tail = mesh(body, SPH, wool, 0, .68, -.45, .1, .1, .12);
   const legs = [];
   for (const [x, z] of [[-.2, -.25], [.2, -.25], [-.2, .25], [.2, .25]]) { const l = mesh(body, CYL, leg, x, .2, z, .06, .4, .06); legs.push(l); }
   const shadow = new T.Mesh(new T.CircleGeometry(.55, 20), new T.MeshBasicMaterial({ color: '#1d3322', transparent: true, opacity: .2, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = .03; root.add(shadow);
-  return { root, body, head, legs, seed, state: 'idle', until: 0, target: new T.Vector3(), yaw: 0 };
+  return { root, body, head, legs, ears, tail, seed, state: 'idle', until: 0, target: new T.Vector3(), yaw: 0, hopTime: 0 };
 }
 
 function duck(parent) {
   const g = new T.Group(); parent.add(g);
   const body = std('#fff7e0'), beak = std('#f39a2c');
-  mesh(g, SPH, body, 0, .12, 0, .2, .14, .26);
-  mesh(g, SPH, body, 0, .3, .14, .11);
-  mesh(g, SPH, beak, 0, .28, .26, .06, .025, .07);
-  mesh(g, SPH, std('#5aa04a'), 0, .34, .13, .08, .05, .08);
+  const torso = mesh(g, SPH, body, 0, .12, 0, .2, .14, .26);
+  const head = mesh(g, SPH, body, 0, .3, .14, .11);
+  mesh(head, SPH, beak, 0, -.02, .12, .06, .025, .07);
+  mesh(head, SPH, std('#5aa04a'), 0, .04, -.01, .08, .05, .08);
   mesh(g, new T.ConeGeometry(.07, .14, 6), body, 0, .2, -.26).rotation.x = -1.2;
-  for (const s of [-1, 1]) mesh(g, SPH, std('#111'), s * .07, .33, .22, .018);
-  return g;
+  for (const s of [-1, 1]) mesh(head, SPH, std('#111'), s * .07, .03, .08, .018);
+  return { g, head, torso, dip: 0 };
 }
 
 function makeGlowTexture() {
@@ -99,7 +107,50 @@ export function createAmbient(scene, { walkable, quality }) {
 
   // Ducks paddling on the ponds.
   const ducks = [];
-  PONDS.forEach((p, pi) => { for (let k = 0; k < (pi ? 3 : 2); k++) { const d = duck(root); ducks.push({ d, p, a: r() * 6.28, speed: .15 + r() * .15, rr: .35 + r() * .35 }); } });
+  PONDS.forEach((p, pi) => {
+    for (let k = 0; k < (pi ? 3 : 2); k++) {
+      const d = duck(root);
+      ducks.push({ d, p, a: r() * 6.28, speed: .14 + r() * .14, rr: .35 + r() * .35, nextDip: 2 + r() * 5, dipVal: 0 });
+    }
+  });
+
+  // Water ripples on the ponds.
+  const rippleCount = low ? 6 : 14;
+  const rippleGeo = new T.RingGeometry(.08, .12, 16); rippleGeo.rotateX(-Math.PI / 2);
+  const rippleMat = new T.MeshBasicMaterial({ color: '#c4f3fa', transparent: true, opacity: .45, depthWrite: false });
+  const ripples = Array.from({ length: rippleCount }, () => {
+    const m = new T.Mesh(rippleGeo, rippleMat.clone());
+    m.position.y = WATER_Y + .01; m.visible = false; root.add(m);
+    return { mesh: m, life: 0, maxLife: 1.8, x: 0, z: 0 };
+  });
+  let nextRippleIdx = 0;
+  function spawnRipple(x, z) {
+    const rp = ripples[nextRippleIdx]; nextRippleIdx = (nextRippleIdx + 1) % rippleCount;
+    rp.x = x; rp.z = z; rp.life = rp.maxLife;
+    rp.mesh.position.set(x, WATER_Y + .01, z);
+    rp.mesh.visible = true;
+  }
+
+  // Floating atmospheric leaves & petals drifting across the breeze.
+  const leafCount = low ? 18 : 45;
+  const leafGeo = new T.PlaneGeometry(.14, .18); leafGeo.rotateX(Math.PI / 4);
+  const leafColors = ['#f59e42', '#e85d43', '#88c558', '#ffd152', '#f2a7be'];
+  const leafMats = leafColors.map(c => new T.MeshBasicMaterial({ color: c, side: T.DoubleSide, transparent: true, opacity: .85 }));
+  const leaves = Array.from({ length: leafCount }, (_, i) => {
+    const mat = leafMats[i % leafMats.length];
+    const m = new T.Mesh(leafGeo, mat);
+    root.add(m);
+    return {
+      m,
+      seed: r() * 100,
+      x: (r() - .5) * 44,
+      y: 1.2 + r() * 4.5,
+      z: (r() - .5) * 44,
+      speedY: .4 + r() * .5,
+      rotSpeed: (r() - .5) * 3,
+      wobbleSpeed: 1.2 + r() * 1.5,
+    };
+  });
 
   // Butterflies (day) and fireflies (night).
   const wingGeo = new T.CircleGeometry(.11, 8); wingGeo.translate(.1, 0, 0);
@@ -125,6 +176,7 @@ export function createAmbient(scene, { walkable, quality }) {
 
   let houseLevel = 0;
   const tmp = new T.Vector3();
+  let lastRippleCheck = 0;
 
   function update(dt, time, { night, player }) {
     lanternGlass.emissiveIntensity = .15 + night * 3.2;
@@ -134,17 +186,33 @@ export function createAmbient(scene, { walkable, quality }) {
     flames.forEach((f, i) => { f.scale.y = 1 + Math.sin(time * (9 + i * 2) + i) * .18; f.rotation.y = time * (1 + i); });
     fireSparks.forEach(s => { s.userData.t = (s.userData.t + dt) % 1.5; const t = s.userData.t / 1.5; s.position.set(CAMPFIRE[0] + Math.sin(t * 9 + s.id) * .2, .4 + t * 1.6, CAMPFIRE[1] + Math.cos(t * 7 + s.id) * .2); s.scale.setScalar(.18 * (1 - t)); s.material.opacity = 1 - t; });
 
+    // Sheep updates
     for (const s of flock) {
       const p = s.root.position;
       if (s.state === 'idle' && time > s.until) {
-        for (let tries = 0; tries < 6; tries++) {
-          const [hx, hz, rad] = s.home, a = r() * 6.28, d = r() * rad;
-          s.target.set(hx + Math.cos(a) * d, 0, hz + Math.sin(a) * d);
-          if (walkable(s.target.x, s.target.z)) { s.state = 'walk'; break; }
+        if (r() < .25) {
+          // Playful hop!
+          s.state = 'hop';
+          s.hopTime = 0;
+        } else {
+          for (let tries = 0; tries < 6; tries++) {
+            const [hx, hz, rad] = s.home, a = r() * 6.28, d = r() * rad;
+            s.target.set(hx + Math.cos(a) * d, 0, hz + Math.sin(a) * d);
+            if (walkable(s.target.x, s.target.z)) { s.state = 'walk'; break; }
+          }
+          s.until = time + 2 + r() * 4;
         }
-        s.until = time + 2 + r() * 4;
       }
-      if (s.state === 'walk') {
+
+      if (s.state === 'hop') {
+        s.hopTime += dt * 3.8;
+        const hopY = Math.sin(s.hopTime * Math.PI) * .28;
+        s.body.position.y = Math.max(0, hopY);
+        s.head.rotation.x = -hopY * .5;
+        s.ears.forEach((e, i) => { e.rotation.z = (i === 0 ? -1 : 1) * Math.sin(s.hopTime * 8) * .35; });
+        if (s.tail) s.tail.rotation.y = Math.sin(s.hopTime * 14) * .6;
+        if (s.hopTime >= 1) { s.state = 'idle'; s.until = time + 1.5 + r() * 3; s.body.position.y = 0; }
+      } else if (s.state === 'walk') {
         tmp.copy(s.target).sub(p); const len = tmp.length();
         if (len < .1) { s.state = 'idle'; s.until = time + 2 + r() * 4; }
         else {
@@ -152,27 +220,77 @@ export function createAmbient(scene, { walkable, quality }) {
           const want = Math.atan2(tmp.x, tmp.z); s.yaw += Math.atan2(Math.sin(want - s.yaw), Math.cos(want - s.yaw)) * Math.min(1, dt * 5);
           s.legs.forEach((l, i) => { l.rotation.x = Math.sin(time * 10 + i * Math.PI) * .4; });
           s.body.position.y = Math.abs(Math.sin(time * 10)) * .03;
+          s.ears.forEach(e => { e.rotation.z = Math.sin(time * 10) * .1; });
+          if (s.tail) s.tail.rotation.y = Math.sin(time * 12) * .4;
         }
       } else {
+        // Idle / Grazing
         s.legs.forEach(l => { l.rotation.x = 0; });
         s.head.rotation.x = .35 + Math.sin(time * 3 + s.seed) * .15; // grazing
+        s.head.rotation.y = Math.sin(time * 1.2 + s.seed) * .12;
         s.body.position.y = 0;
+        s.ears.forEach((e, i) => { e.rotation.z = (i === 0 ? -1 : 1) * (.05 + Math.sin(time * 4 + s.seed) * .08); });
+        if (s.tail) s.tail.rotation.y = Math.sin(time * 5 + s.seed) * .25;
       }
-      if (s.state === 'walk') s.head.rotation.x = 0;
+      if (s.state === 'walk' || s.state === 'hop') s.head.rotation.x = 0;
       s.root.rotation.y = s.yaw;
     }
-    for (const d of ducks) {
-      d.a += dt * d.speed;
-      const x = d.p.x + Math.cos(d.a) * d.p.rx * d.rr, z = d.p.z + Math.sin(d.a) * d.p.rz * d.rr;
-      d.d.position.set(x, WATER_Y - .04 + Math.sin(time * 2.5 + d.a * 3) * .02, z);
-      d.d.rotation.y = Math.atan2(-Math.sin(d.a) * d.p.rx, Math.cos(d.a) * d.p.rz);
+
+    // Ducks updates
+    for (const dk of ducks) {
+      dk.a += dt * dk.speed;
+      const x = dk.p.x + Math.cos(dk.a) * dk.p.rx * dk.rr, z = dk.p.z + Math.sin(dk.a) * dk.p.rz * dk.rr;
+      // Head dipping underwater occasionally
+      if (time > dk.nextDip) {
+        dk.dipVal = Math.sin((time - dk.nextDip) * 3);
+        if (time - dk.nextDip > Math.PI / 3) { dk.nextDip = time + 4 + r() * 7; dk.dipVal = 0; }
+      }
+      dk.d.g.position.set(x, WATER_Y - .04 + Math.sin(time * 2.5 + dk.a * 3) * .02, z);
+      dk.d.g.rotation.y = Math.atan2(-Math.sin(dk.a) * dk.p.rx, Math.cos(dk.a) * dk.p.rz);
+      dk.d.head.rotation.x = dk.dipVal * .8;
+      dk.d.torso.rotation.x = -dk.dipVal * .3;
     }
+
+    // Water ripple spawn check
+    if (time - lastRippleCheck > .35) {
+      lastRippleCheck = time;
+      ducks.forEach(dk => {
+        if (r() < .4) spawnRipple(dk.d.g.position.x, dk.d.g.position.z);
+      });
+    }
+    // Update water ripples
+    ripples.forEach(rp => {
+      if (rp.life > 0) {
+        rp.life -= dt;
+        const progress = 1 - (rp.life / rp.maxLife);
+        rp.mesh.scale.setScalar(1 + progress * 2.2);
+        rp.mesh.material.opacity = (1 - progress) * .45;
+        if (rp.life <= 0) rp.mesh.visible = false;
+      }
+    });
+
+    // Floating leaves & petals updates
+    leaves.forEach(l => {
+      l.y -= l.speedY * dt;
+      l.x += Math.sin(time * l.wobbleSpeed + l.seed) * dt * .8;
+      l.z += Math.cos(time * (l.wobbleSpeed * .8) + l.seed) * dt * .5;
+      l.m.rotation.z += l.rotSpeed * dt;
+      l.m.rotation.y = Math.sin(time * 2 + l.seed);
+      // Reset if below ground
+      if (l.y < .05) {
+        l.y = 3.5 + r() * 3.5;
+        l.x = player.x + (r() - .5) * 36;
+        l.z = player.z + (r() - .5) * 36;
+      }
+      l.m.position.set(l.x, l.y, l.z);
+    });
+
     const day = 1 - night;
     for (const b of butterflies) {
       const t = time * .35 + b.seed;
       b.g.visible = day > .2;
       b.g.position.set(player.x + b.ox + Math.sin(t * 1.3) * 3, .7 + Math.sin(t * 2.1) * .35 + Math.sin(time * 8 + b.seed) * .05, player.z + b.oz + Math.cos(t) * 3);
-      b.g.rotation.y = t * 1.3 + Math.cos(t) ;
+      b.g.rotation.y = t * 1.3 + Math.cos(t);
       const flap = Math.sin(time * 18 + b.seed) * 1.1; b.wl.rotation.y = flap; b.wr.rotation.y = -flap;
       b.g.scale.setScalar(day);
     }

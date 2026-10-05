@@ -117,13 +117,22 @@ export function createHero(parent, avatar = 'girl') {
       legs.forEach(l => { l.rotation.x *= 1 - k; });
       arms.forEach(a => { a.rotation.x *= 1 - k; });
       body.position.y = Math.sin(time * 2.2) * .01; body.rotation.x *= 1 - k;
-      body.scale.y = 1 + Math.sin(time * 2.2) * .012;
       head.rotation.y = Math.sin(time * .6) * .25; head.rotation.x = Math.sin(time * .9) * .05;
     }
     if (busy) {
-      arms[1].rotation.x = -1.6 + Math.sin(time * 14) * .9;
+      const swing = Math.sin(time * 14);
+      arms[1].rotation.x = -1.6 + swing * .9;
       arms[0].rotation.x = -.4 + Math.sin(time * 14 + 1) * .3;
-      body.position.y = Math.abs(Math.sin(time * 14)) * .05;
+      body.position.y = Math.abs(swing) * .08;
+      // Squash & stretch on action strike
+      const stretch = 1 + swing * .16;
+      const squash = 1 / Math.sqrt(Math.max(.1, stretch));
+      body.scale.set(squash, stretch, squash);
+      head.rotation.x = -swing * .18;
+    } else if (!moving) {
+      body.scale.set(1, 1 + Math.sin(time * 2.2) * .015, 1);
+    } else {
+      body.scale.set(1, 1, 1);
     }
     const tails = hair.userData.tails;
     if (tails) tails.forEach((t, i) => { t.rotation.z = Math.sin(time * (moving ? 12 : 2) + i) * (moving ? .18 : .05); });

@@ -26,7 +26,7 @@ export function createWorld(host, callbacks) {
   const sun=new T.DirectionalLight('#fffaf0',3);sun.castShadow=true;
   const shadowSize=quality==='low'?1024:2048;
   sun.shadow.mapSize.set(shadowSize,shadowSize);Object.assign(sun.shadow.camera,{left:-24,right:24,top:24,bottom:-24,near:1,far:120});sun.shadow.normalBias=.04;sun.shadow.bias=-.0003;scene.add(sun);scene.add(sun.target);
-  const camera=new T.PerspectiveCamera(42,1,.1,900);let yaw=.35,zoom=1,overview=false,worldOverview=false;
+  const camera=new T.PerspectiveCamera(42,1,.1,900);let yaw=.35,zoom=1,targetZoom=1,overview=false,worldOverview=false;
   const look=new T.Vector3(0,1,6), desiredLook=new T.Vector3(), offset=new T.Vector3();
   let width=1,height=1, state={}, raf=0, disposed=false, last=performance.now(),time=0,lastUi=0;
   const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,stallObj,helperObj,owlObj,guestTourist,player,worldChanges;let lastRegion=null;
@@ -179,6 +179,7 @@ export function createWorld(host, callbacks) {
     desiredLook.set(worldOverview?0:overview?region.x:pos.x,worldOverview||overview?0:.9,worldOverview?-9:overview?region.z:pos.z);
     look.lerp(desiredLook,1-Math.exp(-dt*(overview||worldOverview?3:5)));
     const portrait=width/height<.8;
+    zoom+=(targetZoom-zoom)*(1-Math.exp(-dt*8));
     const distance=(worldOverview?(portrait?180:108):overview?(portrait?72:38):(portrait?21:15))*zoom;
     camDistance+=(distance-camDistance)*(1-Math.exp(-dt*4));
     const elev=worldOverview?.95:overview?.8:.5;
@@ -192,7 +193,7 @@ export function createWorld(host, callbacks) {
   function resize(){width=host.clientWidth;height=host.clientHeight;if(firstResize&&width/height<.8){overview=false;}firstResize=false;renderer.setSize(width,height);post?.setSize(width,height,renderer.getPixelRatio());camera.aspect=width/height;camera.fov=width/height<.8?50:42;camera.updateProjectionMatrix();positionCamera(10);}
   const observer=new ResizeObserver(resize);observer.observe(host);resize();
   function turn(d){yaw+=d;overview=false;worldOverview=false;}
-  function setZoom(d){zoom=T.MathUtils.clamp(zoom+d,.58,1.45);}
+  function setZoom(d){targetZoom=T.MathUtils.clamp(targetZoom+d,.55,1.5);}
   const pointerDown=new Map();let drag=null,pinch=null,lastGestureRoute=0;
   let lastTapTime=0, lastTapCoords={x:0,y:0};
   const suppressed=new Set();
@@ -300,7 +301,27 @@ export function createWorld(host, callbacks) {
     for(let i=0;i<8;i++){const a=i/8*Math.PI*2;m=Math.min(m,terrain.maskAt(pos.x+Math.cos(a)*3.5,pos.z+Math.sin(a)*3.5));}
     return T.MathUtils.clamp((1-m)*1.6,0,1);
   }
-  function burst(x,z,color){for(let i=0;i<12;i++){const m=box(scene,.12,.12,.12,color,x,.55,z);fx.push({m,v:new T.Vector3((random()-.5)*2.4,2.2+random()*2.2,(random()-.5)*2.4),end:time+.8});}}
+  const starGeo = new T.OctahedronGeometry(.13, 0);
+  function burst(x, z, baseColor) {
+    const palette = [baseColor, '#ffe066', '#ff85a1', '#70e000', '#ffffff'];
+    for(let i = 0; i < 15; i++) {
+      const col = palette[i % palette.length];
+      const m = new T.Mesh(starGeo, new T.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .45, roughness: .35 }));
+      m.position.set(x + (random() - .5) * .35, .65, z + (random() - .5) * .35);
+      m.scale.setScalar(0);
+      scene.add(m);
+      const angle = random() * Math.PI * 2;
+      const speed = 1.4 + random() * 2.2;
+      fx.push({
+        m,
+        v: new T.Vector3(Math.cos(angle) * speed, 2.8 + random() * 2.6, Math.sin(angle) * speed),
+        rot: new T.Vector3((random() - .5) * 10, (random() - .5) * 10, (random() - .5) * 10),
+        started: time,
+        dur: .85 + random() * .3,
+        end: time + .85 + random() * .3,
+      });
+    }
+  }
   function animateAction(kind){busyUntil=time+1.1;path=[];burst(pos.x,pos.z,kind==='mine'?'#a6c7dc':kind==='garden'?'#e9b668':'#f6d68a');audio.chime();}
   let paused=false, frameTime=16, slowFor=0, skyInfo={night:0,horizon:null};
   function frame(now){
@@ -352,7 +373,26 @@ export function createWorld(host, callbacks) {
       r.ears.forEach((ear,i)=>ear.rotation.x=Math.sin(time*(hopping?12:2)+r.phase+i*.5)*(hopping?.25:.09));
       r.feet.forEach((foot,i)=>foot.rotation.x=hopping?Math.sin(u*Math.PI*4+i)*.55:0);
     }
-    fx=fx.filter(f=>{f.m.position.addScaledVector(f.v,dt);f.v.y-=8*dt;f.m.rotation.x+=dt*4;if(time>f.end){f.m.removeFromParent();return false;}return true;});
+    fx = fx.filter(f => {
+      const age = time - f.started;
+      const life = 1 - (f.end - time) / f.dur;
+      f.m.position.addScaledVector(f.v, dt);
+      f.v.y -= 9.5 * dt;
+      f.m.rotation.x += f.rot.x * dt;
+      f.m.rotation.y += f.rot.y * dt;
+      const popScale = age < .12 ? (age / .12) * 1.3 : Math.max(0, 1.3 * (1 - life));
+      f.m.scale.setScalar(popScale);
+      if (f.m.position.y < .08 && f.v.y < 0) {
+        f.v.y = -f.v.y * .35;
+        f.v.x *= .6; f.v.z *= .6;
+      }
+      if (time > f.end) {
+        f.m.removeFromParent();
+        f.m.material.dispose();
+        return false;
+      }
+      return true;
+    });
     if(marker.visible){marker.scale.setScalar(1+Math.sin(time*3)*.1);if(!path.length)marker.material.opacity=.3;else marker.material.opacity=.9;}
     positionCamera(dt);
     skyInfo=sky.update(dt,look);

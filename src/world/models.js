@@ -59,19 +59,35 @@ function windowPane(p,x,y,z,w=.7,h=.85) {
   box(p,w+.28,.09,.32,palette.lightWood,x,y-h/2-.06,z+.16);
 }
 function roof(p,w,d,wallY,c=palette.roof) {
-  const rise=w*.36,run=w/2+.2,length=Math.hypot(run,rise),angle=Math.atan2(rise,run);
+  const rise=w*.38,run=w/2+.24,length=Math.hypot(run,rise),angle=Math.atan2(rise,run);
+  // Layered shingle tiers for Pokopia/Bloomvale aesthetic
+  const tiers = 4;
   for(const side of [-1,1]) {
-    const slab=box(p,length,.17,d+.48,c,side*run/2,wallY+rise/2,0);slab.rotation.z=-side*angle;
-    // Slim seam lines follow the actual roof geometry.
-    for(let i=0;i<Math.ceil(d/.4);i++) {
-      const seam=box(p,length+.02,.045,.045,palette.roofEdge,side*run/2,wallY+rise/2+.1,-d/2+i*.4);seam.rotation.z=-side*angle;
+    for(let t = 0; t < tiers; t++) {
+      const frac = t / tiers;
+      const tLen = length / tiers + .06;
+      // Position along the slope from peak to eave
+      const distDown = (t + .5) * (length / tiers);
+      const perpX = side * Math.cos(angle) * distDown;
+      const perpY = wallY + rise - Math.sin(angle) * distDown;
+      const shingle = box(p, tLen, .12, d + .52 - (tiers - t) * .02, (t % 2 === 0 ? c : palette.roofEdge), perpX, perpY, 0);
+      shingle.rotation.z = -side * (angle + .03);
     }
-    const fascia=box(p,length+.04,.19,.12,palette.cream,side*run/2,wallY+rise/2,d/2+.24);fascia.rotation.z=-side*angle;
+    // Decorative scalloped eaves fascia
+    const fascia = box(p, length + .06, .18, .12, palette.cream, side * run / 2, wallY + rise / 2 - .03, d / 2 + .26);
+    fascia.rotation.z = -side * angle;
+    const fasciaBack = box(p, length + .06, .18, .12, palette.cream, side * run / 2, wallY + rise / 2 - .03, -d / 2 - .26);
+    fasciaBack.rotation.z = -side * angle;
   }
-  cylinder(p,.11,.11,d+.55,palette.roofEdge,0,wallY+rise,0).rotation.x=Math.PI/2;
-  // Fill gable with a triangular prism.
-  const s=new T.Shape();s.moveTo(-w/2,0);s.lineTo(w/2,0);s.lineTo(0,rise-.1);s.closePath();
-  mesh(p,new T.ExtrudeGeometry(s,{depth:d,bevelEnabled:false}),palette.cream,0,wallY,-d/2);
+  // Ridge cap along the apex
+  cylinder(p, .13, .13, d + .62, palette.roofEdge, 0, wallY + rise + .03, 0, 10).rotation.x = Math.PI / 2;
+  // Fill gable with warm wood plank styling
+  const s = new T.Shape(); s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(0, rise - .08); s.closePath();
+  mesh(p, new T.ExtrudeGeometry(s, { depth: d, bevelEnabled: false }), palette.cream, 0, wallY, -d / 2);
+  // Gable beam truss accent
+  for(const gz of [-d / 2 - .02, d / 2 + .02]) {
+    const truss = box(p, .12, rise * .9, .08, palette.lightWood, 0, wallY + rise * .45, gz);
+  }
 }
 export function house(p,level) {
   const g=group(p,-3,0,-2);g.userData.place='house';
@@ -86,8 +102,9 @@ export function house(p,level) {
     return bake(g);
   }
   const h=level>=2?3.45:2.3;
+  // Stucco walls with warm timber corner posts
   box(g,3.8,h,3.1,palette.cream,0,.35+h/2,0);
-  for(const x of [-1.86,1.86])for(const z of [-1.53,1.53])box(g,.16,h+.05,.16,palette.lightWood,x,.35+h/2,z);
+  for(const x of [-1.86,1.86])for(const z of [-1.53,1.53])box(g,.18,h+.06,.18,palette.lightWood,x,.35+h/2,z);
   for(let y=.52;y<h;y+=.37)box(g,3.74,.035,.04,'#e1ca9b',0,y,1.57);
   for(const side of [-1,1]) {
     const wall=group(g,side*1.94,0,0);wall.rotation.y=side*Math.PI/2;
@@ -95,24 +112,53 @@ export function house(p,level) {
     for(const wx of [-.59,.59])box(wall,.25,.91,.08,'#86ac98',wx,1.6,.1);
     if(level>=2)windowPane(wall,0,2.96,.01,.65,.65);
   }
+  // Front door with arched lintel and bronze knocker
   box(g,.96,1.55,.17,palette.roofEdge,-.55,1.13,1.62);
-  box(g,.72,1.18,.09,'#559da2',-.55,1.1,1.73);
+  box(g,.74,1.22,.09,'#4b8e96',-.55,1.1,1.73);
   ball(g,.055,'#edbc64',-.28,.98,1.81);
+  box(g,1.1,.12,.22,palette.lightWood,-.55,1.94,1.68); // Door lintel
+
+  // Front window with flower box
   windowPane(g,.85,1.58,1.61,.7,.82);
   for(const x of [.3,1.4])box(g,.23,.86,.12,'#86ac98',x,1.58,1.72);
-  box(g,.9,.21,.32,'#b7825b',.85,1.06,1.9);
-  for(let i=0;i<4;i++){ball(g,.13,'#729658',.53+i*.2,1.24,1.9);ball(g,.065,i%2?'#e4a092':'#f2d37f',.53+i*.2,1.35,1.92);}
+  box(g,1.05,.24,.34,'#b7825b',.85,1.06,1.9); // Planter box
+  for(let i=0;i<5;i++){
+    ball(g,.13,'#729658',.5+.18*i,1.24,1.9);
+    ball(g,.07,i%3===0?'#f59ea0':i%3===1?'#ffd464':'#9ec5f7',.5+.18*i,1.35,1.92);
+  }
 
-  
-  box(g,1.65,.14,.75,palette.lightWood,-.55,.41,1.9);
-  box(g,1.9,.14,.5,'#c7bd9e',-.55,.15,2.35);
+  // Entrance steps & porch doormat
+  box(g,1.7,.14,.75,palette.lightWood,-.55,.41,1.9);
+  box(g,2.0,.14,.5,'#c7bd9e',-.55,.15,2.35);
+  box(g,.85,.04,.42,'#bd7951',-.55,.49,1.97);
+
+  // Little porch hanging wall lantern by the entrance door
+  const porchLamp = group(g, -.08, 1.72, 1.76);
+  cylinder(porchLamp, .03, .03, .22, '#3b302b', 0, 0, 0).rotation.x = Math.PI / 2;
+  box(porchLamp, .16, .22, .16, '#ffd98a', 0, -.12, .08);
+  box(porchLamp, .2, .04, .2, '#3b302b', 0, -.01, .08);
+  box(porchLamp, .18, .04, .18, '#3b302b', 0, -.23, .08);
+
   if(level>=2){windowPane(g,-.75,2.91,1.62,.66,.7);windowPane(g,.75,2.91,1.62,.66,.7);}
   roof(g,3.8,3.1,.35+h);
-  box(g,.48,1.4,.5,'#a47057',1.05,h+.9,-.55);
-  box(g,.62,.15,.64,palette.cream,1.05,h+1.58,-.55);
-  // Porch plant and doormat add scale near the entrance.
-  box(g,.85,.04,.42,'#bd7951',-.55,.49,1.97);
-  for(const x of [-1.5,1.5]) {cylinder(g,.24,.17,.34,'#c78060',x,.53,1.82);ball(g,.33,'#6d9b52',x,.86,1.82);ball(g,.1,'#f1ce74',x+.08,1.12,1.84);}
+
+  // Masonry stone chimney with cap
+  const chim = group(g, 1.05, h + .4, -.55);
+  box(chim, .54, 1.8, .54, '#7a8084', 0, .5, 0);
+  // Irregular stone relief bands
+  for(let ci = 0; ci < 4; ci++) {
+    box(chim, .58, .22, .58, (ci % 2 === 0 ? '#63696d' : '#8d9499'), 0, .1 + ci * .38, 0);
+  }
+  box(chim, .72, .16, .72, '#484d50', 0, 1.45, 0); // Stone top mantle
+  cylinder(chim, .15, .15, .25, '#3b3d40', 0, 1.62, 0); // Flue pot
+
+  // Terracotta flower pots on porch
+  for(const x of [-1.5,1.5]) {
+    cylinder(g,.24,.17,.34,'#c78060',x,.53,1.82);
+    ball(g,.33,'#6d9b52',x,.86,1.82);
+    ball(g,.1,'#f1ce74',x+.08,1.12,1.84);
+    ball(g,.08,'#ea7996',x-.08,1.06,1.82);
+  }
   if(level>=3) {
     const wing=group(g,2.9,0,-.1);box(wing,2,1.85,2.6,'#d8ddbf',0,1.22,0);roof(wing,2,2.6,2.14);
     windowPane(wing,0,1.25,1.35,1.2,.8);
@@ -164,19 +210,32 @@ export function stall(p,built) {
     for(const x of [-.9,.9])for(const z of [-.6,.6])box(g,.1,.35,.1,palette.wood,x,.2,z);
     return bake(g);
   }
+  // Wooden deck and counter
   box(g,2.2,.15,1.6,palette.lightWood,0,.1,0);
   box(g,2,.85,.8,'#b98b5a',0,.52,.25);
   box(g,2.15,.12,1,palette.cream,0,.96,.25);
+  // Posts supporting awning
   for(const x of [-.95,.95])box(g,.11,2.1,.11,palette.wood,x,1.1,-.55);
+  for(const x of [-.95,.95])box(g,.11,1.9,.11,palette.wood,x,1,.55);
+  // Scalloped striped fabric awning
   for(let i=0;i<5;i++){
     const awn=box(g,.44,.1,1.8,i%2?'#e06b52':'#fff1d2',-.88+i*.44,2.2,0);awn.rotation.x=.12;
     box(g,.43,.25,.08,i%2?'#e06b52':'#fff1d2',-.88+i*.44,1.95,.88);
   }
-  // Crates with apples and carrots
+  // Crates with apples, carrots and cute pumpkins
   box(g,.55,.22,.55,palette.wood,-.6,.98,.25);
   for(let i=0;i<4;i++)ball(g,.09,'#e04a4a',-.7+i%2*.18,1.12,.17+Math.floor(i/2)*.18);
   box(g,.55,.22,.55,palette.wood,.6,.98,.25);
   for(let i=0;i<3;i++)cylinder(g,.05,.02,.24,'#e89240',.52+i*.1,1.1,.25).rotation.z=.4;
+
+  // Center display: cute harvest pumpkin
+  const pmp = ball(g, .15, '#e87b28', 0, 1.14, .25, 1.2, .85, 1.2);
+  cylinder(g, .025, .02, .08, '#4d753b', 0, 1.26, .25);
+
+  // Side rustic barrel
+  const barrel = cylinder(g, .24, .2, .55, '#82593b', 1.28, .36, .2, 10);
+  cylinder(g, .25, .25, .04, '#54463d', 1.28, .22, .2, 10);
+  cylinder(g, .25, .25, .04, '#54463d', 1.28, .48, .2, 10);
   return bake(g);
 }
 export function helper(p,active) {
@@ -304,18 +363,50 @@ export function owl(p, x = 1.6, z = -5.0) {
 export function garden(p,s) {
   const g=group(p,-4.8,0,5);g.userData.place='garden';
   const plot=(x,z)=>{
-    box(g,2.4,.16,2,'#7d5940',x,.15,z,.09);
-    for(const side of [-1,1]) {box(g,2.6,.23,.13,palette.lightWood,x,.23,z+side*1);box(g,.13,.23,2.1,palette.lightWood,x+side*1.24,.23,z);}
+    // Enriched dark soil bed with raised wooden planter rim
+    box(g,2.4,.18,2,'#593a26',x,.15,z,.09);
+    for(const side of [-1,1]) {
+      box(g,2.6,.25,.13,palette.lightWood,x,.24,z+side*1);
+      box(g,.13,.25,2.1,palette.lightWood,x+side*1.24,.24,z);
+    }
+    // Wooden corner pegs
+    for(const sx of [-1.24, 1.24]) for(const sz of [-1, 1]) {
+      cylinder(g, .08, .08, .36, palette.wood, x + sx, .26, z + sz);
+      ball(g, .06, palette.cream, x + sx, .45, z + sz);
+    }
     for(let row=0;row<3;row++)for(let col=0;col<4;col++) {
       const px=x-.82+col*.55,pz=z-.63+row*.62;
       if(s.planted) {
-        if(s.watered)cylinder(g,.11,.035,.32,'#e79445',px,.27,pz);
-        for(let n=0;n<3;n++) {const leaf=box(g,.1,s.watered?.4:.17,.06,n%2?'#729943':'#4e863f',px+(n-1)*.08,s.watered?.6:.35,pz);leaf.rotation.z=(n-1)*.45;}
-      } else box(g,.35,.04,.1,'#634734',px,.255,pz);
+        if(s.watered) {
+          // Lush carrot with orange top poking out
+          cylinder(g,.12,.04,.35,'#f07f24',px,.28,pz);
+          // 4-leaf crown of carrot fronds
+          for(let n=0;n<4;n++) {
+            const leaf=box(g,.09,.38,.05,n%2?'#77b83d':'#549129',px+Math.cos(n*1.5)*.06,.58,pz+Math.sin(n*1.5)*.06);
+            leaf.rotation.z=(n===0?-.4:n===2?.4:0);
+            leaf.rotation.x=(n===1?-.4:n===3?.4:0);
+          }
+        } else {
+          // Seedling sprouts
+          cylinder(g,.04,.02,.12,'#e89240',px,.24,pz);
+          const sprout=box(g,.06,.15,.04,'#8bc34a',px,.32,pz);sprout.rotation.z=.25;
+        }
+      } else {
+        // Tilled soil mounds
+        box(g,.38,.06,.14,'#422919',px,.25,pz);
+      }
     }
   };
   plot(0,0);plot(0,2.65);
   for(let i=0;i<s.landLevel;i++)plot(16.1+i*2.8,0);
+
+  // Little carved wooden garden sign
+  const sign = group(g, 1.45, 0, -.8);
+  cylinder(sign, .06, .07, .9, palette.wood, 0, .45, 0);
+  box(sign, .7, .45, .08, palette.lightWood, 0, .85, 0);
+  // Little orange carrot painted on sign
+  cylinder(sign, .04, .01, .2, '#f07f24', 0, .84, .05).rotation.z = .6;
+  box(sign, .03, .07, .02, '#77b83d', -.06, .93, .05).rotation.z = -.4;
   return bake(g);
 }
 export function shop(p) {

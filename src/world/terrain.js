@@ -49,7 +49,13 @@ export function landIslands(landLevel = 0) {
 export function computeCells(state = {}) {
   const { x0, z0, w, h } = GRID;
   const ovals = [...Object.entries(REGIONS).map(([id, r]) => ({ id, x: r.x, z: r.z, rx: r.rx, rz: r.rz })), ...landIslands(state.landLevel || 0)];
-  const trailPolys = FARM_TRAILS.map(([pts, width]) => {
+  const allTrails = [...FARM_TRAILS];
+  if (state.landLevel > 0) {
+    const pts = [[11, 5.6]];
+    for (let k = 0; k < state.landLevel; k++) pts.push([13 + k * 2.8, 4.8]);
+    allTrails.push([pts, 1.4]);
+  }
+  const trailPolys = allTrails.map(([pts, width]) => {
     const curve = new T.CatmullRomCurve3(pts.map(([x, z]) => new T.Vector3(x, 0, z)));
     return { pts: curve.getPoints(48), half: width / 2 };
   });
