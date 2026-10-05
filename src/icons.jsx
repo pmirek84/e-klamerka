@@ -32,5 +32,8 @@ const paths={
  leaf:<><path d="M19 3C2 2 1 20 9 19S21 13 19 3Z" fill="#c3d498"/><path d="m5 22 10-13"/></>,
  peg:<><path d="m6 3 5-1 1 8 1-8 5 1-3 18h-3l-1-7-1 7H7Z" fill="#e5b977"/><path d="M6 10h11m-10 3h9"/></>,
  sound:<><path d="m3 9 5 0 6-5v16l-6-5H3Zm14-2c4 2 4 8 0 10"/></>,
+ flower:<><circle cx="12" cy="12" r="3" fill="#f8e71c"/><path d="M12 4a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Zm5 5a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Zm-5 5a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Zm-5-5a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Z" fill="#d4b5f5"/><path d="M12 15v7" stroke="#689e5a" strokeWidth="2"/></>,
+ mushroom:<><path d="M3 13c0-5 4-9 9-9s9 4 9 9c0 1-1 2-2 2H5c-1 0-2-1-2-2Z" fill="#ff6b6b"/><circle cx="8" cy="9" r="1.5" fill="#fff"/><circle cx="15" cy="8" r="1.8" fill="#fff"/><circle cx="12" cy="12" r="1.2" fill="#fff"/><path d="M9 15v5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-5" fill="#fdf5e6"/></>,
+ snow:<><path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5" stroke="#7ec8f2" strokeWidth="2"/><circle cx="12" cy="12" r="2" fill="#ffffff"/></>,
 };
 export function Icon({name,size=24,...props}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]||paths.leaf}</svg>;}

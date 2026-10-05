@@ -6,6 +6,11 @@ export const REGIONS = {
   meadow: { name: 'Słoneczna Łąka', subtitle: 'Nowy sad, wiatrak i większe zbiory', x: 31, z: -1, rx: 10.2, rz: 8.7, icon: 'leaf', destination: 'orchard', gate: 'meadowGate', cost: { wood: 14, stone: 10, crystals: 3 }, color: '#d4c683' },
   lake: { name: 'Lazurowe Jezioro', subtitle: 'Złota przystań, połów rybek i perły', x: 0, z: 30, rx: 10.5, rz: 9.2, icon: 'stall', destination: 'lakeDock', gate: 'lakeGate', cost: { wood: 16, stone: 12, crystals: 3 }, color: '#5b9eb8' },
   clouds: { name: 'Gwiezdna Polana', subtitle: 'Gwiezdny pył i kryształowy teleskop', x: 28, z: -28, rx: 9.5, rz: 8.8, icon: 'star', destination: 'observatory', gate: 'cloudsGate', cost: { wood: 20, stone: 15, crystals: 6 }, color: '#8a77b8' },
+  // Planowane kolejne krainy (Wkrótce / Nowe Horyzonty):
+  lavender: { name: 'Lawendowa Dolina', subtitle: 'Bursztynowa pasieka, dzikie pszczoły i zapach ziół', x: -28, z: 28, rx: 9.5, rz: 8.8, icon: 'flower', cost: { wood: 24, stone: 18, crystals: 8 }, color: '#9f85d8', upcoming: true, preview: 'Słoneczna kraina fioletowej lawendy, pasiek z miodem, ziół do herbatki i motylich łąk.' },
+  springs: { name: 'Gorące Źródła', subtitle: 'Parujące gejzery, relaks w termach i złote samorodki', x: -28, z: -28, rx: 9.5, rz: 8.8, icon: 'pump', cost: { wood: 28, stone: 22, crystals: 10 }, color: '#e88d67', upcoming: true, preview: 'Wulkaniczne ciepłe źródła, relaksujące kąpieliska dla mieszkańców farmy i cenne minerały.' },
+  mushrooms: { name: 'Zaczarowana Puszcza', subtitle: 'Świecące grzyby, leśne owoce i tajemnicze elfy', x: 28, z: 28, rx: 9.5, rz: 8.8, icon: 'mushroom', cost: { wood: 32, stone: 25, crystals: 12 }, color: '#4aa889', upcoming: true, preview: 'Baśniowy gaj z gigantycznymi, świecącymi nocą kapeluszami grzybów i jagodami.' },
+  peaks: { name: 'Zimowy Szczyt', subtitle: 'Wieczny śnieg, lodowy kryształ i przytulna chatka', x: 0, z: -58, rx: 10, rz: 9, icon: 'snow', cost: { wood: 40, stone: 30, crystals: 16 }, color: '#78bee8', upcoming: true, preview: 'Mroźna kraina ośnieżonych świerków, rzeźb z lodu i ciepłego kominka z gorącym kakao.' }
 };
 
 export const WORLD_PLACES = {
@@ -44,7 +49,7 @@ export function normalizeWorld(raw={}) {
   };
 }
 
-export const unlocked = (id, s) => id === 'farm' || id === 'woodland' || !!s.world?.[id];
+export const unlocked = (id, s) => !REGIONS[id]?.upcoming && (id === 'farm' || id === 'woodland' || !!s.world?.[id]);
 const inOval = (x, z, r) => ((x - r.x) / r.rx) ** 2 + ((z - r.z) / r.rz) ** 2 < 1;
 export function regionAt(x, z) { return Object.entries(REGIONS).find(([, r]) => inOval(x, z, r))?.[0] || null; }
 

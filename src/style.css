@@ -1395,6 +1395,82 @@ input:focus { border-color: #f8a836; outline: none; box-shadow: inset 0 2px 4px 
   border-radius: 14px;
   justify-content: center;
 }
+
+/* Upcoming Planned Regions Styling */
+.map-node.upcoming-node {
+  border-style: dashed;
+  border-color: #baa6dc;
+  background: rgba(255, 255, 255, 0.88);
+}
+.map-node.upcoming-node .map-island {
+  filter: saturate(1.15);
+}
+.upcoming-spark {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #9f85d8;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  line-height: 1;
+  border: 1.5px solid #ffffff;
+  animation: pulse-beacon 2s infinite;
+}
+
+.region-card.upcoming-card {
+  background: linear-gradient(145deg, #ffffff 0%, #faf7fe 100%);
+  border: 2.5px dashed #cfc2eb;
+  box-shadow: 0 4px 0 #c2b2e0, 0 8px 18px rgba(138, 119, 184, 0.06);
+}
+.region-card.upcoming-card:hover {
+  transform: translateY(-2px);
+  border-color: #b19ee0;
+  box-shadow: 0 6px 0 #b3a0d6, 0 12px 24px rgba(138, 119, 184, 0.12);
+}
+.region-status-badge.upcoming {
+  color: #724eb0;
+  background: #f1ebfc;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #dfd3f7;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  margin-bottom: 4px;
+}
+.upcoming-preview-box {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f7f3fd;
+  border: 1px solid #e7ddf9;
+  font-size: 11px;
+  font-style: italic;
+  color: #634d85;
+  line-height: 1.4;
+}
+.map-price.upcoming-price {
+  background: #f8f6fc;
+  border-color: #e5dbf7;
+}
+.map-price.upcoming-price .price-label {
+  color: #694a91;
+}
+.region-action-btn.upcoming-btn {
+  background: #f6f2fc !important;
+  border-color: #dfd3f7 !important;
+  color: #7a5ea3 !important;
+  box-shadow: 0 3px 0 #d4c5f0 !important;
+  cursor: default;
+  font-size: 12px;
+  padding: 9px 14px;
+}
 .modal-footnote {
   font-size: 11px;
   color: #7b9684;
