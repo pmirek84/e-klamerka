@@ -26,7 +26,7 @@ function lantern(parent, x, z) {
   mesh(lamp, BOX, metal, 0, -.18, 0, .22, .04, .22);
   for (const [a, b] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) mesh(lamp, BOX, metal, a * .1, 0, b * .1, .025, .34, .025);
   mesh(lamp, new T.ConeGeometry(.2, .14, 4), metal, 0, .29, 0).rotation.y = Math.PI / 4;
-  return g;
+  return { g, lamp, x, z };
 }
 
 function sheep(parent, seed) {
@@ -95,6 +95,44 @@ function chicken(parent, seed) {
   return { root, body, head, wings, legs, seed, state: 'idle', until: 0, target: new T.Vector3(), yaw: 0, peckTime: 0 };
 }
 
+function sparrow(parent, seed, homeX, homeZ) {
+  const root = new T.Group(); root.position.set(homeX, 0, homeZ); parent.add(root);
+  const feather = std('#784f33', { roughness: .9 });
+  const tummy = std('#f0ebd8', { roughness: .9 });
+  const beakMat = std('#fca311', { roughness: .4 });
+  const wingMat = std('#543520', { roughness: .9 });
+
+  const body = new T.Group(); root.add(body);
+  mesh(body, SPH, feather, 0, .12, 0, .13, .12, .16);
+  mesh(body, SPH, tummy, 0, .10, .06, .11, .09, .12);
+
+  const head = new T.Group(); head.position.set(0, .19, .10); body.add(head);
+  mesh(head, SPH, feather, 0, 0, 0, .09, .09, .09);
+  mesh(head, new T.ConeGeometry(.03, .07, 4), beakMat, 0, -.01, .12).rotation.x = Math.PI / 2;
+  for (const s of [-1, 1]) mesh(head, SPH, std('#111111'), s * .06, .02, .05, .02);
+
+  const wings = [];
+  for (const s of [-1, 1]) {
+    const w = mesh(body, BOX, wingMat, s * .11, .12, -.01, .025, .08, .14);
+    wings.push(w);
+  }
+  const tail = mesh(body, BOX, wingMat, 0, .12, -.15, .06, .02, .12); tail.rotation.x = -.22;
+  const shadow = new T.Mesh(new T.CircleGeometry(.18, 12), new T.MeshBasicMaterial({ color: '#1d3322', transparent: true, opacity: .2, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = .015; root.add(shadow);
+
+  return {
+    root, body, head, wings, tail,
+    home: new T.Vector3(homeX, 0, homeZ),
+    pos: new T.Vector3(homeX, 0, homeZ),
+    state: 'pecking',
+    timer: 1.5 + (seed % 2.5),
+    flightT: 0,
+    targetAngle: 0,
+    seed,
+    yaw: seed * 2
+  };
+}
+
 function makeGlowTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -107,7 +145,11 @@ export function createAmbient(scene, { walkable, quality }) {
   const root = new T.Group(); scene.add(root);
   const r = rng(1234);
   const low = quality === 'low';
-  LANTERNS.forEach(([x, z]) => lantern(root, x, z));
+  const lanterns = LANTERNS.map(([x, z]) => lantern(root, x, z));
+
+  // Wild sparrows hopping on fences and farm ground
+  const sparrowSpots = [[-1.2, 7.2], [-3.4, 4.2], [-4.2, -1.5], [0.8, -6.6], [4.2, 4.6]];
+  const sparrows = sparrowSpots.map(([x, z], i) => sparrow(root, 42 + i, x, z));
 
   // Night lights: warm glow near the house and the campfire.
   const houseLight = new T.PointLight('#ffb35c', 0, 12, 1.6); houseLight.position.set(-2.4, 2.4, .6); root.add(houseLight);
@@ -191,16 +233,32 @@ export function createAmbient(scene, { walkable, quality }) {
     };
   });
 
-  // Butterflies (day) and fireflies (night).
-  const wingGeo = new T.CircleGeometry(.11, 8); wingGeo.translate(.1, 0, 0);
+  // Butterflies flitting around flower patches
+  const butterflySpots = [
+    [-4.8, 5.0],  // Garden bed
+    [-3.8, 6.2],  // Garden edge
+    [-1.5, 2.0],  // Porch left
+    [1.5, 2.0],   // Porch right
+    [2.0, -6.8],  // Pond lilies
+    [3.5, 2.5],   // Meadow border
+    [6.0, 3.5],   // Pen flowers
+    [-7.5, -2.0]  // Forest wildflowers
+  ];
   const butterflies = [];
-  for (let i = 0; i < (low ? 8 : 16); i++) {
-    const color = ['#ffd34f', '#ff8fb8', '#9fd2ff', '#ffffff', '#c3a2ff'][i % 5];
-    const m = new T.MeshStandardMaterial({ color, side: T.DoubleSide, emissive: color, emissiveIntensity: .25 });
+  const butterflyColors = ['#ffe156', '#ff8fa3', '#64dfdf', '#ffffff', '#c77dff'];
+  for (let i = 0; i < butterflySpots.length; i++) {
+    const [fx, fz] = butterflySpots[i];
+    const color = butterflyColors[i % butterflyColors.length];
+    const m = new T.MeshStandardMaterial({ color, side: T.DoubleSide, emissive: color, emissiveIntensity: .32, roughness: .4 });
     const g = new T.Group(); root.add(g);
-    const wl = new T.Mesh(wingGeo, m), wr = new T.Mesh(wingGeo, m); wr.scale.x = -1; g.add(wl, wr);
-    butterflies.push({ g, wl, wr, seed: r() * 100, ox: (r() - .5) * 22, oz: (r() - .5) * 18 });
+    const wu = new T.Mesh(new T.CircleGeometry(.11, 8), m); wu.scale.set(1.1, 1.4, 1); wu.position.set(.09, .04, 0);
+    const wd = new T.Mesh(new T.CircleGeometry(.08, 8), m); wd.scale.set(.9, 1.1, 1); wd.position.set(.07, -.05, 0);
+    const wl = new T.Group(); wl.add(wu, wd);
+    const wr = wl.clone(); wr.scale.x = -1;
+    g.add(wl, wr);
+    butterflies.push({ g, wl, wr, fx, fz, seed: i * 1.7 + r(), r: 1.1 + r() * .7 });
   }
+
   const glowTex = makeGlowTexture();
   const ffCount = low ? 50 : 110, ffPos = new Float32Array(ffCount * 3), ffSeed = [];
   for (let i = 0; i < ffCount; i++) ffSeed.push([(r() - .5) * 30, .4 + r() * 2.2, (r() - .5) * 26, r() * 10]);
@@ -376,24 +434,92 @@ export function createAmbient(scene, { walkable, quality }) {
       l.m.position.set(l.x, l.y, l.z);
     });
 
+    lanterns.forEach(l => {
+      l.lamp.rotation.z = Math.sin(time * 2.2 + l.x) * .05;
+      l.lamp.rotation.x = Math.cos(time * 1.8 + l.z) * .04;
+    });
+
+    for (const sp of sparrows) {
+      const distToPlayer = Math.hypot(player.x - sp.pos.x, player.z - sp.pos.z);
+      if (distToPlayer < 2.3 && sp.state !== 'flight') {
+        sp.state = 'flight';
+        sp.flightT = 0;
+        sp.targetAngle = Math.atan2(sp.pos.x - player.x, sp.pos.z - player.z) + (r() - .5) * .8;
+      }
+
+      if (sp.state === 'flight') {
+        sp.flightT += dt;
+        const progress = sp.flightT / 2.8;
+        if (progress >= 1) {
+          sp.state = 'pecking';
+          sp.pos.set(sp.home.x + (r() - .5) * 1.5, 0, sp.home.z + (r() - .5) * 1.5);
+          sp.root.position.copy(sp.pos);
+          sp.body.position.y = 0;
+          sp.wings[0].rotation.z = 0; sp.wings[1].rotation.z = 0;
+          sp.timer = 2 + r() * 2;
+        } else {
+          const flightHeight = Math.sin(progress * Math.PI) * 2.2;
+          sp.pos.x += Math.sin(sp.targetAngle) * dt * 2.8;
+          sp.pos.z += Math.cos(sp.targetAngle) * dt * 2.8;
+          sp.root.position.set(sp.pos.x, flightHeight, sp.pos.z);
+          sp.root.rotation.y = sp.targetAngle;
+          const flap = Math.sin(time * 36) * 1.1;
+          sp.wings[0].rotation.z = flap;
+          sp.wings[1].rotation.z = -flap;
+        }
+      } else {
+        sp.timer -= dt;
+        if (sp.timer <= 0) {
+          if (sp.state === 'pecking') {
+            sp.state = 'hop';
+            sp.timer = .32;
+            sp.yaw += (r() - .5) * 1.4;
+          } else {
+            sp.state = 'pecking';
+            sp.timer = 1.8 + r() * 2.5;
+          }
+        }
+        if (sp.state === 'hop') {
+          const hopP = 1 - (sp.timer / .32);
+          sp.body.position.y = Math.sin(hopP * Math.PI) * .09;
+          sp.pos.x += Math.sin(sp.yaw) * dt * .9;
+          sp.pos.z += Math.cos(sp.yaw) * dt * .9;
+          sp.root.position.copy(sp.pos);
+        } else {
+          sp.body.position.y = 0;
+          sp.head.rotation.x = Math.max(0, Math.sin(time * 7 + sp.seed)) * .35;
+          sp.tail.rotation.x = -.22 + Math.sin(time * 5 + sp.seed) * .08;
+        }
+        sp.root.rotation.y = sp.yaw;
+      }
+    }
+
     const day = 1 - night;
     for (const b of butterflies) {
-      const t = time * .35 + b.seed;
-      b.g.visible = day > .2;
-      b.g.position.set(player.x + b.ox + Math.sin(t * 1.3) * 3, .7 + Math.sin(t * 2.1) * .35 + Math.sin(time * 8 + b.seed) * .05, player.z + b.oz + Math.cos(t) * 3);
-      b.g.rotation.y = t * 1.3 + Math.cos(t);
-      const flap = Math.sin(time * 18 + b.seed) * 1.1; b.wl.rotation.y = flap; b.wr.rotation.y = -flap;
+      b.g.visible = day > .15;
+      if (!b.g.visible) continue;
+      const t = time * .65 + b.seed;
+      const x = b.fx + Math.sin(t) * b.r + Math.sin(t * 2.3) * .3;
+      const z = b.fz + Math.cos(t) * b.r + Math.cos(t * 1.8) * .3;
+      const y = .65 + Math.sin(t * 2.8) * .28 + Math.abs(Math.sin(time * 3 + b.seed)) * .12;
+      b.g.position.set(x, y, z);
+      b.g.rotation.y = t + Math.PI / 2 + Math.cos(t * 1.5) * .4;
+      const flap = Math.sin(time * 26 + b.seed) * 1.15;
+      b.wl.rotation.y = flap;
+      b.wr.rotation.y = -flap;
       b.g.scale.setScalar(day);
     }
-    fireflies.material.opacity = Math.max(0, night - .3) * 1.4;
+    fireflies.material.opacity = Math.max(0, night - .28) * 1.3;
     if (fireflies.material.opacity > 0) {
       for (let i = 0; i < ffCount; i++) {
         const [ox, oy, oz, sd] = ffSeed[i];
-        ffPos[i * 3] = player.x + ox + Math.sin(time * .5 + sd) * 1.4;
-        ffPos[i * 3 + 1] = oy + Math.sin(time * .9 + sd * 2) * .4;
-        ffPos[i * 3 + 2] = player.z + oz + Math.cos(time * .4 + sd) * 1.4;
+        const driftY = (oy + time * .18 + sd) % 3.0;
+        ffPos[i * 3] = player.x + ox + Math.sin(time * .4 + sd) * 1.5;
+        ffPos[i * 3 + 1] = .35 + driftY;
+        ffPos[i * 3 + 2] = player.z + oz + Math.cos(time * .35 + sd * 1.3) * 1.5;
       }
       ffGeo.attributes.position.needsUpdate = true;
+      fireflies.material.size = .45 + Math.sin(time * 4) * .12;
     }
     const h = houseLevel >= 2 ? 3.45 : 2.3;
     puffs.forEach(s => {
