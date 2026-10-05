@@ -38,5 +38,7 @@ const paths={
  honey:<><path d="M7 6h10v2H7Z" fill="#c98a3b"/><path d="M6 8c0 4 1 12 6 12s6-8 6-12H6Z" fill="#f5a623"/><path d="M9 11c0 3 1.5 5 3 5s3-2 3-5H9Z" fill="#ffcf56"/></>,
  badge:<><circle cx="12" cy="9" r="6" fill="#f5a623"/><path d="m9 14-2 7 5-2 5 2-2-7" fill="#d97706"/><circle cx="12" cy="9" r="3" fill="#fff9db"/></>,
  duck:<><path d="M4 14c0-4 4-7 9-7 3 0 5 2 6 5l3 1-3 2c-1 3-3 5-7 5-4 0-8-2-8-6Z" fill="#facc15"/><circle cx="14" cy="10" r="1.5" fill="#1e293b"/></>,
+ egg:<><path d="M12 3C8 3 5 8 5 13.5 5 18.5 8 22 12 22s7-3.5 7-8.5C19 8 16 3 12 3Z" fill="#fffaf0" stroke="#dfcaa2" strokeWidth="1.5"/></>,
+ dog:<><ellipse cx="12" cy="12" rx="7" ry="6" fill="#f5ede0"/><circle cx="9" cy="11" r="1.5" fill="#2c1e13"/><circle cx="15" cy="11" r="1.5" fill="#2c1e13"/><path d="m11 14 1 1 1-1" stroke="#2c1e13" strokeWidth="1.5"/><path d="M6 7c-2 2-3 5-1 7M18 7c2 2 3 5 1 7" stroke="#b07d54" strokeWidth="2.5" strokeLinecap="round"/></>,
 };
 export function Icon({name,size=24,...props}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]||paths.leaf}</svg>;}

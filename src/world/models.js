@@ -623,3 +623,204 @@ export function duck(p, x = 0, z = 24.5) {
 
   return { root, body, head, update };
 }
+
+export function coop(p, x = 3.6, z = -2.2) {
+  const root = group(p, x, 0, z);
+  root.userData.place = 'coop';
+  shadow(root, 0, 0, 1.4, 1.2);
+
+  // 4 wooden stilts
+  for (const sx of [-.45, .45]) {
+    for (const sz of [-.36, .36]) {
+      box(root, .1, .35, .1, palette.wood, sx, .17, sz);
+    }
+  }
+
+  // Floor and main coop box
+  box(root, 1.12, .08, .92, palette.wood, 0, .38, 0);
+  box(root, 1.05, .72, .85, '#d9a764', 0, .76, 0);
+
+  // Wood plank trims
+  for (const y of [.45, .75, 1.05]) {
+    box(root, 1.09, .04, .89, '#bf8c48', 0, y, 0);
+  }
+
+  // Nesting box on the right
+  box(root, .42, .38, .56, '#c69554', .72, .54, 0);
+  const nestLid = box(root, .46, .05, .62, '#8b4b2e', .73, .75, 0);
+  nestLid.rotation.z = -.16;
+  // Straw inside
+  box(root, .36, .06, .48, '#edd98e', .72, .48, 0);
+  // 3 fresh white eggs in nest
+  ball(root, .042, '#fffef8', .66, .53, -.1, .9, 1.25, .9);
+  ball(root, .044, '#fffef8', .76, .53, 0, .9, 1.25, .9);
+  ball(root, .042, '#fffef8', .68, .53, .12, .9, 1.25, .9);
+
+  // Entrance door opening
+  box(root, .26, .38, .04, '#3a2211', -.22, .58, .44);
+  // Ladder ramp leading up to entrance
+  const ladder = box(root, .28, .04, .65, '#b58345', -.22, .2, .7);
+  ladder.rotation.x = .48;
+  for (let r = 0; r < 4; r++) {
+    const rung = box(root, .3, .025, .03, '#8d5d28', -.22, .08 + r * .08, .48 + r * .14);
+    rung.rotation.x = .48;
+  }
+
+  // Terracotta gable roof
+  const roof = group(root, 0, 1.25, 0);
+  const rL = box(roof, 1.18, .08, .55, '#8b4b2e', 0, .08, -.24);
+  rL.rotation.x = -.54;
+  const rR = box(roof, 1.18, .08, .55, '#8b4b2e', 0, .08, .24);
+  rR.rotation.x = .54;
+  box(roof, 1.22, .08, .08, '#6c351b', 0, .21, 0); // ridge cap
+
+  // 2 cute pecking hens outside coop
+  const chickens = [];
+  const configs = [
+    { x: -.55, z: .75, color: '#fdfbf7', comb: '#e53935', phase: 0 },
+    { x: .38, z: .95, color: '#b66532', comb: '#d32f2f', phase: 2.3 }
+  ];
+
+  configs.forEach(cfg => {
+    const cRoot = group(root, cfg.x, 0, cfg.z);
+    shadow(cRoot, 0, 0, .3, .3);
+
+    // Legs
+    cylinder(cRoot, .015, .015, .1, '#f59e0b', -.05, .05, 0);
+    cylinder(cRoot, .015, .015, .1, '#f59e0b', .05, .05, 0);
+
+    // Body
+    const cBody = group(cRoot, 0, .14, 0);
+    ball(cBody, .12, cfg.color, 0, 0, 0, 1.1, 1, 1.35);
+
+    // Wings
+    box(cBody, .03, .08, .14, cfg.color, -.12, .02, 0).rotation.z = .2;
+    box(cBody, .03, .08, .14, cfg.color, .12, .02, 0).rotation.z = -.2;
+
+    // Tail feathers
+    const tail = cylinder(cBody, 0, .07, .12, cfg.color, 0, .08, -.14, 4);
+    tail.rotation.x = -1.1;
+
+    // Head and neck
+    const cHead = group(cBody, 0, .12, .12);
+    ball(cHead, .075, cfg.color, 0, 0, 0);
+    // Red comb
+    box(cHead, .025, .06, .08, cfg.comb, 0, .08, -.01);
+    // Yellow beak
+    const beak = cylinder(cHead, .015, .035, .06, '#f59e0b', 0, -.015, .09, 3);
+    beak.rotation.x = Math.PI / 2;
+    // Red wattle
+    ball(cHead, .025, cfg.comb, 0, -.045, .05);
+    // Eyes
+    ball(cHead, .014, '#1a1815', -.06, .015, .04);
+    ball(cHead, .014, '#1a1815', .06, .015, .04);
+
+    chickens.push({ root: cRoot, head: cHead, body: cBody, phase: cfg.phase });
+  });
+
+  function update(time) {
+    chickens.forEach((c, i) => {
+      // Pecking ground animation
+      const peck = Math.max(0, Math.sin(time * 5 + c.phase));
+      c.head.rotation.x = peck * .65;
+      c.body.rotation.x = peck * .18;
+      c.body.position.y = .14 - peck * .02;
+    });
+  }
+
+  return { root, update };
+}
+
+export function dog(p, x = 0.6, z = 2.6) {
+  const root = group(p, x, 0, z);
+  root.userData.place = 'dog';
+  shadow(root, 0, 0, .9, .8);
+
+  // Small cozy wooden doghouse beside puppy
+  const kennel = group(root, -.65, 0, 0);
+  shadow(kennel, 0, 0, .8, .7);
+  box(kennel, .55, .44, .6, '#c48e4d', 0, .22, 0); // doghouse box
+  box(kennel, .22, .3, .04, '#2d1b0d', 0, .16, .31); // arched doorway
+  // Gable kennel roof
+  const kRoof = group(kennel, 0, .46, 0);
+  const krL = box(kRoof, .62, .04, .38, '#9c3b24', 0, .06, -.16); krL.rotation.x = -.52;
+  const krR = box(kRoof, .62, .04, .38, '#9c3b24', 0, .06, .16); krR.rotation.x = .52;
+  box(kRoof, .64, .05, .05, '#7a2b18', 0, .16, 0); // ridge
+
+  // Red dog food bowl
+  const bowl = cylinder(root, .14, .1, .06, '#e53935', -.28, .03, .36, 12);
+  cylinder(bowl, .09, .09, .03, '#d4a373', 0, .02, 0, 8); // kibble inside
+
+  // Puppy Łatek
+  const bodyGroup = group(root, .1, 0, .1);
+  const body = group(bodyGroup, 0, .22, 0);
+
+  // Plump spotted body
+  ball(body, .21, '#faf8f2', 0, 0, 0, 1.05, 1, 1.35);
+  // Caramel spot on back
+  ball(body, .12, '#9c6237', .08, .09, -.04, 1.2, .8, 1.1);
+
+  // 4 cute paws
+  for (const px of [-.12, .12]) {
+    for (const pz of [-.14, .14]) {
+      cylinder(bodyGroup, .05, .055, .14, '#faf8f2', px, .07, pz, 8);
+      ball(bodyGroup, .052, '#faf8f2', px, .03, pz + .03, 1, .6, 1.2);
+    }
+  }
+
+  // Upright tail with white tip
+  const tail = group(body, 0, .06, -.26);
+  cylinder(tail, .025, .038, .18, '#9c6237', 0, .08, 0, 8).rotation.x = .65;
+  ball(tail, .035, '#faf8f2', 0, .18, .09);
+
+  // Head and neck
+  const headGroup = group(body, 0, .22, .2);
+  ball(headGroup, .16, '#faf8f2', 0, 0, 0, 1.1, 1.05, 1.15);
+
+  // Caramel spot over right eye & ear
+  ball(headGroup, .11, '#9c6237', .07, .04, .06, 1.1, 1, 1.1);
+
+  // Cute muzzle / snout
+  const snout = group(headGroup, 0, -.03, .14);
+  ball(snout, .08, '#faf8f2', 0, 0, 0, 1.15, .85, 1.2);
+  ball(snout, .032, '#1a1815', 0, .025, .09); // shiny black nose
+  // Little pink tongue sticking out
+  const tongue = box(snout, .038, .01, .05, '#ff758f', 0, -.04, .08);
+  tongue.rotation.x = .2;
+
+  // Big sparkling puppy eyes
+  for (const s of [-1, 1]) {
+    ball(headGroup, .025, '#2b1d12', s * .075, .035, .12);
+    ball(headGroup, .009, '#ffffff', s * .08, .045, .135); // shine
+  }
+
+  // Floppy puppy ears
+  const ears = [];
+  for (const s of [-1, 1]) {
+    const e = group(headGroup, s * .15, .08, -.02);
+    const earMesh = box(e, .04, .16, .09, s === 1 ? '#9c6237' : '#e0d8c8', 0, -.07, 0);
+    earMesh.rotation.z = s * .35;
+    ears.push(e);
+  }
+
+  // Red collar with gold medal tag
+  cylinder(headGroup, .14, .14, .04, '#e53935', 0, -.08, -.02, 12);
+  cylinder(headGroup, .035, .035, .01, '#f59e0b', 0, -.11, .11, 8); // medal
+
+  function update(time, petted = false) {
+    // Excited wagging tail
+    tail.rotation.y = Math.sin(time * 10) * .55 + (petted ? Math.sin(time * 22) * .35 : 0);
+    // Cute head tilt
+    headGroup.rotation.z = Math.sin(time * 1.8) * .12;
+    headGroup.rotation.y = Math.sin(time * .9) * .15;
+    // Ear bounce
+    ears.forEach((e, i) => {
+      e.rotation.z = (i === 0 ? -1 : 1) * Math.sin(time * 5) * .08;
+    });
+    // Happy breathing bounce
+    body.position.y = Math.sin(time * 2.8) * .012;
+  }
+
+  return { root, body, headGroup, tail, ears, update };
+}
+

@@ -308,6 +308,43 @@ export function createAudio() {
     });
   }
 
+  function cluck() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Cute hen cluck / bok-bok
+    [0, 0.1].forEach((delay, idx) => {
+      const st = t + delay;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(480 + idx * 40, st);
+      o.frequency.exponentialRampToValueAtTime(320, st + 0.08);
+      g.gain.setValueAtTime(0, st);
+      g.gain.linearRampToValueAtTime(0.12, st + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0005, st + 0.09);
+      o.connect(g).connect(master);
+      o.start(st); o.stop(st + 0.1);
+    });
+  }
+
+  function bark() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Friendly puppy bark / yip
+    [0, 0.16].forEach((delay, idx) => {
+      const st = t + delay;
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = 'sawtooth';
+      f.type = 'bandpass'; f.frequency.value = 850 + idx * 100; f.Q.value = 2.8;
+      o.frequency.setValueAtTime(420, st);
+      o.frequency.exponentialRampToValueAtTime(260, st + 0.12);
+      g.gain.setValueAtTime(0, st);
+      g.gain.linearRampToValueAtTime(0.14, st + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0005, st + 0.14);
+      o.connect(f).connect(g).connect(master);
+      o.start(st); o.stop(st + 0.15);
+    });
+  }
+
   function setMuted(v) {
     muted = v; localStorage.setItem(MUTE_KEY, v ? '1' : '0');
     if (master) master.gain.setTargetAtTime(v ? 0 : .7, ctx.currentTime, .1);
@@ -335,6 +372,8 @@ export function createAudio() {
     meow,
     buzz,
     quack,
+    cluck,
+    bark,
     setMuted,
     get muted() { return muted; },
     dispose

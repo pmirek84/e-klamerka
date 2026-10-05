@@ -483,6 +483,28 @@ export const COOKING_RECIPES = [
     effectDesc: 'Przysmak wędrowców (sprzedaż: +28 monet)',
     sellPrice: 28,
     buffDuration: 90000
+  },
+  {
+    id: 'pancakes',
+    name: 'Naleśniki z Miodem i Jabłkiem',
+    desc: 'Puszyste, złociste naleśniki smażone na wiejskich jajkach ze słodkim miodem.',
+    icon: '🥞',
+    cost: { flour: 1, eggs: 2, honey: 1 },
+    effect: 'speed',
+    effectDesc: 'Błyskawiczny bieg z wiatrem (120s) i +35 monet',
+    sellPrice: 35,
+    buffDuration: 120000
+  },
+  {
+    id: 'omelet',
+    name: 'Wiejski Puszysty Omlet',
+    desc: 'Ciepły, pożywny omlet ze świeżych jajek z kurnika.',
+    icon: '🍳',
+    cost: { eggs: 2 },
+    effect: 'speed',
+    effectDesc: '+35% prędkości chodu (60s)',
+    sellPrice: 16,
+    buffDuration: 60000
   }
 ];
 
@@ -493,7 +515,10 @@ export const STICKERS = [
   { id: 'first_fish', title: 'Złota Rybka', desc: 'Złów swoją pierwszą rybkę w Lazurowym Jeziorze.', icon: '🐟', reward: { coins: 5 }, check: s => (s.fishCaught?.total > 0 || s.fish > 0) },
   { id: 'pet_cat', title: 'Mruczące Serduszko', desc: 'Pogłaszcz kotka Puszka na ganku chociaż raz.', icon: '🐾', reward: { coins: 4 }, check: s => (s.petPats || 0) > 0 },
   { id: 'honey_harvest', title: 'Bursztynowy Miód', desc: 'Zbierz świeży miód z wiejskiej pasieki.', icon: '🐝', reward: { coins: 5 }, check: s => (s.honey || 0) > 0 },
+  { id: 'first_egg', title: 'Złote Jajko', desc: 'Zbierz świeże jajka z wiejskiego kurnika.', icon: '🥚', reward: { coins: 5 }, check: s => (s.eggs || 0) > 0 },
+  { id: 'pet_dog', title: 'Wierny Przyjaciel', desc: 'Pobaw się z wesołym pieskiem Łatkiem.', icon: '🐕', reward: { coins: 4 }, check: s => (s.dogPats || 0) > 0 },
   { id: 'first_cook', title: 'Mistrz Patelni', desc: 'Ugotuj ciepłe danie w wiejskiej kuchni.', icon: '🍳', reward: { coins: 5 }, check: s => Object.values(s.dishes || {}).some(v => v > 0) },
+  { id: 'master_chef', title: 'Wiejski Szef Kuchni', desc: 'Ugotuj i miej w spiżarni co najmniej 3 dania.', icon: '👨‍🍳', reward: { coins: 10 }, check: s => Object.values(s.dishes || {}).filter(v => v > 0).length >= 3 },
   { id: 'owl_riddles', title: 'Mądra Głowa', desc: 'Rozwiąż co najmniej 3 zagadki Sowy Klary.', icon: '🦉', reward: { coins: 8 }, check: s => (s.solvedRiddles?.length || 0) >= 3 },
   { id: 'bridge_builder', title: 'Odkrywca Mostów', desc: 'Wybuduj i połącz most do dowolnej nowej krainy.', icon: '🌉', reward: { coins: 10 }, check: s => Boolean(s.world?.quarry || s.world?.meadow || s.world?.lake || s.world?.clouds) },
   { id: 'wealthy_farmer', title: 'Złoty Skarbiec', desc: 'Zgromadź w swojej sakiewce co najmniej 50 monet.', icon: '👑', reward: { coins: 15 }, check: s => (s.coins || 0) >= 50 }
@@ -517,14 +542,17 @@ export const INITIAL = {
   fish: 0,
   honey: 0,
   lastHoney: 0,
+  eggs: 0,
+  lastEggs: 0,
   stickersClaimed: [],
   // Dishes & Cooking
-  dishes: { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0 },
+  dishes: { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0, pancakes: 0, omelet: 0 },
   speedBoostUntil: 0,
   // Fishing Logs & Pet
   fishCaught: { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 },
   fishRecords: {},
   petPats: 0,
+  dogPats: 0,
   // Buildings & Upgrades
   houseLevel: 0, // 0: None, 1: Chatka, 2: Dom gospodarza, 3: Dom odkrywcy
   landLevel: 0,  // 0: 1 grządka, 1: 2 grządki, 2: 3 grządki, 3: 4 grządki
@@ -571,7 +599,7 @@ const count = (value, max = 999999) => Math.min(max, Math.max(0, Math.floor(Numb
 export function normalize(raw = {}) {
   const s = { ...INITIAL };
   s.saveVersion = SAVE_VERSION;
-  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish', 'honey', 'babies', 'totalBred', 'petPats']) {
+  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish', 'honey', 'eggs', 'babies', 'totalBred', 'petPats', 'dogPats']) {
     s[k] = count(raw[k] ?? s[k]);
   }
   s.world = normalizeWorld(raw.world);
@@ -591,10 +619,13 @@ export function normalize(raw = {}) {
     grilledFish: count(raw.dishes?.grilledFish),
     starCookies: count(raw.dishes?.starCookies),
     honeyTea: count(raw.dishes?.honeyTea),
-    gingerbread: count(raw.dishes?.gingerbread)
+    gingerbread: count(raw.dishes?.gingerbread),
+    pancakes: count(raw.dishes?.pancakes),
+    omelet: count(raw.dishes?.omelet)
   };
   s.speedBoostUntil = Number.isFinite(raw.speedBoostUntil) ? raw.speedBoostUntil : 0;
   s.lastHoney = Number.isFinite(raw.lastHoney) ? raw.lastHoney : 0;
+  s.lastEggs = Number.isFinite(raw.lastEggs) ? raw.lastEggs : 0;
   s.stickersClaimed = Array.isArray(raw.stickersClaimed) ? raw.stickersClaimed : [];
 
   // Fishing log
@@ -754,8 +785,11 @@ export function transact(state, action, now = Date.now(), params = {}) {
     fish: state.fish || 0,
     honey: state.honey || 0,
     lastHoney: state.lastHoney || 0,
+    eggs: state.eggs || 0,
+    lastEggs: state.lastEggs || 0,
+    dogPats: state.dogPats || 0,
     stickersClaimed: [...(state.stickersClaimed || [])],
-    dishes: { ...(state.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0 }) },
+    dishes: { ...(state.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0, pancakes: 0, omelet: 0 }) },
     fishCaught: { ...(state.fishCaught || { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 }) },
     fishRecords: { ...(state.fishRecords || {}) },
     world: normalizeWorld(state.world),
@@ -885,6 +919,31 @@ export function transact(state, action, now = Date.now(), params = {}) {
       if (!pay({ wheat: 1 })) return fail('Kaczuszka chętnie zje kłos pszenicy (wymaga 1 pszenicy).');
       s.coins += 4;
       message = 'Kaczuszka wesoło zakwakała i zanurkowała po ziarna pszenicy! (+4 monety 🪙)';
+      break;
+    }
+
+    // Chicken Coop Egg Harvesting
+    case 'harvest-eggs': case 'coop': {
+      if (now - (s.lastEggs || 0) < 40000) {
+        const waitSec = Math.ceil((40000 - (now - s.lastEggs)) / 1000);
+        return fail(`Kurki jeszcze wysiadują jajka (${waitSec}s).`);
+      }
+      s.lastEggs = now;
+      s.eggs = (s.eggs || 0) + 2;
+      message = 'Zebrano 2 świeże jajka z kurnika! (+2 jajka 🥚)';
+      break;
+    }
+
+    // Puppy Łatek Interaction
+    case 'pet-dog': case 'dog': {
+      s.dogPats = (s.dogPats || 0) + 1;
+      s.coins += 2;
+      const phrases = [
+        'Piesek Łatek radośnie szczeka, macha ogonkiem i przynosi patyk! (+2 monety 🐕)',
+        'Łatek robi wesoły piruet na trawie i domaga się pieszczot! (+2 monety ✨)',
+        'Łatek opiera łapki o Twoje kolano i wesoło poszczekuje! (+2 monety 🪙)'
+      ];
+      message = phrases[s.dogPats % phrases.length];
       break;
     }
 
@@ -1183,6 +1242,12 @@ export function transact(state, action, now = Date.now(), params = {}) {
       message = 'Sprzedano słoik miodu · +5 monet';
       break;
     }
+    case 'sell-egg': {
+      if (!pay({ eggs: 2 })) return fail('Przynieś 2 jajka z kurnika.');
+      s.coins += 3;
+      message = 'Sprzedano 2 świeże jajka · +3 monety';
+      break;
+    }
 
     // Wardrobe & Outfit customization
     case 'set-avatar': {
@@ -1286,18 +1351,18 @@ export function transact(state, action, now = Date.now(), params = {}) {
     }
 
     // Cooking & Dining Actions
-    case 'cook:bread': case 'cook:applePie': case 'cook:carrotSoup': case 'cook:grilledFish': case 'cook:starCookies': case 'cook:honeyTea': case 'cook:gingerbread': {
+    case 'cook:bread': case 'cook:applePie': case 'cook:carrotSoup': case 'cook:grilledFish': case 'cook:starCookies': case 'cook:honeyTea': case 'cook:gingerbread': case 'cook:pancakes': case 'cook:omelet': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznany przepis.');
       if (!pay(recipe.cost)) return fail('Brakuje składników do ugotowania tej potrawy.');
-      s.dishes = s.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0 };
+      s.dishes = s.dishes || {};
       s.dishes[rId] = (s.dishes[rId] || 0) + 1;
       message = `Ugotowano: ${recipe.name}! Danie trafiło do spiżarni.`;
       break;
     }
 
-    case 'eat:bread': case 'eat:applePie': case 'eat:carrotSoup': case 'eat:grilledFish': case 'eat:starCookies': case 'eat:honeyTea': case 'eat:gingerbread': {
+    case 'eat:bread': case 'eat:applePie': case 'eat:carrotSoup': case 'eat:grilledFish': case 'eat:starCookies': case 'eat:honeyTea': case 'eat:gingerbread': case 'eat:pancakes': case 'eat:omelet': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznane danie.');
@@ -1309,7 +1374,7 @@ export function transact(state, action, now = Date.now(), params = {}) {
       break;
     }
 
-    case 'sell-dish:bread': case 'sell-dish:applePie': case 'sell-dish:carrotSoup': case 'sell-dish:grilledFish': case 'sell-dish:starCookies': case 'sell-dish:honeyTea': case 'sell-dish:gingerbread': {
+    case 'sell-dish:bread': case 'sell-dish:applePie': case 'sell-dish:carrotSoup': case 'sell-dish:grilledFish': case 'sell-dish:starCookies': case 'sell-dish:honeyTea': case 'sell-dish:gingerbread': case 'sell-dish:pancakes': case 'sell-dish:omelet': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznane danie.');
@@ -1399,6 +1464,8 @@ export const PLACES = {
   ...WORLD_PLACES,
   house: { title: 'Twój dom', short: 'Dom', x: -3, z: -2, approach: [-3, 1.5], label: [-3, 4.8, -2] },
   cat: { title: 'Kotek Puszek', short: 'Puszek ♥', x: -1.7, z: 1.8, approach: [-1.7, 2.5], label: [-1.7, 1.3, 1.8] },
+  dog: { title: 'Piesek Łatek', short: 'Łatek 🐕', x: 0.6, z: 2.6, approach: [0.6, 3.8], label: [0.6, 1.3, 2.6] },
+  coop: { title: 'Wiejski Kurnik', short: 'Kurnik 🐔', x: 3.6, z: -2.2, approach: [3.6, -1.0], label: [3.6, 1.8, -2.2] },
   beehive: { title: 'Bursztynowa Pasieka', short: 'Pasieka 🐝', x: 6.8, z: 2.4, approach: [6.8, 3.6], label: [6.8, 1.8, 2.4] },
   duck: { title: 'Kaczuszka Kwaczka', short: 'Kaczuszka 🦆', region: 'lake', x: 0, z: 24.5, approach: [0, 26], label: [0, 1.4, 24.5] },
   forest: { title: 'Leśna ścieżka', short: 'Las', x: -9, z: -4, approach: [-7, -1.3], label: [-8.7, 4, -4] },
@@ -1421,6 +1488,27 @@ export function actionFor(place, s) {
         action: 'pet-cat',
         icon: 'rabbit'
       };
+
+    case 'dog':
+      return {
+        label: 'Pobaw się z Łatkiem 🐕',
+        hint: `Rzuć patyk i pogłaszcz pieska (${s.dogPats || 0} zabaw · +2 monety).`,
+        action: 'pet-dog',
+        icon: 'dog'
+      };
+
+    case 'coop': {
+      const elapsed = Date.now() - (s.lastEggs || 0);
+      const ready = elapsed >= 40000;
+      const waitSec = Math.ceil((40000 - elapsed) / 1000);
+      return {
+        label: ready ? 'Zbierz jajka 🥚' : `Kurki w gniazdach (${waitSec}s)`,
+        hint: 'Wiejski Kurnik · świeże jajka na puszyste omlety i naleśniki.',
+        action: 'harvest-eggs',
+        disabled: !ready,
+        icon: 'egg'
+      };
+    }
 
     case 'beehive': {
       const elapsed = Date.now() - (s.lastHoney || 0);

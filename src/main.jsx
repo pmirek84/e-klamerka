@@ -38,6 +38,7 @@ const resourceNames = {
   wheat: 'pszenica',
   apples: 'jabłka',
   honey: 'miód',
+  eggs: 'jajka',
   flour: 'mąka',
   crystals: 'kryształy',
   coins: 'monety',
@@ -52,10 +53,12 @@ const resourceIcons = {
   wheat: 'wheat',
   apples: 'apple',
   honey: 'honey',
+  eggs: 'egg',
   flour: 'flour',
   crystals: 'crystal',
   coins: 'coins',
   fish: 'stall',
+  dog: 'dog',
   helper: 'helper',
   stall: 'stall',
   windmill: 'windmill',
@@ -69,7 +72,7 @@ const resourceIcons = {
 function Resources({ state, all = false, onOpenBackpack }) {
   // HUD: max 3 contextual resources + coins (Section 17)
   const keys = all
-    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'honey', 'flour', 'crystals', 'coins', 'fish']
+    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'honey', 'eggs', 'flour', 'crystals', 'coins', 'fish']
     : ['wood', 'stone', state.plantedCrop === 'wheat' || state.wheat > 0 ? 'wheat' : 'carrots', 'coins'];
 
   return (
@@ -255,6 +258,12 @@ function App() {
       } else if (action === 'feed-duck' || action === 'duck') {
         spawnReward('+4 Monety! Kaczuszka kwacze!', '🦆', '#ffd166');
         worldRef.current?.playSound('quack');
+      } else if (action === 'harvest-eggs' || action === 'coop') {
+        spawnReward('+2 Świeże Jajka!', '🥚', '#fffdf5');
+        worldRef.current?.playSound('cluck');
+      } else if (action === 'pet-dog' || action === 'dog') {
+        spawnReward('♥ Łatek merda ogonkiem! (+2 Monety)', '🐕', '#f59e0b');
+        worldRef.current?.playSound('bark');
       } else if (action === 'claim-sticker') {
         spawnReward('Zdobyto odznakę w albumie! ⭐', '📖', '#f5a623');
         worldRef.current?.playSound('fanfare');
@@ -487,7 +496,7 @@ function App() {
             title="Księga Odkrywcy · Naklejki i osiągnięcia"
           >
             <Icon name="badge" />
-            <span>Księga ({game.stickersClaimed?.length || 0}/10)</span>
+            <span>Księga ({game.stickersClaimed?.length || 0}/{STICKERS.length})</span>
             {STICKERS.some(st => !game.stickersClaimed?.includes(st.id) && st.check(game)) && (
               <span className="unclaimed-badge-dot" title="Nowa naklejka czeka na odebranie!">✨</span>
             )}
@@ -707,7 +716,7 @@ function App() {
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: '16px', color: '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)' }}
             >
               <Icon name="badge" size={20} />
-              <span>Otwórz Księgę Odkrywcy · Naklejki ({game.stickersClaimed?.length || 0}/10)</span>
+              <span>Otwórz Księgę Odkrywcy · Naklejki ({game.stickersClaimed?.length || 0}/{STICKERS.length})</span>
             </button>
           </div>
         </Modal>
@@ -1131,6 +1140,7 @@ function App() {
               { action: 'sell-wheat', icon: 'wheat', title: 'Sprzedaj 1 pszenicę', desc: 'Złote kłosy zebrane z ogrodu', label: 'Sprzedaj · +1', available: game.wheat >= 1 },
               { action: 'sell-apples', icon: 'apple', title: 'Sprzedaj 2 jabłka', desc: 'Soczyste owoce z sadu jabłoni', label: 'Sprzedaj · +4', available: game.apples >= 2 },
               { action: 'sell-honey', icon: 'honey', title: 'Sprzedaj słoik miodu', desc: 'Złoty miód zebrany z pasieki', label: 'Sprzedaj · +5', available: (game.honey || 0) >= 1 },
+              { action: 'sell-egg', icon: 'egg', title: 'Sprzedaj 2 jajka', desc: 'Świeże jajka z wiejskiego kurnika', label: 'Sprzedaj · +3', available: (game.eggs || 0) >= 2 },
               { action: 'sell-flour', icon: 'flour', title: 'Sprzedaj 1 mąkę', desc: 'Świeża mąka ze skrzydlatego młyna', label: 'Sprzedaj · +3', available: game.flour >= 1 },
               { action: 'sell-crystal', icon: 'crystal', title: 'Sprzedaj 1 kryształ', desc: 'Rzadki kryształ ze wzgórz', label: 'Sprzedaj · +4', available: game.crystals >= 1 },
               { action: 'sell-baby', icon: 'rabbit', title: 'Nowy dom dla maluszka', desc: `Masz ${game.babies} małych króliczków.`, label: 'Adopcja · +5', available: game.babies > 0 }
