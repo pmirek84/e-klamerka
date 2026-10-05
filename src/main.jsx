@@ -20,9 +20,11 @@ import {
   landCost,
   COSTS,
   FISH_SPECIES,
-  COOKING_RECIPES
+  COOKING_RECIPES,
+  STICKERS
 } from './game.js';
 import { FishingModal } from './FishingModal.jsx';
+import { StickerAlbumModal } from './StickerAlbumModal.jsx';
 import { Icon } from './icons.jsx';
 import './style.css';
 import { WorldMap } from './WorldMap.jsx';
@@ -35,6 +37,7 @@ const resourceNames = {
   seeds: 'nasiona',
   wheat: 'pszenica',
   apples: 'jabłka',
+  honey: 'miód',
   flour: 'mąka',
   crystals: 'kryształy',
   coins: 'monety',
@@ -48,6 +51,7 @@ const resourceIcons = {
   seeds: 'seeds',
   wheat: 'wheat',
   apples: 'apple',
+  honey: 'honey',
   flour: 'flour',
   crystals: 'crystal',
   coins: 'coins',
@@ -57,13 +61,15 @@ const resourceIcons = {
   windmill: 'windmill',
   pump: 'pump',
   backpack: 'backpack',
-  pickaxe: 'pickaxe'
+  pickaxe: 'pickaxe',
+  badge: 'badge',
+  duck: 'duck'
 };
 
 function Resources({ state, all = false, onOpenBackpack }) {
   // HUD: max 3 contextual resources + coins (Section 17)
   const keys = all
-    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish']
+    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'honey', 'flour', 'crystals', 'coins', 'fish']
     : ['wood', 'stone', state.plantedCrop === 'wheat' || state.wheat > 0 ? 'wheat' : 'carrots', 'coins'];
 
   return (
@@ -243,6 +249,15 @@ function App() {
       } else if (action === 'pet-cat') {
         spawnReward('♥ Puszek mruczy!', '🐾', '#ff5c8a');
         worldRef.current?.playSound('meow');
+      } else if (action === 'harvest-honey' || action === 'beehive') {
+        spawnReward('+1 Złoty Miód!', '🍯', '#f5a623');
+        worldRef.current?.playSound('buzz');
+      } else if (action === 'feed-duck' || action === 'duck') {
+        spawnReward('+4 Monety! Kaczuszka kwacze!', '🦆', '#ffd166');
+        worldRef.current?.playSound('quack');
+      } else if (action === 'claim-sticker') {
+        spawnReward('Zdobyto odznakę w albumie! ⭐', '📖', '#f5a623');
+        worldRef.current?.playSound('fanfare');
       } else if (action.startsWith('cook:')) {
         spawnReward('Ugotowano potrawę!', '🍳', '#ff9f43');
         worldRef.current?.playSound('sizzle');
@@ -465,6 +480,18 @@ function App() {
         </button>
         <Resources state={game} onOpenBackpack={() => openModal('backpack')} />
         <div className="header-actions">
+          <button
+            className={`stickers-shortcut ${STICKERS.some(st => !game.stickersClaimed?.includes(st.id) && st.check(game)) ? 'has-unclaimed' : ''}`}
+            aria-label="Otwórz album naklejek i osiągnięć"
+            onClick={() => openModal('stickers')}
+            title="Księga Odkrywcy · Naklejki i osiągnięcia"
+          >
+            <Icon name="badge" />
+            <span>Księga ({game.stickersClaimed?.length || 0}/10)</span>
+            {STICKERS.some(st => !game.stickersClaimed?.includes(st.id) && st.check(game)) && (
+              <span className="unclaimed-badge-dot" title="Nowa naklejka czeka na odebranie!">✨</span>
+            )}
+          </button>
           <button className="map-shortcut" aria-label="Otwórz mapę świata" onClick={() => openModal('map')}>
             <Icon name="map" />
             <span>Mapa świata</span>
@@ -670,6 +697,18 @@ function App() {
                 );
               })}
             </div>
+          </div>
+
+          {/* STICKER ALBUM LINK */}
+          <div style={{ marginTop: '16px' }}>
+            <button
+              className="primary full"
+              onClick={() => openModal('stickers')}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none', borderRadius: '16px', color: '#fff', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)' }}
+            >
+              <Icon name="badge" size={20} />
+              <span>Otwórz Księgę Odkrywcy · Naklejki ({game.stickersClaimed?.length || 0}/10)</span>
+            </button>
           </div>
         </Modal>
       )}
@@ -1091,6 +1130,7 @@ function App() {
               { action: 'sell-carrot', icon: 'carrot', title: 'Sprzedaj 1 marchewkę', desc: 'Świeży plon z ogrodu', label: 'Sprzedaj · +1', available: game.carrots >= 1 },
               { action: 'sell-wheat', icon: 'wheat', title: 'Sprzedaj 1 pszenicę', desc: 'Złote kłosy zebrane z ogrodu', label: 'Sprzedaj · +1', available: game.wheat >= 1 },
               { action: 'sell-apples', icon: 'apple', title: 'Sprzedaj 2 jabłka', desc: 'Soczyste owoce z sadu jabłoni', label: 'Sprzedaj · +4', available: game.apples >= 2 },
+              { action: 'sell-honey', icon: 'honey', title: 'Sprzedaj słoik miodu', desc: 'Złoty miód zebrany z pasieki', label: 'Sprzedaj · +5', available: (game.honey || 0) >= 1 },
               { action: 'sell-flour', icon: 'flour', title: 'Sprzedaj 1 mąkę', desc: 'Świeża mąka ze skrzydlatego młyna', label: 'Sprzedaj · +3', available: game.flour >= 1 },
               { action: 'sell-crystal', icon: 'crystal', title: 'Sprzedaj 1 kryształ', desc: 'Rzadki kryształ ze wzgórz', label: 'Sprzedaj · +4', available: game.crystals >= 1 },
               { action: 'sell-baby', icon: 'rabbit', title: 'Nowy dom dla maluszka', desc: `Masz ${game.babies} małych króliczków.`, label: 'Adopcja · +5', available: game.babies > 0 }
@@ -1367,6 +1407,17 @@ function App() {
           onClose={closeModal}
           playSound={(name, p) => worldRef.current?.playSound(name, p)}
         />
+      )}
+
+      {/* STICKER ALBUM MODAL */}
+      {modal === 'stickers' && (
+        <Modal title="Księga Odkrywcy" subtitle="ALBUM NAKLEJEK I OSIĄGNIĘĆ" onClose={closeModal}>
+          <StickerAlbumModal
+            game={game}
+            onClaim={(id) => perform('claim-sticker', { id })}
+            onClose={closeModal}
+          />
+        </Modal>
       )}
     </main>
   );

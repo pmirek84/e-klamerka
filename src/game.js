@@ -461,7 +461,42 @@ export const COOKING_RECIPES = [
     effectDesc: 'Super-przyspieszenie (90s) i +45 monet przy sprzedaży',
     sellPrice: 45,
     buffDuration: 90000
+  },
+  {
+    id: 'honeyTea',
+    name: 'Ziołowa Herbatka z Miodem',
+    desc: 'Gorący, aromatyczny napar z jabłkiem i złocistym miodem z pasieki.',
+    icon: '🍵',
+    cost: { apples: 1, honey: 1 },
+    effect: 'speed',
+    effectDesc: '+40% prędkości chodu (90s)',
+    sellPrice: 18,
+    buffDuration: 90000
+  },
+  {
+    id: 'gingerbread',
+    name: 'Miodowy Piernik Korzenny',
+    desc: 'Tradycyjny, pachnący cynamonem piernik pieczony na wiejskim miodzie.',
+    icon: '🍯',
+    cost: { flour: 1, honey: 1 },
+    effect: 'coins',
+    effectDesc: 'Przysmak wędrowców (sprzedaż: +28 monet)',
+    sellPrice: 28,
+    buffDuration: 90000
   }
+];
+
+export const STICKERS = [
+  { id: 'first_house', title: 'Ciepły Kąt', desc: 'Zbuduj swoją pierwszą chatkę na farmie.', icon: '🏡', reward: { coins: 5 }, check: s => (s.houseLevel || 0) >= 1 },
+  { id: 'first_harvest', title: 'Zielony Ogrodnik', desc: 'Zbierz pierwsze świeże warzywa z ogrodu.', icon: '🥕', reward: { coins: 4 }, check: s => (s.carrots > 0 || s.wheat > 0) },
+  { id: 'first_baby', title: 'Puszysta Rodzinka', desc: 'Powitaj na świecie małego króliczka.', icon: '🐰', reward: { coins: 6 }, check: s => (s.babies > 0 || s.totalBred > 0) },
+  { id: 'first_fish', title: 'Złota Rybka', desc: 'Złów swoją pierwszą rybkę w Lazurowym Jeziorze.', icon: '🐟', reward: { coins: 5 }, check: s => (s.fishCaught?.total > 0 || s.fish > 0) },
+  { id: 'pet_cat', title: 'Mruczące Serduszko', desc: 'Pogłaszcz kotka Puszka na ganku chociaż raz.', icon: '🐾', reward: { coins: 4 }, check: s => (s.petPats || 0) > 0 },
+  { id: 'honey_harvest', title: 'Bursztynowy Miód', desc: 'Zbierz świeży miód z wiejskiej pasieki.', icon: '🐝', reward: { coins: 5 }, check: s => (s.honey || 0) > 0 },
+  { id: 'first_cook', title: 'Mistrz Patelni', desc: 'Ugotuj ciepłe danie w wiejskiej kuchni.', icon: '🍳', reward: { coins: 5 }, check: s => Object.values(s.dishes || {}).some(v => v > 0) },
+  { id: 'owl_riddles', title: 'Mądra Głowa', desc: 'Rozwiąż co najmniej 3 zagadki Sowy Klary.', icon: '🦉', reward: { coins: 8 }, check: s => (s.solvedRiddles?.length || 0) >= 3 },
+  { id: 'bridge_builder', title: 'Odkrywca Mostów', desc: 'Wybuduj i połącz most do dowolnej nowej krainy.', icon: '🌉', reward: { coins: 10 }, check: s => Boolean(s.world?.quarry || s.world?.meadow || s.world?.lake || s.world?.clouds) },
+  { id: 'wealthy_farmer', title: 'Złoty Skarbiec', desc: 'Zgromadź w swojej sakiewce co najmniej 50 monet.', icon: '👑', reward: { coins: 15 }, check: s => (s.coins || 0) >= 50 }
 ];
 
 export const INITIAL = {
@@ -480,8 +515,11 @@ export const INITIAL = {
   crystals: 0,
   coins: 8,
   fish: 0,
+  honey: 0,
+  lastHoney: 0,
+  stickersClaimed: [],
   // Dishes & Cooking
-  dishes: { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0 },
+  dishes: { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0 },
   speedBoostUntil: 0,
   // Fishing Logs & Pet
   fishCaught: { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 },
@@ -533,7 +571,7 @@ const count = (value, max = 999999) => Math.min(max, Math.max(0, Math.floor(Numb
 export function normalize(raw = {}) {
   const s = { ...INITIAL };
   s.saveVersion = SAVE_VERSION;
-  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish', 'babies', 'totalBred', 'petPats']) {
+  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish', 'honey', 'babies', 'totalBred', 'petPats']) {
     s[k] = count(raw[k] ?? s[k]);
   }
   s.world = normalizeWorld(raw.world);
@@ -551,9 +589,13 @@ export function normalize(raw = {}) {
     applePie: count(raw.dishes?.applePie),
     carrotSoup: count(raw.dishes?.carrotSoup),
     grilledFish: count(raw.dishes?.grilledFish),
-    starCookies: count(raw.dishes?.starCookies)
+    starCookies: count(raw.dishes?.starCookies),
+    honeyTea: count(raw.dishes?.honeyTea),
+    gingerbread: count(raw.dishes?.gingerbread)
   };
   s.speedBoostUntil = Number.isFinite(raw.speedBoostUntil) ? raw.speedBoostUntil : 0;
+  s.lastHoney = Number.isFinite(raw.lastHoney) ? raw.lastHoney : 0;
+  s.stickersClaimed = Array.isArray(raw.stickersClaimed) ? raw.stickersClaimed : [];
 
   // Fishing log
   s.fishCaught = {
@@ -710,7 +752,10 @@ export function transact(state, action, now = Date.now(), params = {}) {
     wheat: state.wheat || 0,
     flour: state.flour || 0,
     fish: state.fish || 0,
-    dishes: { ...(state.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0 }) },
+    honey: state.honey || 0,
+    lastHoney: state.lastHoney || 0,
+    stickersClaimed: [...(state.stickersClaimed || [])],
+    dishes: { ...(state.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0 }) },
     fishCaught: { ...(state.fishCaught || { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 }) },
     fishRecords: { ...(state.fishRecords || {}) },
     world: normalizeWorld(state.world),
@@ -819,6 +864,43 @@ export function transact(state, action, now = Date.now(), params = {}) {
         s.lastOrchard = now;
         message = `Zebrano ${yieldApples} soczystych jabłek z sadu!`;
       }
+      break;
+    }
+
+    // Beehive Honey Harvesting
+    case 'harvest-honey': case 'beehive': {
+      if (now - (s.lastHoney || 0) < 45000) {
+        const waitSec = Math.ceil((45000 - (now - s.lastHoney)) / 1000);
+        return fail(`Pszczółki napełniają plastry miodu (${waitSec}s).`);
+      }
+      s.lastHoney = now;
+      s.honey = (s.honey || 0) + 1;
+      message = 'Zebrano słoik świeżego, bursztynowego miodu! (+1 miód 🍯)';
+      break;
+    }
+
+    // Lake Duck Feeding
+    case 'feed-duck': case 'duck': {
+      if (!s.world?.lake) return fail('Najpierw odblokuj Lazurowe Jezioro.');
+      if (!pay({ wheat: 1 })) return fail('Kaczuszka chętnie zje kłos pszenicy (wymaga 1 pszenicy).');
+      s.coins += 4;
+      message = 'Kaczuszka wesoło zakwakała i zanurkowała po ziarna pszenicy! (+4 monety 🪙)';
+      break;
+    }
+
+    // Sticker Album Achievements
+    case 'claim-sticker': {
+      const stickerId = params.id;
+      const sticker = STICKERS.find(st => st.id === stickerId);
+      if (!sticker) return fail('Nieznana naklejka.');
+      s.stickersClaimed = s.stickersClaimed || [];
+      if (s.stickersClaimed.includes(stickerId)) return fail('Ta naklejka została już odebrana!');
+      if (!sticker.check(s)) return fail('Warunek zdobycia naklejki nie został jeszcze spełniony.');
+      s.stickersClaimed.push(stickerId);
+      if (sticker.reward?.coins) {
+        s.coins += sticker.reward.coins;
+      }
+      message = `Wklejono naklejkę: „${sticker.title}”! (+${sticker.reward?.coins || 0} monet ⭐)`;
       break;
     }
 
@@ -1095,6 +1177,12 @@ export function transact(state, action, now = Date.now(), params = {}) {
       message = 'Maluszek znalazł nowy, kochający dom · +5 monet';
       break;
     }
+    case 'sell-honey': {
+      if (!pay({ honey: 1 })) return fail('Przynieś słoik miodu.');
+      s.coins += 5;
+      message = 'Sprzedano słoik miodu · +5 monet';
+      break;
+    }
 
     // Wardrobe & Outfit customization
     case 'set-avatar': {
@@ -1198,18 +1286,18 @@ export function transact(state, action, now = Date.now(), params = {}) {
     }
 
     // Cooking & Dining Actions
-    case 'cook:bread': case 'cook:applePie': case 'cook:carrotSoup': case 'cook:grilledFish': case 'cook:starCookies': {
+    case 'cook:bread': case 'cook:applePie': case 'cook:carrotSoup': case 'cook:grilledFish': case 'cook:starCookies': case 'cook:honeyTea': case 'cook:gingerbread': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznany przepis.');
       if (!pay(recipe.cost)) return fail('Brakuje składników do ugotowania tej potrawy.');
-      s.dishes = s.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0 };
+      s.dishes = s.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0 };
       s.dishes[rId] = (s.dishes[rId] || 0) + 1;
       message = `Ugotowano: ${recipe.name}! Danie trafiło do spiżarni.`;
       break;
     }
 
-    case 'eat:bread': case 'eat:applePie': case 'eat:carrotSoup': case 'eat:grilledFish': case 'eat:starCookies': {
+    case 'eat:bread': case 'eat:applePie': case 'eat:carrotSoup': case 'eat:grilledFish': case 'eat:starCookies': case 'eat:honeyTea': case 'eat:gingerbread': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznane danie.');
@@ -1221,7 +1309,7 @@ export function transact(state, action, now = Date.now(), params = {}) {
       break;
     }
 
-    case 'sell-dish:bread': case 'sell-dish:applePie': case 'sell-dish:carrotSoup': case 'sell-dish:grilledFish': case 'sell-dish:starCookies': {
+    case 'sell-dish:bread': case 'sell-dish:applePie': case 'sell-dish:carrotSoup': case 'sell-dish:grilledFish': case 'sell-dish:starCookies': case 'sell-dish:honeyTea': case 'sell-dish:gingerbread': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznane danie.');
@@ -1311,6 +1399,8 @@ export const PLACES = {
   ...WORLD_PLACES,
   house: { title: 'Twój dom', short: 'Dom', x: -3, z: -2, approach: [-3, 1.5], label: [-3, 4.8, -2] },
   cat: { title: 'Kotek Puszek', short: 'Puszek ♥', x: -1.7, z: 1.8, approach: [-1.7, 2.5], label: [-1.7, 1.3, 1.8] },
+  beehive: { title: 'Bursztynowa Pasieka', short: 'Pasieka 🐝', x: 6.8, z: 2.4, approach: [6.8, 3.6], label: [6.8, 1.8, 2.4] },
+  duck: { title: 'Kaczuszka Kwaczka', short: 'Kaczuszka 🦆', region: 'lake', x: 0, z: 24.5, approach: [0, 26], label: [0, 1.4, 24.5] },
   forest: { title: 'Leśna ścieżka', short: 'Las', x: -9, z: -4, approach: [-7, -1.3], label: [-8.7, 4, -4] },
   mine: { title: 'Kryształowe skały', short: 'Kopalnia', x: 6.8, z: -5.5, approach: [5.5, -3.3], label: [6.6, 3.6, -5.5] },
   garden: { title: 'Ogród uprawny', short: 'Ogród', x: -4.8, z: 5, approach: [-2.8, 5.5], label: [-5, 1.2, 5] },
@@ -1331,6 +1421,30 @@ export function actionFor(place, s) {
         action: 'pet-cat',
         icon: 'rabbit'
       };
+
+    case 'beehive': {
+      const elapsed = Date.now() - (s.lastHoney || 0);
+      const ready = elapsed >= 45000;
+      const waitSec = Math.ceil((45000 - elapsed) / 1000);
+      return {
+        label: ready ? 'Zbierz miód 🍯' : `Pszczoły pracują (${waitSec}s)`,
+        hint: 'Bursztynowa Pasieka · słodki miód do herbatki i pierników.',
+        action: 'harvest-honey',
+        disabled: !ready,
+        icon: 'honey'
+      };
+    }
+
+    case 'duck': {
+      return {
+        label: 'Nakarm kaczuszkę 🦆',
+        hint: 'Rzuć kaczuszce kłos pszenicy (koszt: 1 pszenica → nagroda: +4 monety).',
+        cost: { wheat: 1 },
+        action: 'feed-duck',
+        disabled: (s.wheat || 0) < 1,
+        icon: 'wheat'
+      };
+    }
 
     case 'quarryGate': case 'meadowGate': case 'lakeGate': case 'cloudsGate': {
       const id = place === 'quarryGate' ? 'quarry' : place === 'meadowGate' ? 'meadow' : place === 'lakeGate' ? 'lake' : 'clouds';

@@ -271,6 +271,43 @@ export function createAudio() {
     o.start(t); o.stop(t + .32);
   }
 
+  function buzz() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Buzzy cute bumblebee tone
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(220, t);
+    o.frequency.linearRampToValueAtTime(255, t + 0.15);
+    o.frequency.linearRampToValueAtTime(220, t + 0.35);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 680;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0005, t + 0.38);
+    o.connect(filter).connect(g).connect(master);
+    o.start(t); o.stop(t + 0.4);
+  }
+
+  function quack() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Playful duck quack
+    [0, 0.14].forEach((delay, idx) => {
+      const st = t + delay;
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = 'sawtooth';
+      f.type = 'bandpass'; f.frequency.value = 750; f.Q.value = 3.5;
+      o.frequency.setValueAtTime(320 - idx * 25, st);
+      o.frequency.exponentialRampToValueAtTime(180, st + 0.11);
+      g.gain.setValueAtTime(0, st);
+      g.gain.linearRampToValueAtTime(0.12, st + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0005, st + 0.13);
+      o.connect(f).connect(g).connect(master);
+      o.start(st); o.stop(st + 0.14);
+    });
+  }
+
   function setMuted(v) {
     muted = v; localStorage.setItem(MUTE_KEY, v ? '1' : '0');
     if (master) master.gain.setTargetAtTime(v ? 0 : .7, ctx.currentTime, .1);
@@ -296,6 +333,8 @@ export function createAudio() {
     reel,
     sizzle,
     meow,
+    buzz,
+    quack,
     setMuted,
     get muted() { return muted; },
     dispose

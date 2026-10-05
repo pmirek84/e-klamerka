@@ -35,5 +35,8 @@ const paths={
  flower:<><circle cx="12" cy="12" r="3" fill="#f8e71c"/><path d="M12 4a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Zm5 5a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Zm-5 5a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Zm-5-5a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3Z" fill="#d4b5f5"/><path d="M12 15v7" stroke="#689e5a" strokeWidth="2"/></>,
  mushroom:<><path d="M3 13c0-5 4-9 9-9s9 4 9 9c0 1-1 2-2 2H5c-1 0-2-1-2-2Z" fill="#ff6b6b"/><circle cx="8" cy="9" r="1.5" fill="#fff"/><circle cx="15" cy="8" r="1.8" fill="#fff"/><circle cx="12" cy="12" r="1.2" fill="#fff"/><path d="M9 15v5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-5" fill="#fdf5e6"/></>,
  snow:<><path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5" stroke="#7ec8f2" strokeWidth="2"/><circle cx="12" cy="12" r="2" fill="#ffffff"/></>,
+ honey:<><path d="M7 6h10v2H7Z" fill="#c98a3b"/><path d="M6 8c0 4 1 12 6 12s6-8 6-12H6Z" fill="#f5a623"/><path d="M9 11c0 3 1.5 5 3 5s3-2 3-5H9Z" fill="#ffcf56"/></>,
+ badge:<><circle cx="12" cy="9" r="6" fill="#f5a623"/><path d="m9 14-2 7 5-2 5 2-2-7" fill="#d97706"/><circle cx="12" cy="9" r="3" fill="#fff9db"/></>,
+ duck:<><path d="M4 14c0-4 4-7 9-7 3 0 5 2 6 5l3 1-3 2c-1 3-3 5-7 5-4 0-8-2-8-6Z" fill="#facc15"/><circle cx="14" cy="10" r="1.5" fill="#1e293b"/></>,
 };
 export function Icon({name,size=24,...props}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]||paths.leaf}</svg>;}

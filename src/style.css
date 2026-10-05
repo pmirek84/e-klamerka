@@ -1974,9 +1974,275 @@ input:focus { border-color: #f8a836; outline: none; box-shadow: inset 0 2px 4px 
   box-shadow: 0 3px 0 #cc7a00, 0 6px 14px rgba(255, 153, 0, 0.3);
   animation: buff-pulse 1.8s infinite alternate;
 }
-@keyframes buff-pulse {
-  0% { transform: scale(0.98); }
-  100% { transform: scale(1.02); filter: drop-shadow(0 0 6px rgba(255, 204, 0, 0.6)); }
+/* ══════════════════════════════════════════════════════════════════════════════
+   STICKER ALBUM & ACHIEVEMENTS MODAL STYLES
+   ══════════════════════════════════════════════════════════════════════════════ */
+.stickers-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #fffcf5 0%, #fef3d6 100%) !important;
+  color: #8c5b16 !important;
+  border: 2px solid #ecd89e !important;
+  box-shadow: 0 3px 0 #ddc27b, 0 6px 14px rgba(221, 194, 123, 0.25) !important;
+  border-radius: 14px;
+  padding: 8px 13px;
+  font-weight: 700;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+.stickers-shortcut:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 #ddc27b, 0 8px 18px rgba(221, 194, 123, 0.35) !important;
+}
+.stickers-shortcut.has-unclaimed {
+  animation: sticker-btn-glow 2s infinite alternate;
+  border-color: #f59e0b !important;
+}
+@keyframes sticker-btn-glow {
+  0% { box-shadow: 0 3px 0 #ddc27b, 0 0 0 rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 3px 0 #d97706, 0 0 12px rgba(245, 158, 11, 0.6); }
+}
+.unclaimed-badge-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 11px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  animation: pulse-beacon 1.2s infinite;
+}
+
+.resource.honey {
+  background: #fff8e8;
+  border-color: #fae1a0;
+  color: #8d5914;
+}
+
+/* Album Container */
+.sticker-album-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.album-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: radial-gradient(circle at top left, #fffdf7 0%, #fbf4e2 100%);
+  border: 2.5px solid #ecdab3;
+  border-radius: 22px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 0 #ded0aa, 0 10px 20px rgba(180, 140, 60, 0.08);
+}
+.album-badge-icon {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  box-shadow: 0 3px 0 #d97706;
+}
+.album-hero-text {
+  flex: 1;
+  min-width: 0;
+}
+.album-subtitle {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  color: #6d5334;
+  line-height: 1.45;
+  font-weight: 500;
+}
+.album-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.album-progress-bar {
+  width: 100%;
+  height: 14px;
+  background: #ecd9b8;
+  border-radius: 7px;
+  border: 1.5px solid #d8bf94;
+  overflow: hidden;
+}
+.album-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #10b981);
+  border-radius: 6px;
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.album-progress-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #553e20;
+}
+
+/* Grid of collectible stamps */
+.stickers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+.sticker-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 2px dashed #ded4c1;
+  padding: 12px;
+  box-shadow: 0 3px 0 #d6c8b0, 0 6px 14px rgba(0,0,0,0.04);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.sticker-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 #d6c8b0, 0 10px 20px rgba(0,0,0,0.08);
+}
+.sticker-card.is-claimed {
+  background: linear-gradient(150deg, #ffffff 0%, #fffdf8 100%);
+  border: 2.5px solid #f6d177;
+  box-shadow: 0 3px 0 #e4b950, 0 8px 18px rgba(220, 160, 40, 0.1);
+}
+.sticker-card.is-ready {
+  background: linear-gradient(150deg, #fffdf5 0%, #fef8e7 100%);
+  border: 2.5px solid #f59e0b;
+  box-shadow: 0 3px 0 #d97706, 0 8px 20px rgba(245, 158, 11, 0.22);
+  animation: card-pulse 1.8s infinite alternate;
+}
+@keyframes card-pulse {
+  0% { transform: scale(0.99); }
+  100% { transform: scale(1.015); }
+}
+.sticker-card.is-locked {
+  background: #faf8f5;
+  border-color: #e5ded2;
+  opacity: 0.82;
+}
+
+.sticker-stamp-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.sticker-stamp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sticker-icon-frame {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fbf3e2;
+  border: 2px solid #ecd8b3;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  box-shadow: 0 2px 0 #e2caa0;
+}
+.sticker-card.is-claimed .sticker-icon-frame {
+  background: radial-gradient(circle, #fef3c7, #fde68a);
+  border-color: #f59e0b;
+}
+.sticker-card.is-locked .sticker-icon-frame {
+  background: #ede8df;
+  border-color: #ded5c5;
+}
+.sticker-claimed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eefbee;
+  color: #276723;
+  border: 1.5px solid #a4dc9d;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  box-shadow: 0 2px 0 #95ce8e;
+}
+.sticker-info {
+  flex: 1;
+}
+.sticker-title {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3b2c1d;
+  line-height: 1.25;
+}
+.sticker-desc {
+  margin: 0;
+  font-size: 11px;
+  color: #72604d;
+  line-height: 1.4;
+}
+.sticker-footer {
+  margin-top: auto;
+  padding-top: 6px;
+}
+.sticker-status-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 8px;
+  text-align: center;
+}
+.sticker-status-tag.claimed {
+  background: #fff8e6;
+  border: 1px solid #fae29f;
+  color: #8c5b16;
+}
+.sticker-status-tag.locked {
+  background: #f1ede5;
+  border: 1px solid #e2dbcf;
+  color: #837666;
+}
+.sticker-claim-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #b45309;
+  transition: transform 0.1s ease;
+}
+.sticker-claim-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #b45309;
+}
+.sticker-claim-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #b45309;
+}
+.reward-tag {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
 
 

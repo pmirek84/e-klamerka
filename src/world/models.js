@@ -502,3 +502,124 @@ export function cat(p, x = -1.7, z = 1.8) {
 
   return { root, body, head, tail, ears, update };
 }
+
+export function beehive(p, x = 6.8, z = 2.4) {
+  const root = group(p, x, 0, z);
+  root.userData.place = 'beehive';
+  shadow(root, 0, 0, .8, .7);
+
+  // Four wooden leg stilts
+  for (const sx of [-.28, .28]) {
+    for (const sz of [-.22, .22]) {
+      box(root, .09, .32, .09, palette.wood, sx, .16, sz);
+    }
+  }
+
+  // Base platform board
+  box(root, .74, .08, .62, palette.wood, 0, .34, 0);
+  // Extended landing board for bees
+  const landing = box(root, .46, .05, .22, '#d4a259', 0, .36, .35);
+  landing.rotation.x = .12;
+
+  // Hive boxes (stack of 2 bee chambers with pastel honey warmth)
+  box(root, .64, .36, .52, '#e8b84b', 0, .54, 0); // lower brood box
+  box(root, .66, .05, .54, '#c99632', 0, .73, 0); // divider rim
+  box(root, .62, .32, .5, '#f5ce62', 0, .9, 0);  // upper honey super
+
+  // Slotted flight entrance
+  box(root, .36, .07, .06, '#3a2512', 0, .41, .26);
+  // Sweet honey drip on entrance
+  ball(root, .04, '#ff9900', .06, .38, .27, 1, 1.4, 1);
+
+  // Gable roof with wooden ridge
+  const roof = group(root, 0, 1.15, 0);
+  const rLeft = box(roof, .74, .08, .36, '#8b4b2e', 0, .08, -.14);
+  rLeft.rotation.x = -.52;
+  const rRight = box(roof, .74, .08, .36, '#8b4b2e', 0, .08, .14);
+  rRight.rotation.x = .52;
+  box(roof, .76, .08, .08, '#a65b38', 0, .19, 0); // ridge cap
+
+  // 3 buzzing little bumblebees
+  const beeGroup = group(root, 0, .8, 0);
+  const bees = [];
+  for (let i = 0; i < 3; i++) {
+    const b = group(beeGroup);
+    // Yellow & black fuzzy body
+    cylinder(b, .036, .04, .09, '#f5c518', 0, 0, 0, 8).rotation.x = Math.PI / 2;
+    cylinder(b, .038, .038, .03, '#2a221b', 0, 0, -.01, 8).rotation.x = Math.PI / 2;
+    cylinder(b, .038, .038, .03, '#2a221b', 0, 0, .025, 8).rotation.x = Math.PI / 2;
+    ball(b, .03, '#2a221b', 0, 0, .048); // head
+    // Translucent wings
+    const w1 = box(b, .05, .005, .035, '#ffffff', -.035, .04, 0);
+    const w2 = box(b, .05, .005, .035, '#ffffff', .035, .04, 0);
+    bees.push({ group: b, w1, w2, phase: i * 2.1, rad: .55 + i * .22, speed: 2.2 + i * .5 });
+  }
+
+  function update(time) {
+    bees.forEach((bee, i) => {
+      const angle = time * bee.speed + bee.phase;
+      const r = bee.rad + Math.sin(time * 1.5 + i) * .12;
+      bee.group.position.x = Math.cos(angle) * r;
+      bee.group.position.z = Math.sin(angle) * r;
+      bee.group.position.y = .15 + Math.sin(time * 3 + bee.phase) * .18;
+      bee.group.rotation.y = -angle + Math.PI / 2;
+      // Wing flapping
+      const flap = Math.sin(time * 32 + i * 4) * .65;
+      bee.w1.rotation.z = flap;
+      bee.w2.rotation.z = -flap;
+    });
+  }
+
+  return { root, update };
+}
+
+export function duck(p, x = 0, z = 24.5) {
+  const root = group(p, x, -.32, z);
+  root.userData.place = 'duck';
+
+  const body = group(root, 0, .04, 0);
+  // Plump duck body (cheerful golden duckling with sunny warmth)
+  const main = ball(body, .22, '#fecf33', 0, .14, 0, 1.1, .9, 1.45);
+  // Little upturned tail
+  const tail = cylinder(body, 0, .09, .15, '#f5be20', 0, .22, -.26, 4);
+  tail.rotation.x = -1.1;
+
+  // Folded side wings
+  const wL = box(body, .04, .12, .24, '#eab21c', -.18, .16, 0);
+  wL.rotation.z = .2;
+  const wR = box(body, .04, .12, .24, '#eab21c', .18, .16, 0);
+  wR.rotation.z = -.2;
+
+  // Neck and head
+  const neck = cylinder(body, .08, .09, .14, '#fecf33', 0, .3, .16);
+  neck.rotation.x = .2;
+  const head = group(body, 0, .42, .22);
+  ball(head, .13, '#fecf33', 0, 0, 0, 1, 1.05, 1.1);
+
+  // Eyes
+  for (const s of [-1, 1]) {
+    ball(head, .022, '#1a1815', s * .09, .03, .07);
+    ball(head, .008, '#ffffff', s * .095, .04, .085);
+  }
+
+  // Orange duck beak
+  const beak = cylinder(head, .02, .065, .11, '#ff6d00', 0, -.025, .15, 4);
+  beak.rotation.x = Math.PI / 2;
+
+  // Floating water ripple ring
+  const ripple = cylinder(root, .36, .38, .02, '#e0f4ff', 0, .02, 0, 12);
+  ripple.material.transparent = true;
+  ripple.material.opacity = .6;
+
+  function update(time) {
+    // Gentle bobbing and wave tilt
+    body.position.y = Math.sin(time * 2.2) * .025 + .04;
+    body.rotation.z = Math.sin(time * 1.8) * .04;
+    body.rotation.x = Math.cos(time * 2.2) * .03;
+    head.rotation.y = Math.sin(time * .9) * .25;
+    tail.rotation.y = Math.sin(time * 4) * .18;
+    ripple.scale.setScalar(1 + Math.sin(time * 2.2) * .08);
+  }
+
+  return { root, body, head, update };
+}

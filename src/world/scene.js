@@ -1,5 +1,5 @@
 import * as T from 'three';
-import { palette as C, material, box, ball, cylinder, group, bake, tree, house, pen, garden, shop, rabbit, person, stall, helper, visitor, owl, cat, windowGlass } from './models.js';
+import { palette as C, material, box, ball, cylinder, group, bake, tree, house, pen, garden, shop, rabbit, person, stall, helper, visitor, owl, cat, beehive, duck, windowGlass } from './models.js';
 import { PLACES } from '../game.js';
 import { REGIONS, regionAt, insideWorld, visiblePlace, unlocked } from './regions.js';
 import { findPath } from './navigation.js';
@@ -29,10 +29,10 @@ export function createWorld(host, callbacks) {
   const camera=new T.PerspectiveCamera(42,1,.1,900);let yaw=.35,zoom=1,targetZoom=1,overview=false,worldOverview=false;
   const look=new T.Vector3(0,1,6), desiredLook=new T.Vector3(), offset=new T.Vector3();
   let width=1,height=1, state={}, raf=0, disposed=false, last=performance.now(),time=0,lastUi=0;
-  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,stallObj,helperObj,owlObj,catObj,guestTourist,player,worldChanges;let lastRegion=null;
+  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,stallObj,helperObj,owlObj,catObj,beehiveObj,duckObj,guestTourist,player,worldChanges;let lastRegion=null;
   // Trees, ponds, lanterns and the campfire block walking; ponds are new water carved into the plateaus.
   const obstacles=[...[[ -35,-4],[-31,-4],[-26,-5],[-23,-2],[-36,1],[-34,6],[-29,6],[-24,5],[25,4],[37,3],[26,-6]].map(([x,z])=>({x,z,w:.8,d:.8})),
-    {x:1.9,z:-7.8,w:5.6,d:3.6},{x:2.5,z:33.2,w:9.2,d:8.8},
+    {x:1.9,z:-7.8,w:5.6,d:3.6},{x:2.5,z:33.2,w:9.2,d:8.8},{x:6.8,z:2.4,w:.9,d:.9},
     ...LANTERNS.map(([x,z])=>({x:x+.15,z,w:.5,d:.4})),{x:CAMPFIRE[0],z:CAMPFIRE[1],w:1.4,d:1.4}];
   let rabbits=[],visitors=[],selected=null,path=[],keys=new Set(),busyUntil=0,fx=[];
   const raycaster=new T.Raycaster(),pointer=new T.Vector2(),ground=new T.Plane(new T.Vector3(0,1,0),0),hitPoint=new T.Vector3();
@@ -117,6 +117,8 @@ export function createWorld(host, callbacks) {
     if(!helperObj||prev.helper!==next.helper){if(helperObj?.root)disposeObject(helperObj.root);helperObj=helper(dynamic,next.helper);if(helperObj?.root)targets.push(helperObj.root);}
     if(!owlObj){owlObj=owl(dynamic,1.6,-5.0);targets.push(owlObj.root);}
     if(!catObj){catObj=cat(dynamic,-1.7,1.8);targets.push(catObj.root);}
+    if(!beehiveObj){beehiveObj=beehive(dynamic,6.8,2.4);targets.push(beehiveObj.root);}
+    if(!duckObj){duckObj=duck(dynamic,0,24.5);targets.push(duckObj.root);}
     if(!player||prev.avatar!==next.avatar){if(player)player.root.removeFromParent();player=person(scene,next.avatar);player.root.position.copy(pos);player.onStep=footstep;}
     if(!walkable(pos.x,pos.z)){
       let safe=null;
@@ -373,6 +375,10 @@ export function createWorld(host, callbacks) {
 
     if (kind === 'mine' || kind.includes('mine')) {
       baseCol = '#a6c7dc'; fxType = 'star'; audio.mine();
+    } else if (kind === 'beehive' || kind.includes('honey')) {
+      baseCol = '#f5a623'; fxType = 'star'; audio.buzz();
+    } else if (kind === 'duck' || kind.includes('feed-duck') || kind.includes('duck')) {
+      baseCol = '#ffd166'; fxType = 'heart'; audio.quack();
     } else if (kind === 'garden' || kind.includes('harvest')) {
       baseCol = '#e9b668'; fxType = 'star'; audio.harvest();
     } else if (kind === 'water' || kind.includes('water')) {
@@ -434,6 +440,8 @@ export function createWorld(host, callbacks) {
     if(helperObj?.update) helperObj.update(time);
     if(owlObj?.update) owlObj.update(time);
     if(catObj?.update) catObj.update(time);
+    if(beehiveObj?.update) beehiveObj.update(time);
+    if(duckObj?.update) duckObj.update(time);
     if(guestTourist?.update) guestTourist.update(time, 1.8);
     for(const v of visitors){
       if(v.update) v.update(time, v.phase);
@@ -521,6 +529,8 @@ export function createWorld(host, callbacks) {
       else if (name === 'reel') audio.reel();
       else if (name === 'sizzle') audio.sizzle();
       else if (name === 'meow') audio.meow();
+      else if (name === 'buzz') audio.buzz();
+      else if (name === 'quack') audio.quack();
       else audio.chime();
     },
     getPlayerScreenPos() {
