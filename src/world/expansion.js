@@ -57,6 +57,40 @@ export function buildRegions(scene){
         ball(g,.3,'#d1c4e9',x,h+.4,z,1,1.4,1);
       }
     }
+    if(id==='lavender'){
+      // Blooming lavender bushes along paths and fields
+      for(let row=-2;row<=2;row++){
+        for(let col=-3;col<=3;col++){
+          const lx=col*1.6+(row%2)*.4, lz=row*1.8+2;
+          if(Math.hypot(lx,lz)<1.8)continue;
+          ball(g,.42,row%2?'#9370db':'#8a68d6',lx,.4,lz,1,1.4,1);
+          ball(g,.32,'#ba94eb',lx,.8,lz,.9,1.3,.9);
+          cylinder(g,.04,.05,.4,'#5e8544',lx,.15,lz);
+        }
+      }
+      // Herbalist Gazebo with tea table
+      const gaz=group(g,-3,0,-3);
+      cylinder(gaz,1.8,2.0,.25,C.lightWood,0,.12,0,8);
+      for(let i=0;i<6;i++){
+        const a=i*(Math.PI/3);
+        cylinder(gaz,.08,.09,2.1,C.cream,Math.cos(a)*1.5,1.15,Math.sin(a)*1.5);
+      }
+      cylinder(gaz,0,2.1,1.1,'#7a5da6',0,2.7,0,8);
+      // Tea table, teapot, cups
+      cylinder(gaz,.6,.6,.08,C.wood,0,.72,0);
+      cylinder(gaz,.1,.1,.68,C.wood,0,.36,0);
+      cylinder(gaz,.14,.18,.22,'#f5deb3',0,.85,0);
+      ball(gaz,.08,'#f5deb3',0,.97,0);
+      for(const a of [0.8,2.4,4.2]){
+        cylinder(gaz,.06,.07,.08,C.cream,Math.cos(a)*.35,.78,Math.sin(a)*.35);
+      }
+      // Fluttering butterflies
+      for(let i=0;i<6;i++){
+        const a=i*1.05, bx=Math.cos(a)*4.2, bz=Math.sin(a)*3.8;
+        ball(g,.12,i%2?'#ffb3c6':'#ffe484',bx,1.4+(i%3)*.3,bz,1.4,.3,1);
+      }
+      bake(gaz);
+    }
     bake(g);
   }
   return roots;
@@ -86,6 +120,7 @@ export function buildWorldChanges(parent,state){
   bridge(16.8,-3,10.2,false,w.meadow);
   bridge(0,15.9,10.8,true,w.lake);
   bridge(15.1,-15.1,19.2,false,w.clouds,Math.PI*0.25);
+  bridge(-15.1,15.1,19.2,false,w.lavender,-Math.PI*0.25);
   // Chest lid visibly opens and stays open after the one-time reward.
   const chest=group(g,-33,0,4);box(chest,1.05,.55,.75,C.wood,0,.36,0);for(const x of [-.38,.38])box(chest,.08,.58,.8,'#e6c67c',x,.36,0);
   const hinge=group(chest,0,.65,-.36);const lid=box(hinge,1.1,.18,.8,'#c89a5e',0,.02,.35);hinge.rotation.x=w.chest?-1.2:0;box(chest,.15,.16,.08,'#f6d785',0,.58,.4);

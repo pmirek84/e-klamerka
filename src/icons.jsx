@@ -40,5 +40,9 @@ const paths={
  duck:<><path d="M4 14c0-4 4-7 9-7 3 0 5 2 6 5l3 1-3 2c-1 3-3 5-7 5-4 0-8-2-8-6Z" fill="#facc15"/><circle cx="14" cy="10" r="1.5" fill="#1e293b"/></>,
  egg:<><path d="M12 3C8 3 5 8 5 13.5 5 18.5 8 22 12 22s7-3.5 7-8.5C19 8 16 3 12 3Z" fill="#fffaf0" stroke="#dfcaa2" strokeWidth="1.5"/></>,
  dog:<><ellipse cx="12" cy="12" rx="7" ry="6" fill="#f5ede0"/><circle cx="9" cy="11" r="1.5" fill="#2c1e13"/><circle cx="15" cy="11" r="1.5" fill="#2c1e13"/><path d="m11 14 1 1 1-1" stroke="#2c1e13" strokeWidth="1.5"/><path d="M6 7c-2 2-3 5-1 7M18 7c2 2 3 5 1 7" stroke="#b07d54" strokeWidth="2.5" strokeLinecap="round"/></>,
+ tractor:<><rect x="4" y="9" width="10" height="6" rx="2" fill="#e05353"/><rect x="8" y="5" width="6" height="5" rx="1" fill="#fffaf0"/><circle cx="6" cy="17" r="4.5" fill="#2b2d42" stroke="#e05353" strokeWidth="2"/><circle cx="17" cy="18" r="2.8" fill="#2b2d42" stroke="#e05353" strokeWidth="1.5"/><path d="M14 11h6v4h-6M6 4v3" stroke="#8d99ae" strokeWidth="2"/></>,
+ rainbow:<><path d="M4 19a8 8 0 0 1 16 0" stroke="#f87171" strokeWidth="2"/><path d="M6.5 19a5.5 5.5 0 0 1 11 0" stroke="#fbbf24" strokeWidth="2"/><path d="M9 19a3 3 0 0 1 6 0" stroke="#60a5fa" strokeWidth="2"/></>,
+ rain:<><path d="M7 14A4 4 0 0 1 6 6a5 5 0 0 1 9.9-1A3.5 3.5 0 0 1 19 12a3 3 0 0 1-3 3H7Z" fill="#bae6fd"/><path d="M8 17v3M12 17v3M16 17v3" stroke="#38bdf8" strokeWidth="2"/></>,
+ tea:<><path d="M4 9h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V9Z" fill="#f3eedd"/><path d="M16 11h2a2 2 0 0 1 0 4h-2M2 20h16" stroke="#92714c" strokeWidth="1.5"/><path d="M7 6c0-1 1-2 1-2M11 6c0-1 1-2 1-2" stroke="#b08968" strokeWidth="1.5"/></>,
 };
 export function Icon({name,size=24,...props}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name]||paths.leaf}</svg>;}

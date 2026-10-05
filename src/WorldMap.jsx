@@ -42,6 +42,7 @@ export function WorldMap({ game, current, position, onTravel, onOverview }) {
           {game.world?.meadow && <path d="M300 200 H490" stroke="#d5b882" strokeWidth="8" strokeLinecap="round" />}
           {game.world?.lake && <path d="M300 200 V330" stroke="#d5b882" strokeWidth="8" strokeLinecap="round" />}
           {game.world?.clouds && <path d="M300 200 L480 70" stroke="#d5b882" strokeWidth="8" strokeLinecap="round" />}
+          {game.world?.lavender && <path d="M300 200 L110 330" stroke="#d5b882" strokeWidth="8" strokeLinecap="round" />}
         </svg>
 
         {Object.entries(REGIONS).map(([id, r]) => {

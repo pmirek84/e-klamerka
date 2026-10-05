@@ -1,5 +1,5 @@
 import * as T from 'three';
-import { palette as C, material, box, ball, cylinder, group, bake, tree, house, pen, garden, shop, rabbit, person, stall, helper, visitor, owl, cat, beehive, duck, coop, dog, windowGlass } from './models.js';
+import { palette as C, material, box, ball, cylinder, group, bake, tree, house, pen, garden, shop, rabbit, person, stall, helper, visitor, owl, cat, beehive, duck, coop, dog, tractor, windowGlass } from './models.js';
 import { PLACES } from '../game.js';
 import { REGIONS, regionAt, insideWorld, visiblePlace, unlocked } from './regions.js';
 import { findPath } from './navigation.js';
@@ -29,7 +29,10 @@ export function createWorld(host, callbacks) {
   const camera=new T.PerspectiveCamera(42,1,.1,900);let yaw=.35,zoom=1,targetZoom=1,overview=false,worldOverview=false;
   const look=new T.Vector3(0,1,6), desiredLook=new T.Vector3(), offset=new T.Vector3();
   let width=1,height=1, state={}, raf=0, disposed=false, last=performance.now(),time=0,lastUi=0;
-  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,stallObj,helperObj,owlObj,catObj,beehiveObj,duckObj,coopObj,dogObj,guestTourist,player,worldChanges;let lastRegion=null;
+  const targets=[],dynamic=group(scene),scenery=group(scene);let houseObj,penObj,gardenObj,stallObj,helperObj,owlObj,catObj,beehiveObj,duckObj,coopObj,dogObj,tractorObj,guestTourist,player,worldChanges;let lastRegion=null;
+  // Weather system: 'sunny' (90s) -> 'rain' (50s) -> 'rainbow' (40s)
+  let weatherTime=10, currentWeather='sunny';
+  let rainGeo=null, rainMesh=null, rainbowMesh=null;
   // Trees, ponds, lanterns and the campfire block walking; ponds are new water carved into the plateaus.
   const obstacles=[...[[ -35,-4],[-31,-4],[-26,-5],[-23,-2],[-36,1],[-34,6],[-29,6],[-24,5],[25,4],[37,3],[26,-6]].map(([x,z])=>({x,z,w:.8,d:.8})),
     {x:1.9,z:-7.8,w:5.6,d:3.6},{x:2.5,z:33.2,w:9.2,d:8.8},{x:6.8,z:2.4,w:.9,d:.9},{x:3.6,z:-2.2,w:1.2,d:1.0},{x:0.6,z:2.6,w:.9,d:.8},
@@ -43,6 +46,48 @@ export function createWorld(host, callbacks) {
   const audio=createAudio();
   let post=createPost(renderer,scene,camera,quality);
   buildRegions(scene);
+
+  // Rain particles system
+  const rainCount = quality === 'low' ? 350 : 700;
+  const rainPos = new Float32Array(rainCount * 3);
+  for (let i = 0; i < rainCount; i++) {
+    rainPos[i * 3] = (Math.random() - 0.5) * 44;
+    rainPos[i * 3 + 1] = Math.random() * 20;
+    rainPos[i * 3 + 2] = (Math.random() - 0.5) * 44;
+  }
+  rainGeo = new T.BufferGeometry();
+  rainGeo.setAttribute('position', new T.BufferAttribute(rainPos, 3));
+  const rainMat = new T.PointsMaterial({
+    color: '#bde0fe',
+    size: 0.18,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false
+  });
+  rainMesh = new T.Points(rainGeo, rainMat);
+  scene.add(rainMesh);
+
+  // Luminous rainbow arch in the sky
+  const rainbowGroup = new T.Group();
+  const rainbowColors = ['#ff595e', '#ff924c', '#ffca3a', '#8ac926', '#1982c4', '#6a4c93'];
+  rainbowColors.forEach((col, idx) => {
+    const radius = 55 + idx * 0.85;
+    const arcGeo = new T.TorusGeometry(radius, 0.38, 8, 48, Math.PI);
+    const arcMat = new T.MeshBasicMaterial({
+      color: col,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: T.DoubleSide
+    });
+    const arc = new T.Mesh(arcGeo, arcMat);
+    arc.rotation.z = Math.PI;
+    rainbowGroup.add(arc);
+  });
+  rainbowGroup.position.set(0, -6, -38);
+  rainbowGroup.rotation.y = 0.35;
+  scene.add(rainbowGroup);
+  rainbowMesh = rainbowGroup;
 
   // Trees frame the clearing rather than obscuring its center.
   const treePositions=[[-10,-5,1.2],[-8.6,-7,1.1],[-6.7,-6.3,.95],[-11,-1.5,1],[-5.2,-8.4,1.2],[-2.8,-9.3,.95],[9.8,-1,1.1],[10,-6.6,.94],[7,-8.7,.8],[-10,7,.8],[7.5,8.3,.78],[-8,8.5,.65]];
@@ -121,6 +166,7 @@ export function createWorld(host, callbacks) {
     if(!duckObj){duckObj=duck(dynamic,0,24.5);targets.push(duckObj.root);}
     if(!coopObj){coopObj=coop(dynamic,3.6,-2.2);targets.push(coopObj.root);}
     if(!dogObj){dogObj=dog(dynamic,0.6,2.6);targets.push(dogObj.root);}
+    if(!tractorObj){tractorObj=tractor(dynamic,-3.8,2.2);targets.push(tractorObj.root);}
     if(!player||prev.avatar!==next.avatar){if(player)player.root.removeFromParent();player=person(scene,next.avatar);player.root.position.copy(pos);player.onStep=footstep;}
     if(!walkable(pos.x,pos.z)){
       let safe=null;
@@ -165,7 +211,7 @@ export function createWorld(host, callbacks) {
   function inside(x,z){return insideWorld(x,z,state);}
   function walkable(x,z){
     if(!inside(x,z))return false;
-    const blocks=[...obstacles,{x:1,z:-30,w:4.6,d:3.4},...(state.world?.windmill?[{x:34,z:-4,w:2.7,d:2.7}]:[]),{x:state.houseLevel>=3?-2.15:-3,z:state.houseLevel>=3?-1.8:-2,w:state.houseLevel>=3?6.5:4.6,d:state.houseLevel>=3?4.5:3.8},...(state.pen?[{x:5.3,z:2.3,w:state.penLevel>=2?6.2:5.2,d:4.2}]:[]),...(state.stall?[{x:-1.2,z:8.5,w:2.2,d:1.6}]:[])];
+    const blocks=[...obstacles,{x:1,z:-30,w:4.6,d:3.4},...(state.world?.windmill?[{x:34,z:-4,w:2.7,d:2.7}]:[]),{x:state.houseLevel>=3?-2.15:-3,z:state.houseLevel>=3?-1.8:-2,w:state.houseLevel>=3?6.5:4.6,d:state.houseLevel>=3?4.5:3.8},...(state.pen?[{x:5.3,z:2.3,w:state.penLevel>=2?6.2:5.2,d:4.2}]:[]),...(state.stall?[{x:-1.2,z:8.5,w:2.2,d:1.6}]:[]),...(!state.ridingTractor?[{x:-3.8,z:2.2,w:1.2,d:1.5}]:[])];
     return !blocks.some(b=>Math.abs(x-b.x)<b.w/2+.3&&Math.abs(z-b.z)<b.d/2+.3);
   }
   function route(x,z){return findPath([pos.x,pos.z],[x,z],walkable).map(([px,pz])=>new T.Vector3(px,0,pz));}
@@ -397,6 +443,12 @@ export function createWorld(host, callbacks) {
       baseCol = '#ffca3a'; fxType = 'coin'; audio.coin();
     } else if (kind.includes('unlock') || kind.includes('upgrade') || kind.includes('build')) {
       baseCol = '#ff9f1c'; fxType = 'star'; audio.fanfare();
+    } else if (kind === 'tractor' || kind.includes('tractor')) {
+      baseCol = '#e05353'; fxType = 'star'; audio.honk();
+    } else if (kind === 'lavenderField' || kind.includes('lavender')) {
+      baseCol = '#b388ff'; fxType = 'star'; audio.harvest();
+    } else if (kind === 'teaGazebo' || kind.includes('tea')) {
+      baseCol = '#f5deb3'; fxType = 'heart'; audio.sizzle();
     } else {
       audio.chime();
     }
@@ -415,8 +467,9 @@ export function createWorld(host, callbacks) {
       const inputZ=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);
       if(inputX||inputZ){path=[];overview=false;worldOverview=false;const length=Math.max(1,Math.hypot(inputX,inputZ));dx=(inputX*Math.cos(yaw)+inputZ*Math.sin(yaw))/length;dz=(-inputX*Math.sin(yaw)+inputZ*Math.cos(yaw))/length;}
       else if(path.length){const v=path[0].clone().sub(pos);if(v.length()<.15)path.shift();else{v.normalize();dx=v.x;dz=v.z;}}
+      const isRiding = Boolean(state?.ridingTractor);
       const isSpeedBoosted = (state?.speedBoostUntil || 0) > Date.now();
-      const speedMult = isSpeedBoosted ? 1.42 : 1.0;
+      const speedMult = isRiding ? 1.75 : isSpeedBoosted ? 1.42 : 1.0;
       const ox=pos.x,oz=pos.z,step=Math.min(dt*3.4*speedMult,path.length?pos.distanceTo(path[0]):Infinity);
       if(walkable(pos.x+dx*step,pos.z))pos.x+=dx*step;
       if(walkable(pos.x,pos.z+dz*step))pos.z+=dz*step;
@@ -424,9 +477,24 @@ export function createWorld(host, callbacks) {
       if(isSpeedBoosted && speed > .1 && Math.random() < .2) {
         burst(pos.x + (Math.random() - .5) * .3, pos.z + (Math.random() - .5) * .3, '#ffd152', 'star');
       }
+      if(isRiding && speed > .1 && Math.random() < .15) {
+        burst(pos.x - (Math.sin(player?.root?.rotation?.y || 0) * .6), pos.z - (Math.cos(player?.root?.rotation?.y || 0) * .6), '#ebe3ce', 'wood');
+      }
+    }
+    if(tractorObj){
+      if(state?.ridingTractor){
+        tractorObj.root.position.set(pos.x, 0, pos.z);
+        if(player) tractorObj.root.rotation.y = player.root.rotation.y;
+        tractorObj.update(time, speed > .04, speed);
+      } else {
+        tractorObj.root.position.set(-3.8, 0, 2.2);
+        tractorObj.root.rotation.y = 0.35;
+        tractorObj.update(time, false, 0);
+      }
     }
     if(player){
       player.root.position.copy(pos);
+      if(state?.ridingTractor) player.root.position.y = 0.32;
       const moving=speed>.04;
       player.update({ moving, speed, dx, dz, time, cameraYaw: yaw, busy: time < busyUntil });
       U.uPlayer.value.copy(pos);
@@ -492,6 +560,55 @@ export function createWorld(host, callbacks) {
     ambient.update(dt,time,{night,player:pos});
     audio.update({night,water:waterNearby(),moving:speed>.04});
 
+    // Dynamic Weather Cycle: sunny (75s) -> rain (55s) -> rainbow (35s) -> sunny
+    weatherTime = (weatherTime + dt) % 180;
+    if (weatherTime < 75) {
+      currentWeather = 'sunny';
+    } else if (weatherTime < 130) {
+      currentWeather = 'rain';
+    } else if (weatherTime < 165) {
+      currentWeather = 'rainbow';
+    } else {
+      currentWeather = 'sunny';
+    }
+
+    if (currentWeather === 'rain') {
+      audio.rain(true);
+      if (rainMesh && rainGeo) {
+        rainMesh.visible = true;
+        rainMesh.material.opacity = Math.min(0.85, rainMesh.material.opacity + dt * 1.2);
+        const pArr = rainGeo.attributes.position.array;
+        for (let i = 1; i < pArr.length; i += 3) {
+          pArr[i] -= dt * 26;
+          if (pArr[i] < 0) pArr[i] = 16 + Math.random() * 2;
+        }
+        rainGeo.attributes.position.needsUpdate = true;
+        rainMesh.position.set(pos.x, 0, pos.z);
+      }
+      if (state.planted && !state.watered && time - lastAutoWater > 6) {
+        lastAutoWater = time;
+        callbacks.onWaterAuto?.();
+      }
+    } else {
+      audio.rain(false);
+      if (rainMesh) {
+        rainMesh.material.opacity = Math.max(0, rainMesh.material.opacity - dt * 2);
+        if (rainMesh.material.opacity <= 0) rainMesh.visible = false;
+      }
+    }
+
+    if (currentWeather === 'rainbow') {
+      if (rainbowMesh) {
+        rainbowMesh.visible = true;
+        const rbProg = (weatherTime - 130) / 35;
+        const rbOpacity = Math.sin(Math.max(0, Math.min(1, rbProg)) * Math.PI) * 0.85;
+        rainbowMesh.children.forEach(c => { if (c.material) c.material.opacity = rbOpacity; });
+      }
+      callbacks.onRainbowSeen?.();
+    } else if (rainbowMesh) {
+      rainbowMesh.visible = false;
+    }
+
     // 60 FPS Direct Label Synchronization (Eliminates DOM lag and wobble)
     const labelWrap = host.querySelector('.world-labels') || host.parentElement?.querySelector('.world-labels') || document.querySelector('.world-labels');
     if (labelWrap) {
@@ -515,7 +632,9 @@ export function createWorld(host, callbacks) {
       for(const [id,p] of Object.entries(PLACES)){if(!visiblePlace(p,state))continue;const d=Math.hypot(pos.x-p.approach[0],pos.z-p.approach[1]);if(d<dist){nearest=id;dist=d;}}
       const currentRegion=regionAt(pos.x,pos.z);
       if(currentRegion&&currentRegion!==lastRegion){lastRegion=currentRegion;callbacks.onRegion?.(currentRegion);}
-      callbacks.onFrame({region:lastRegion||'farm',position:[pos.x,pos.z],destination:selected,near:dist<1.65?nearest:null,moving:speed>.04,busy:time<busyUntil,clock:sky.clock(),muted:audio.muted,labels:Object.fromEntries(Object.entries(PLACES).filter(([,p])=>visiblePlace(p,state)).map(([id,p])=>[id,project(p.label)]))});lastUi=now;
+      const weatherLabel = currentWeather === 'rain' ? 'Letni deszczyk' : currentWeather === 'rainbow' ? 'Cudowna tęcza' : 'Słonecznie';
+      const weatherIcon = currentWeather === 'rain' ? 'rain' : currentWeather === 'rainbow' ? 'rainbow' : 'sunny';
+      callbacks.onFrame({region:lastRegion||'farm',position:[pos.x,pos.z],destination:selected,near:dist<1.65?nearest:null,moving:speed>.04,busy:time<busyUntil,clock:sky.clock(),weather:{type:currentWeather,label:weatherLabel,icon:weatherIcon},muted:audio.muted,labels:Object.fromEntries(Object.entries(PLACES).filter(([,p])=>visiblePlace(p,state)).map(([id,p])=>[id,project(p.label)]))});lastUi=now;
     }
     if(post)post.render(night);else renderer.render(scene,camera);
     raf=requestAnimationFrame(frame);
@@ -541,6 +660,7 @@ export function createWorld(host, callbacks) {
       else if (name === 'quack') audio.quack();
       else if (name === 'cluck') audio.cluck();
       else if (name === 'bark') audio.bark();
+      else if (name === 'honk') audio.honk();
       else audio.chime();
     },
     getPlayerScreenPos() {

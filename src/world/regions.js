@@ -6,8 +6,8 @@ export const REGIONS = {
   meadow: { name: 'Słoneczna Łąka', subtitle: 'Nowy sad, wiatrak i większe zbiory', x: 31, z: -1, rx: 10.2, rz: 8.7, icon: 'leaf', destination: 'orchard', gate: 'meadowGate', cost: { wood: 14, stone: 10, crystals: 3 }, color: '#d4c683' },
   lake: { name: 'Lazurowe Jezioro', subtitle: 'Złota przystań, połów rybek i perły', x: 0, z: 30, rx: 10.5, rz: 9.2, icon: 'stall', destination: 'lakeDock', gate: 'lakeGate', cost: { wood: 16, stone: 12, crystals: 3 }, color: '#5b9eb8' },
   clouds: { name: 'Gwiezdna Polana', subtitle: 'Gwiezdny pył i kryształowy teleskop', x: 28, z: -28, rx: 9.5, rz: 8.8, icon: 'star', destination: 'observatory', gate: 'cloudsGate', cost: { wood: 20, stone: 15, crystals: 6 }, color: '#8a77b8' },
+  lavender: { name: 'Lawendowa Dolina', subtitle: 'Kwitnąca lawenda, zapach ziół i altanka herbatki', x: -28, z: 28, rx: 9.5, rz: 8.8, icon: 'flower', destination: 'lavenderField', gate: 'lavenderGate', cost: { wood: 18, stone: 12, crystals: 4 }, color: '#9f85d8' },
   // Planowane kolejne krainy (Wkrótce / Nowe Horyzonty):
-  lavender: { name: 'Lawendowa Dolina', subtitle: 'Bursztynowa pasieka, dzikie pszczoły i zapach ziół', x: -28, z: 28, rx: 9.5, rz: 8.8, icon: 'flower', cost: { wood: 24, stone: 18, crystals: 8 }, color: '#9f85d8', upcoming: true, preview: 'Słoneczna kraina fioletowej lawendy, pasiek z miodem, ziół do herbatki i motylich łąk.' },
   springs: { name: 'Gorące Źródła', subtitle: 'Parujące gejzery, relaks w termach i złote samorodki', x: -28, z: -28, rx: 9.5, rz: 8.8, icon: 'pump', cost: { wood: 28, stone: 22, crystals: 10 }, color: '#e88d67', upcoming: true, preview: 'Wulkaniczne ciepłe źródła, relaksujące kąpieliska dla mieszkańców farmy i cenne minerały.' },
   mushrooms: { name: 'Zaczarowana Puszcza', subtitle: 'Świecące grzyby, leśne owoce i tajemnicze elfy', x: 28, z: 28, rx: 9.5, rz: 8.8, icon: 'mushroom', cost: { wood: 32, stone: 25, crystals: 12 }, color: '#4aa889', upcoming: true, preview: 'Baśniowy gaj z gigantycznymi, świecącymi nocą kapeluszami grzybów i jagodami.' },
   peaks: { name: 'Zimowy Szczyt', subtitle: 'Wieczny śnieg, lodowy kryształ i przytulna chatka', x: 0, z: -58, rx: 10, rz: 9, icon: 'snow', cost: { wood: 40, stone: 30, crystals: 16 }, color: '#78bee8', upcoming: true, preview: 'Mroźna kraina ośnieżonych świerków, rzeźb z lodu i ciepłego kominka z gorącym kakao.' }
@@ -26,9 +26,12 @@ export const WORLD_PLACES = {
   lakePearls: { title: 'Perłowa Zatoczka', short: 'Perły', region: 'lake', x: -3.5, z: 32, approach: [-2.5, 31], label: [-3.5, 2.5, 32] },
   cloudsGate: { title: 'Ścieżka na Gwiezdną Polanę', short: 'Ścieżka gwiazd', x: 8.6, z: -8.6, approach: [7.5, -7.5], label: [8.6, 2.2, -8.6] },
   observatory: { title: 'Obserwatorium Gwiazd', short: 'Teleskop', region: 'clouds', x: 28, z: -28, approach: [26, -27], label: [28, 4.5, -28] },
+  lavenderGate: { title: 'Most do Lawendowej Doliny', short: 'Most lawendowy', x: -8.6, z: 8.6, approach: [-7.5, 7.5], label: [-8.6, 2.2, 8.6] },
+  lavenderField: { title: 'Pola Kwitnącej Lawendy', short: 'Lawenda', region: 'lavender', x: -28, z: 28, approach: [-26, 27], label: [-28, 3.5, 28] },
+  teaGazebo: { title: 'Altanka Zielarki Melisy', short: 'Herbatka', region: 'lavender', x: -31, z: 25, approach: [-30, 26], label: [-31, 3.8, 25] },
 };
 
-export const NEW_WORLD = { quarry: false, meadow: false, lake: false, clouds: false, orchard: false, windmill: false, chest: false, visited: ['farm'], lastGrove: 0, lastCrystals: 0, lastLake: 0, lastObservatory: 0 };
+export const NEW_WORLD = { quarry: false, meadow: false, lake: false, clouds: false, lavender: false, orchard: false, windmill: false, chest: false, visited: ['farm'], lastGrove: 0, lastCrystals: 0, lastLake: 0, lastObservatory: 0, lastLavender: 0, lastTea: 0 };
 
 export function normalizeWorld(raw={}) {
   raw = raw && typeof raw === 'object' ? raw : {};
@@ -38,6 +41,7 @@ export function normalizeWorld(raw={}) {
     meadow: !!raw.meadow,
     lake: !!raw.lake,
     clouds: !!raw.clouds,
+    lavender: !!raw.lavender,
     orchard: !!raw.orchard && !!raw.meadow,
     windmill: !!raw.windmill && !!raw.meadow,
     chest: !!raw.chest,
@@ -45,7 +49,9 @@ export function normalizeWorld(raw={}) {
     lastGrove: Math.max(0, Number(raw.lastGrove) || 0),
     lastCrystals: Math.max(0, Number(raw.lastCrystals) || 0),
     lastLake: Math.max(0, Number(raw.lastLake) || 0),
-    lastObservatory: Math.max(0, Number(raw.lastObservatory) || 0)
+    lastObservatory: Math.max(0, Number(raw.lastObservatory) || 0),
+    lastLavender: Math.max(0, Number(raw.lastLavender) || 0),
+    lastTea: Math.max(0, Number(raw.lastTea) || 0)
   };
 }
 
@@ -60,6 +66,7 @@ export function insideWorld(x, z, s) {
   if (s.world?.meadow && x >= 11.8 && x <= 22 && Math.abs(z + 3) < 1.02) return true;
   if (s.world?.lake && Math.abs(x) < 1.02 && z >= 10 && z <= 21) return true;
   if (s.world?.clouds && x >= 8 && x <= 22 && z <= -8 && z >= -22 && Math.abs((x - 8) - (-z - 8)) < 2.5) return true;
+  if (s.world?.lavender && x <= -8 && x >= -22 && z >= 8 && z <= 22 && Math.abs((-x - 8) - (z - 8)) < 2.5) return true;
   return Array.from({ length: s.landLevel || 0 }, (_, i) => 13 + i * 2.8).some(cx => ((x - cx) / 2.8) ** 2 + ((z - 4.8) / 3.8) ** 2 < 1);
 }
 

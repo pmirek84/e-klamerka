@@ -824,3 +824,89 @@ export function dog(p, x = 0.6, z = 2.6) {
   return { root, body, headGroup, tail, ears, update };
 }
 
+export function tractor(p, x = -3.8, z = 2.2) {
+  const root = group(p, x, 0, z);
+  root.userData.place = 'tractor';
+  const body = group(root);
+  shadow(root, 0, 0, 1.6, 2.1);
+
+  // Red chassis and engine hood
+  box(body, .84, .52, 1.25, '#d63031', 0, .54, .2);
+  // Front radiator grille
+  box(body, .72, .42, .08, '#2d3436', 0, .52, .84);
+  for (let i = -2; i <= 2; i++) {
+    box(body, .55, .03, .02, '#b2bec3', 0, .52 + i * .07, .89);
+  }
+
+  // Front yellow headlights
+  for (const s of [-1, 1]) {
+    const lamp = cylinder(body, .09, .09, .06, '#fcedcf', s * .28, .62, .85, 10);
+    lamp.rotation.x = Math.PI / 2;
+    cylinder(body, .11, .11, .03, '#b2bec3', s * .28, .62, .83, 10).rotation.x = Math.PI / 2;
+  }
+
+  // Vintage vertical exhaust chimney with smoke puff
+  cylinder(body, .04, .045, .65, '#636e72', .26, .98, .45);
+  const cap = cylinder(body, .05, .02, .08, '#2d3436', .26, 1.33, .45);
+  cap.rotation.z = .3;
+  const puff = ball(body, .07, '#f1f2f6', .29, 1.42, .45, 1, 1, 1);
+
+  // Footrests / floorboards
+  box(body, 1.15, .08, .65, '#636e72', 0, .31, -.32);
+
+  // Driver seat and steering column
+  box(body, .52, .08, .42, '#2d3436', 0, .65, -.45);
+  box(body, .52, .32, .08, '#2d3436', 0, .82, -.64); // backrest
+  const col = cylinder(body, .03, .03, .42, '#2d3436', 0, .82, -.12);
+  col.rotation.x = -.45;
+  const wheel = new T.Mesh(new T.TorusGeometry(.15, .022, 6, 14), material('#2d3436'));
+  wheel.position.set(0, .98, -.21); wheel.rotation.x = .48; body.add(wheel);
+
+  // Rear fenders
+  for (const s of [-1, 1]) {
+    box(body, .22, .32, .85, '#d63031', s * .56, .78, -.45);
+  }
+
+  // Wheels (interactive rotation)
+  const wheels = [];
+  // Big rear wheels (treaded)
+  for (const s of [-1, 1]) {
+    const wg = group(body, s * .58, .48, -.45);
+    const tire = cylinder(wg, .46, .46, .2, '#2b2d42', 0, 0, 0, 16);
+    tire.rotation.z = Math.PI / 2;
+    const rim = cylinder(wg, .28, .28, .22, '#fcedcf', 0, 0, 0, 12);
+    rim.rotation.z = Math.PI / 2;
+    ball(wg, .08, '#d63031', s * .12, 0, 0); // hub
+    wheels.push(wg);
+  }
+  // Small front steering wheels
+  for (const s of [-1, 1]) {
+    const wg = group(body, s * .42, .26, .58);
+    const tire = cylinder(wg, .25, .25, .14, '#2b2d42', 0, 0, 0, 14);
+    tire.rotation.z = Math.PI / 2;
+    const rim = cylinder(wg, .14, .14, .15, '#fcedcf', 0, 0, 0, 10);
+    rim.rotation.z = Math.PI / 2;
+    ball(wg, .06, '#d63031', s * .08, 0, 0);
+    wheels.push(wg);
+  }
+
+  function update(time, isMoving = false, speed = 0) {
+    // Engine gentle idle vibrate
+    body.position.y = Math.sin(time * 20) * (isMoving ? .014 : .005);
+    // Exhaust puff pulsing
+    puff.scale.setScalar(0.7 + Math.sin(time * 14) * 0.4);
+    puff.position.y = 1.42 + Math.sin(time * 8) * 0.05;
+
+    // Spin wheels when rolling
+    if (isMoving && speed !== 0) {
+      wheels[0].rotation.x += speed * 4.5;
+      wheels[1].rotation.x += speed * 4.5;
+      wheels[2].rotation.x += speed * 8.2;
+      wheels[3].rotation.x += speed * 8.2;
+    }
+  }
+
+  return { root, body, wheels, update, defaultPos: { x, z } };
+}
+
+

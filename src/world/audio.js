@@ -345,12 +345,69 @@ export function createAudio() {
     });
   }
 
+  function honk() {
+    if (!ctx || muted) return;
+    const t = ctx.currentTime;
+    // Vintage bulb horn 'toot-toot!'
+    [0, 0.14].forEach((delay) => {
+      const st = t + delay;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(370, st);
+      o.frequency.exponentialRampToValueAtTime(440, st + 0.08);
+      g.gain.setValueAtTime(0, st);
+      g.gain.linearRampToValueAtTime(0.12, st + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0005, st + 0.11);
+      o.connect(g).connect(master);
+      o.start(st); o.stop(st + 0.12);
+    });
+  }
+
+  let rainNode = null, rainGain = null;
+  function rain(active) {
+    if (!ctx) return;
+    if (active && !rainNode) {
+      const bufSize = ctx.sampleRate * 2;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      let lastOut = 0.0;
+      for (let i = 0; i < bufSize; i++) {
+        const white = Math.random() * 2 - 1;
+        lastOut = (lastOut + 0.02 * white) / 1.02;
+        data[i] = lastOut * 3.5;
+      }
+      rainNode = ctx.createBufferSource();
+      rainNode.buffer = buf;
+      rainNode.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 1400;
+      rainGain = ctx.createGain();
+      rainGain.gain.setValueAtTime(0.001, ctx.currentTime);
+      rainGain.gain.linearRampToValueAtTime(muted ? 0 : 0.09, ctx.currentTime + 1.2);
+      rainNode.connect(filter).connect(rainGain).connect(master);
+      rainNode.start();
+    } else if (!active && rainNode) {
+      if (rainGain) {
+        rainGain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+      }
+      setTimeout(() => {
+        try { rainNode?.stop(); rainNode?.disconnect(); } catch {}
+        rainNode = null; rainGain = null;
+      }, 900);
+    }
+  }
+
   function setMuted(v) {
     muted = v; localStorage.setItem(MUTE_KEY, v ? '1' : '0');
     if (master) master.gain.setTargetAtTime(v ? 0 : .7, ctx.currentTime, .1);
+    if (rainGain) rainGain.gain.setTargetAtTime(v ? 0 : 0.09, ctx.currentTime, .1);
   }
 
-  function dispose() { ctx?.close(); ctx = null; }
+  function dispose() {
+    rain(false);
+    ctx?.close(); ctx = null;
+  }
 
   return {
     start,
@@ -374,6 +431,8 @@ export function createAudio() {
     quack,
     cluck,
     bark,
+    honk,
+    rain,
     setMuted,
     get muted() { return muted; },
     dispose

@@ -234,6 +234,87 @@ button svg { flex-shrink: 0; }
 .clock-pill.night .clock-orb { background: radial-gradient(circle at 35% 35%, #ffffff, #c9d3ff); color: #55609a; box-shadow: 0 0 12px #c9d3ff88; }
 .sound-toggle span { font-size: 17px; line-height: 1; }
 
+.weather-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  transition: all .5s ease;
+}
+.weather-pill.sunny {
+  background: linear-gradient(135deg, #fff9e6, #fff0c2);
+  border: 1.5px solid #ffe182;
+  color: #8c5b16;
+}
+.weather-pill.rain {
+  background: linear-gradient(135deg, #e6f4ff, #cfe6ff);
+  border: 1.5px solid #a3cfff;
+  color: #1a568c;
+  animation: rain-pulse 2s infinite ease-in-out;
+}
+.weather-pill.rainbow {
+  background: linear-gradient(135deg, #ffeef8, #f0f7ff, #f2ffe6);
+  border: 1.5px solid #fbcfe8;
+  color: #702459;
+  box-shadow: 0 0 16px rgba(251, 146, 60, 0.35);
+  animation: rainbow-glow 3s infinite alternate;
+}
+@keyframes rain-pulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes rainbow-glow {
+  0% { box-shadow: 0 0 8px rgba(244, 114, 182, 0.4); }
+  100% { box-shadow: 0 0 18px rgba(129, 140, 248, 0.6); }
+}
+
+.riding-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 10px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffeae8, #ffd5d1);
+  border: 1.5px solid #ffaaa1;
+  color: #a82313;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  animation: tractor-chug 0.4s infinite alternate ease-in-out;
+}
+@keyframes tractor-chug {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-1.5px); }
+}
+.dismount-btn {
+  background: #a82313 !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 3px 8px !important;
+  border-radius: 10px !important;
+  font-size: 10px !important;
+  cursor: pointer;
+  font-weight: 800;
+  margin-left: 2px;
+}
+.dismount-btn:hover {
+  background: #c42b18 !important;
+}
+
+.resource.lavender {
+  background: linear-gradient(180deg, #fbf7ff, #f3ebfc);
+  border-color: #dfcdfa;
+  color: #6a3aa8;
+}
+.resource.lavender svg {
+  color: #8c52d4;
+}
+
 .world-labels {
   position: absolute;
   inset: 0;

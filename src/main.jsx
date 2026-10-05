@@ -42,7 +42,9 @@ const resourceNames = {
   flour: 'mąka',
   crystals: 'kryształy',
   coins: 'monety',
-  fish: 'rybki'
+  fish: 'rybki',
+  lavender: 'lawenda',
+  tea: 'herbatka'
 };
 
 const resourceIcons = {
@@ -66,14 +68,20 @@ const resourceIcons = {
   backpack: 'backpack',
   pickaxe: 'pickaxe',
   badge: 'badge',
-  duck: 'duck'
+  duck: 'duck',
+  lavender: 'flower',
+  tea: 'tea',
+  tractor: 'tractor',
+  rain: 'rain',
+  rainbow: 'rainbow',
+  sunny: 'sun'
 };
 
 function Resources({ state, all = false, onOpenBackpack }) {
   // HUD: max 3 contextual resources + coins (Section 17)
   const keys = all
-    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'honey', 'eggs', 'flour', 'crystals', 'coins', 'fish']
-    : ['wood', 'stone', state.plantedCrop === 'wheat' || state.wheat > 0 ? 'wheat' : 'carrots', 'coins'];
+    ? ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'honey', 'eggs', 'flour', 'crystals', 'lavender', 'coins', 'fish']
+    : ['wood', 'stone', state.plantedCrop === 'wheat' || state.wheat > 0 ? 'wheat' : state.lavender > 0 ? 'lavender' : 'carrots', 'coins'];
 
   return (
     <div className="resources" aria-label="Zasoby">
@@ -267,6 +275,24 @@ function App() {
       } else if (action === 'claim-sticker') {
         spawnReward('Zdobyto odznakę w albumie! ⭐', '📖', '#f5a623');
         worldRef.current?.playSound('fanfare');
+      } else if (action === 'harvest-lavender' || action === 'lavenderField') {
+        spawnReward('+2 Bukiety Lawendy!', '🪻', '#b388ff');
+        worldRef.current?.playSound('harvest');
+      } else if (action === 'brew-tea' || action === 'teaGazebo') {
+        spawnReward('Zaparzono Herbatkę Lawendową!', '🍵', '#f5deb3');
+        worldRef.current?.playSound('sizzle');
+      } else if (action === 'tractor' || action === 'mount-tractor') {
+        spawnReward(next.ridingTractor ? 'Pyr-pyr! Prowadzisz Traktorek!' : 'Zsiadłeś z traktorka.', '🚜', '#e05353');
+        worldRef.current?.playSound('honk');
+      } else if (action === 'dismount-tractor') {
+        spawnReward('Zsiadłeś z traktorka.', '🚜', '#e05353');
+        worldRef.current?.playSound('honk');
+      } else if (action === 'water-auto') {
+        spawnReward('Letni deszczyk podlał ogród! 🌧️', '💧', '#3ba4f5');
+        worldRef.current?.playSound('water');
+      } else if (action === 'see-rainbow') {
+        spawnReward('Zauważono tęczę na niebie! 🌈', '✨', '#ff9f43');
+        worldRef.current?.playSound('fanfare');
       } else if (action.startsWith('cook:')) {
         spawnReward('Ugotowano potrawę!', '🍳', '#ff9f43');
         worldRef.current?.playSound('sizzle');
@@ -322,6 +348,9 @@ function App() {
     return result;
   }, [say, spawnReward]);
 
+  const performRef = useRef();
+  performRef.current = perform;
+
   useEffect(() => {
     let world;
     try {
@@ -329,7 +358,11 @@ function App() {
         onSelect: setSelected,
         onFrame: setFrame,
         onRegion: id => visitRef.current(id),
-        onAction: () => actionRef.current()
+        onAction: () => actionRef.current(),
+        onWaterAuto: () => performRef.current?.('water-auto'),
+        onRainbowSeen: () => {
+          if (!gameRef.current?.seenRainbow) performRef.current?.('see-rainbow');
+        }
       });
       worldRef.current = world;
       world.setGame(gameRef.current);
@@ -528,6 +561,19 @@ function App() {
             <div className={`clock-pill ${frame.clock.night ? 'night' : ''}`} aria-label={`Godzina w grze: ${frame.clock.label}`}>
               <span className="clock-orb" aria-hidden="true">{frame.clock.night ? '☾' : '☀'}</span>
               <span><small>{frame.clock.phase.toLocaleUpperCase('pl')}</small><b>{frame.clock.label}</b></span>
+            </div>
+          )}
+          {frame.weather && (
+            <div className={`weather-pill ${frame.weather.type}`} title={`Pogoda: ${frame.weather.label}`}>
+              <span className="weather-icon"><Icon name={frame.weather.icon} size={16} /></span>
+              <span><b>{frame.weather.label}</b></span>
+            </div>
+          )}
+          {game.ridingTractor && (
+            <div className="riding-pill" title="Jedziesz traktorkiem! (+75% prędkości)">
+              <span>🚜</span>
+              <span><b>Traktorek</b></span>
+              <button className="dismount-btn" onClick={() => perform('dismount-tractor')} title="Zsiądź z traktorka">Zsiądź</button>
             </div>
           )}
           {game.speedBoostUntil > Date.now() && (
@@ -1143,6 +1189,7 @@ function App() {
               { action: 'sell-egg', icon: 'egg', title: 'Sprzedaj 2 jajka', desc: 'Świeże jajka z wiejskiego kurnika', label: 'Sprzedaj · +3', available: (game.eggs || 0) >= 2 },
               { action: 'sell-flour', icon: 'flour', title: 'Sprzedaj 1 mąkę', desc: 'Świeża mąka ze skrzydlatego młyna', label: 'Sprzedaj · +3', available: game.flour >= 1 },
               { action: 'sell-crystal', icon: 'crystal', title: 'Sprzedaj 1 kryształ', desc: 'Rzadki kryształ ze wzgórz', label: 'Sprzedaj · +4', available: game.crystals >= 1 },
+              { action: 'sell-lavender', icon: 'flower', title: 'Sprzedaj bukiet lawendy', desc: 'Pachnąca lawenda zebrana w dolinie', label: 'Sprzedaj · +3', available: (game.lavender || 0) >= 1 },
               { action: 'sell-baby', icon: 'rabbit', title: 'Nowy dom dla maluszka', desc: `Masz ${game.babies} małych króliczków.`, label: 'Adopcja · +5', available: game.babies > 0 }
             ].map(item => (
               <article key={item.action}>

@@ -356,6 +356,16 @@ export const TOURIST_GUESTS = [
     favorite: 'bread',
     wantsHint: 'Chętnie skosztuje ciepłego chleba z mąki lub soczystych owoców.',
     review: '„Przytulne łóżko i serdeczni gospodarze. Na pewno wrócę z kolejnej wyprawy!”'
+  },
+  {
+    id: 't5',
+    name: 'Melisa Aromaterapeutka',
+    origin: 'Lawendowa Dolina',
+    avatar: 'flower',
+    greeting: '„Witajcie! Przybywam z Lawendowej Doliny z bukietem suszonych ziół. Szukam oazy spokoju i pachnącej herbatki!”',
+    favorite: 'lavenderTea',
+    wantsHint: 'Najbardziej ucieszy się z uspokajającej herbatki lawendowej.',
+    review: '„Cudowny relaks, gościnność i wspaniała domowa herbatka z miodem!”'
   }
 ];
 
@@ -505,6 +515,28 @@ export const COOKING_RECIPES = [
     effectDesc: '+35% prędkości chodu (60s)',
     sellPrice: 16,
     buffDuration: 60000
+  },
+  {
+    id: 'lavenderTea',
+    name: 'Herbatka Lawendowa z Miodem',
+    desc: 'Uspokajający napar z kwiatów lawendy i miodu z pasieki.',
+    icon: '🪻',
+    cost: { lavender: 1, honey: 1 },
+    effect: 'speed',
+    effectDesc: '+45% prędkości chodu (90s) i spokój',
+    sellPrice: 20,
+    buffDuration: 90000
+  },
+  {
+    id: 'lavenderSachet',
+    name: 'Woreczek Zapachowy z Ziół',
+    desc: 'Pachnący woreczek z suszoną lawendą i drewnem.',
+    icon: '🌸',
+    cost: { lavender: 2, wood: 1 },
+    effect: 'coins',
+    effectDesc: 'Pamiątka z doliny (sprzedaż: +18 monet)',
+    sellPrice: 18,
+    buffDuration: 60000
   }
 ];
 
@@ -520,8 +552,11 @@ export const STICKERS = [
   { id: 'first_cook', title: 'Mistrz Patelni', desc: 'Ugotuj ciepłe danie w wiejskiej kuchni.', icon: '🍳', reward: { coins: 5 }, check: s => Object.values(s.dishes || {}).some(v => v > 0) },
   { id: 'master_chef', title: 'Wiejski Szef Kuchni', desc: 'Ugotuj i miej w spiżarni co najmniej 3 dania.', icon: '👨‍🍳', reward: { coins: 10 }, check: s => Object.values(s.dishes || {}).filter(v => v > 0).length >= 3 },
   { id: 'owl_riddles', title: 'Mądra Głowa', desc: 'Rozwiąż co najmniej 3 zagadki Sowy Klary.', icon: '🦉', reward: { coins: 8 }, check: s => (s.solvedRiddles?.length || 0) >= 3 },
-  { id: 'bridge_builder', title: 'Odkrywca Mostów', desc: 'Wybuduj i połącz most do dowolnej nowej krainy.', icon: '🌉', reward: { coins: 10 }, check: s => Boolean(s.world?.quarry || s.world?.meadow || s.world?.lake || s.world?.clouds) },
-  { id: 'wealthy_farmer', title: 'Złoty Skarbiec', desc: 'Zgromadź w swojej sakiewce co najmniej 50 monet.', icon: '👑', reward: { coins: 15 }, check: s => (s.coins || 0) >= 50 }
+  { id: 'bridge_builder', title: 'Odkrywca Mostów', desc: 'Wybuduj i połącz most do dowolnej nowej krainy.', icon: '🌉', reward: { coins: 10 }, check: s => Boolean(s.world?.quarry || s.world?.meadow || s.world?.lake || s.world?.clouds || s.world?.lavender) },
+  { id: 'wealthy_farmer', title: 'Złoty Skarbiec', desc: 'Zgromadź w swojej sakiewce co najmniej 50 monet.', icon: '👑', reward: { coins: 15 }, check: s => (s.coins || 0) >= 50 },
+  { id: 'first_lavender', title: 'Fioletowy Bukiet', desc: 'Zbierz pachnącą lawendę w Lawendowej Dolinie.', icon: '🪻', reward: { coins: 8 }, check: s => (s.lavender || 0) > 0 },
+  { id: 'tractor_ride', title: 'Mistrz Kierownicy', desc: 'Wsiądź i przejedź się traktorkiem odkrywcy.', icon: '🚜', reward: { coins: 8 }, check: s => (s.tractorRides || 0) > 0 },
+  { id: 'rainbow_chaser', title: 'Łowca Tęczy', desc: 'Podziwiaj lśniącą tęczę po letnim deszczu.', icon: '🌈', reward: { coins: 8 }, check: s => (s.seenRainbow || 0) > 0 }
 ];
 
 export const INITIAL = {
@@ -544,9 +579,14 @@ export const INITIAL = {
   lastHoney: 0,
   eggs: 0,
   lastEggs: 0,
+  lavender: 0,
+  lastLavender: 0,
+  ridingTractor: false,
+  tractorRides: 0,
+  seenRainbow: 0,
   stickersClaimed: [],
   // Dishes & Cooking
-  dishes: { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0, pancakes: 0, omelet: 0 },
+  dishes: { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0, pancakes: 0, omelet: 0, lavenderTea: 0, lavenderSachet: 0 },
   speedBoostUntil: 0,
   // Fishing Logs & Pet
   fishCaught: { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 },
@@ -599,7 +639,7 @@ const count = (value, max = 999999) => Math.min(max, Math.max(0, Math.floor(Numb
 export function normalize(raw = {}) {
   const s = { ...INITIAL };
   s.saveVersion = SAVE_VERSION;
-  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish', 'honey', 'eggs', 'babies', 'totalBred', 'petPats', 'dogPats']) {
+  for (const k of ['wood', 'stone', 'carrots', 'seeds', 'wheat', 'apples', 'flour', 'crystals', 'coins', 'fish', 'honey', 'eggs', 'lavender', 'babies', 'totalBred', 'petPats', 'dogPats', 'tractorRides', 'seenRainbow']) {
     s[k] = count(raw[k] ?? s[k]);
   }
   s.world = normalizeWorld(raw.world);
@@ -621,11 +661,15 @@ export function normalize(raw = {}) {
     honeyTea: count(raw.dishes?.honeyTea),
     gingerbread: count(raw.dishes?.gingerbread),
     pancakes: count(raw.dishes?.pancakes),
-    omelet: count(raw.dishes?.omelet)
+    omelet: count(raw.dishes?.omelet),
+    lavenderTea: count(raw.dishes?.lavenderTea),
+    lavenderSachet: count(raw.dishes?.lavenderSachet)
   };
   s.speedBoostUntil = Number.isFinite(raw.speedBoostUntil) ? raw.speedBoostUntil : 0;
   s.lastHoney = Number.isFinite(raw.lastHoney) ? raw.lastHoney : 0;
   s.lastEggs = Number.isFinite(raw.lastEggs) ? raw.lastEggs : 0;
+  s.lastLavender = Number.isFinite(raw.lastLavender) ? raw.lastLavender : 0;
+  s.ridingTractor = Boolean(raw.ridingTractor);
   s.stickersClaimed = Array.isArray(raw.stickersClaimed) ? raw.stickersClaimed : [];
 
   // Fishing log
@@ -787,9 +831,14 @@ export function transact(state, action, now = Date.now(), params = {}) {
     lastHoney: state.lastHoney || 0,
     eggs: state.eggs || 0,
     lastEggs: state.lastEggs || 0,
+    lavender: state.lavender || 0,
+    lastLavender: state.lastLavender || 0,
+    ridingTractor: Boolean(state.ridingTractor),
+    tractorRides: state.tractorRides || 0,
+    seenRainbow: state.seenRainbow || 0,
     dogPats: state.dogPats || 0,
     stickersClaimed: [...(state.stickersClaimed || [])],
-    dishes: { ...(state.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0, pancakes: 0, omelet: 0 }) },
+    dishes: { ...(state.dishes || { bread: 0, applePie: 0, carrotSoup: 0, grilledFish: 0, starCookies: 0, honeyTea: 0, gingerbread: 0, pancakes: 0, omelet: 0, lavenderTea: 0, lavenderSachet: 0 }) },
     fishCaught: { ...(state.fishCaught || { gold: 0, carp: 0, trout: 0, pike: 0, total: 0 }) },
     fishRecords: { ...(state.fishRecords || {}) },
     world: normalizeWorld(state.world),
@@ -805,7 +854,7 @@ export function transact(state, action, now = Date.now(), params = {}) {
 
   let message;
   switch (action) {
-    case 'visit:woodland': case 'visit:quarry': case 'visit:meadow': case 'visit:lake': case 'visit:clouds': {
+    case 'visit:woodland': case 'visit:quarry': case 'visit:meadow': case 'visit:lake': case 'visit:clouds': case 'visit:lavender': {
       const id = action.split(':')[1];
       if (!unlocked(id, s) || s.world.visited.includes(id)) return { state, ok: false };
       s.world.visited = [...s.world.visited, id];
@@ -813,7 +862,7 @@ export function transact(state, action, now = Date.now(), params = {}) {
       break;
     }
 
-    case 'unlock:quarry': case 'unlock:meadow': case 'unlock:lake': case 'unlock:clouds': {
+    case 'unlock:quarry': case 'unlock:meadow': case 'unlock:lake': case 'unlock:clouds': case 'unlock:lavender': {
       const id = action.split(':')[1];
       if (s.world[id]) return fail('Ten most jest już odbudowany.');
       
@@ -828,6 +877,8 @@ export function transact(state, action, now = Date.now(), params = {}) {
       } else if (id === 'clouds') {
         if (s.houseLevel < 3) return fail('Wymaga Domu odkrywcy (Poziom 3).');
         if (s.penLevel < 2) return fail('Wymaga zagrody na poziomie 2.');
+      } else if (id === 'lavender') {
+        if (s.houseLevel < 2) return fail('Wymaga Domu gospodarza (Poziom 2).');
       }
 
       if (!pay(REGIONS[id].cost)) return fail('Brakuje materiałów pokazanych przy moście.');
@@ -997,6 +1048,61 @@ export function transact(state, action, now = Date.now(), params = {}) {
       s.world.lastObservatory = now;
       s.coins += 10;
       message = 'Odkryto spadającą gwiazdę przez teleskop! (+10 monet)';
+      break;
+    }
+
+    // Lavender Valley Harvesting
+    case 'lavenderField': case 'harvest-lavender': {
+      if (!s.world?.lavender) return fail('Najpierw napraw most do Lawendowej Doliny.');
+      if (now - (s.world.lastLavender || 0) < 40000) {
+        const waitSec = Math.ceil((40000 - (now - s.world.lastLavender)) / 1000);
+        return fail(`Krzaczki lawendy jeszcze kwitną (${waitSec}s).`);
+      }
+      s.world.lastLavender = now;
+      s.lavender = (s.lavender || 0) + 2;
+      message = 'Zebrano 2 bukiety pachnącej lawendy! (+2 lawenda 🪻)';
+      break;
+    }
+
+    // Herbal Tea Gazebo
+    case 'teaGazebo': case 'brew-tea': {
+      if (!s.world?.lavender) return fail('Najpierw napraw most do Lawendowej Doliny.');
+      if ((s.lavender || 0) < 1 || (s.honey || 0) < 1) return fail('Do zaparzenia herbatki potrzebujesz 1 lawendy i 1 miodu.');
+      s.lavender -= 1;
+      s.honey -= 1;
+      s.coins += 8;
+      s.dishes.lavenderTea = (s.dishes.lavenderTea || 0) + 1;
+      s.speedBoostUntil = Math.max(s.speedBoostUntil || 0, now) + 90000;
+      message = 'Zaparzono gorącą herbatkę lawendową z miodem! +8 monet i Bieg z wiatrem 🍵';
+      break;
+    }
+
+    // Tractor Mount / Dismount
+    case 'tractor': case 'mount-tractor': case 'dismount-tractor': {
+      s.ridingTractor = !s.ridingTractor;
+      if (s.ridingTractor) {
+        s.tractorRides = (s.tractorRides || 0) + 1;
+        message = 'Wsiadasz do traktorka odkrywcy! Pyr-pyr! Jedziemy z wiatrem! 🚜';
+      } else {
+        message = 'Zsiadasz z traktorka na pachnącą trawę.';
+      }
+      break;
+    }
+
+    // Rainbow Wonder
+    case 'see-rainbow': {
+      s.seenRainbow = (s.seenRainbow || 0) + 1;
+      s.coins += 5;
+      message = 'Podziwiasz barwną tęczę nad farmą! +5 monet szczęścia 🌈';
+      break;
+    }
+
+    // Auto-water by rain
+    case 'water-auto': {
+      if (s.planted && !s.watered) {
+        s.watered = true;
+        message = '🌧️ Letni deszczyk podlał Twoje grządki!';
+      }
       break;
     }
 
@@ -1248,6 +1354,12 @@ export function transact(state, action, now = Date.now(), params = {}) {
       message = 'Sprzedano 2 świeże jajka · +3 monety';
       break;
     }
+    case 'sell-lavender': {
+      if (!pay({ lavender: 1 })) return fail('Przynieś bukiet lawendy.');
+      s.coins += 3;
+      message = 'Sprzedano bukiet lawendy · +3 monety';
+      break;
+    }
 
     // Wardrobe & Outfit customization
     case 'set-avatar': {
@@ -1351,7 +1463,7 @@ export function transact(state, action, now = Date.now(), params = {}) {
     }
 
     // Cooking & Dining Actions
-    case 'cook:bread': case 'cook:applePie': case 'cook:carrotSoup': case 'cook:grilledFish': case 'cook:starCookies': case 'cook:honeyTea': case 'cook:gingerbread': case 'cook:pancakes': case 'cook:omelet': {
+    case 'cook:bread': case 'cook:applePie': case 'cook:carrotSoup': case 'cook:grilledFish': case 'cook:starCookies': case 'cook:honeyTea': case 'cook:gingerbread': case 'cook:pancakes': case 'cook:omelet': case 'cook:lavenderTea': case 'cook:lavenderSachet': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznany przepis.');
@@ -1362,7 +1474,7 @@ export function transact(state, action, now = Date.now(), params = {}) {
       break;
     }
 
-    case 'eat:bread': case 'eat:applePie': case 'eat:carrotSoup': case 'eat:grilledFish': case 'eat:starCookies': case 'eat:honeyTea': case 'eat:gingerbread': case 'eat:pancakes': case 'eat:omelet': {
+    case 'eat:bread': case 'eat:applePie': case 'eat:carrotSoup': case 'eat:grilledFish': case 'eat:starCookies': case 'eat:honeyTea': case 'eat:gingerbread': case 'eat:pancakes': case 'eat:omelet': case 'eat:lavenderTea': case 'eat:lavenderSachet': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznane danie.');
@@ -1374,7 +1486,7 @@ export function transact(state, action, now = Date.now(), params = {}) {
       break;
     }
 
-    case 'sell-dish:bread': case 'sell-dish:applePie': case 'sell-dish:carrotSoup': case 'sell-dish:grilledFish': case 'sell-dish:starCookies': case 'sell-dish:honeyTea': case 'sell-dish:gingerbread': case 'sell-dish:pancakes': case 'sell-dish:omelet': {
+    case 'sell-dish:bread': case 'sell-dish:applePie': case 'sell-dish:carrotSoup': case 'sell-dish:grilledFish': case 'sell-dish:starCookies': case 'sell-dish:honeyTea': case 'sell-dish:gingerbread': case 'sell-dish:pancakes': case 'sell-dish:omelet': case 'sell-dish:lavenderTea': case 'sell-dish:lavenderSachet': {
       const rId = action.split(':')[1];
       const recipe = COOKING_RECIPES.find(r => r.id === rId);
       if (!recipe) return fail('Nieznane danie.');
@@ -1477,10 +1589,19 @@ export const PLACES = {
   owl: { title: 'Mądra Sowa Klara', short: 'Sowa', x: 1.6, z: -5.0, approach: [1.6, -3.8], label: [1.6, 3.2, -5.0] },
   shop: { title: 'Sklepik pod klamerką', short: 'Sklepik', x: -9, z: 3.8, approach: [-7, 2.6], label: [-9, 3.5, 3.8] },
   land: { title: 'Nowa polana', short: 'Rozbudowa', x: 11, z: 5, approach: [9, 5.8], label: [10.8, 1.6, 5] },
+  tractor: { title: 'Traktorek Odkrywcy', short: 'Traktorek 🚜', x: -3.8, z: 2.2, approach: [-3.8, 3.2], label: [-3.8, 1.8, 2.2] },
 };
 
 export function actionFor(place, s) {
   switch (place) {
+    case 'tractor':
+      return {
+        label: s.ridingTractor ? 'Zsiądź z traktorka' : 'Wsiądź do traktorka 🚜',
+        hint: s.ridingTractor ? 'Zsiądź z powrotem na trawę.' : 'Pyr-pyr! Szybka jazda traktorkiem odkrywcy po farmie i mostach!',
+        action: 'tractor',
+        icon: 'tractor'
+      };
+
     case 'cat':
       return {
         label: 'Pogłaszcz kotka',
@@ -1534,8 +1655,8 @@ export function actionFor(place, s) {
       };
     }
 
-    case 'quarryGate': case 'meadowGate': case 'lakeGate': case 'cloudsGate': {
-      const id = place === 'quarryGate' ? 'quarry' : place === 'meadowGate' ? 'meadow' : place === 'lakeGate' ? 'lake' : 'clouds';
+    case 'quarryGate': case 'meadowGate': case 'lakeGate': case 'cloudsGate': case 'lavenderGate': {
+      const id = place === 'quarryGate' ? 'quarry' : place === 'meadowGate' ? 'meadow' : place === 'lakeGate' ? 'lake' : place === 'cloudsGate' ? 'clouds' : 'lavender';
       const r = REGIONS[id];
       const isUnlocked = s.world?.[id];
       let disabled = false;
@@ -1545,6 +1666,7 @@ export function actionFor(place, s) {
         if (id === 'meadow' && (s.houseLevel < 2 || !s.pen)) { disabled = true; reqHint = 'Wymaga: Dom 2 i Zagroda.'; }
         if (id === 'lake' && s.houseLevel < 2) { disabled = true; reqHint = 'Wymaga: Dom 2 i kuchnia.'; }
         if (id === 'clouds' && (s.houseLevel < 3 || s.penLevel < 2)) { disabled = true; reqHint = 'Wymaga: Dom 3 i Zagroda 2.'; }
+        if (id === 'lavender' && s.houseLevel < 2) { disabled = true; reqHint = 'Wymaga: Dom 2 (kuchnia).'; }
       }
       return isUnlocked
         ? { label: 'Wyrusz na wyprawę', hint: r.name, action: `travel:${r.destination}`, icon: r.icon }
@@ -1593,6 +1715,29 @@ export function actionFor(place, s) {
         action: 'observatory',
         disabled: !s.world?.clouds,
         icon: 'star'
+      };
+
+    case 'lavenderField': {
+      const elapsed = Date.now() - (s.world?.lastLavender || 0);
+      const ready = elapsed >= 40000;
+      const waitSec = Math.ceil((40000 - elapsed) / 1000);
+      return {
+        label: ready ? 'Zbierz lawendę 🪻' : `Lawenda kwitnie (${waitSec}s)`,
+        hint: 'Pola Lawendy · 2 bukiety fioletowych kwiatów do herbatki i bukietów.',
+        action: 'harvest-lavender',
+        disabled: !ready || !s.world?.lavender,
+        icon: 'flower'
+      };
+    }
+
+    case 'teaGazebo':
+      return {
+        label: 'Zaparz herbatkę lawendową 🍵',
+        hint: 'Altanka · 1 lawenda + 1 miód → pyszny napar i Bieg z wiatrem (+8 monet)!',
+        cost: { lavender: 1, honey: 1 },
+        action: 'brew-tea',
+        disabled: !s.world?.lavender || (s.lavender || 0) < 1 || (s.honey || 0) < 1,
+        icon: 'tea'
       };
 
     case 'forest':

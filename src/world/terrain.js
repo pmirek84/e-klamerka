@@ -9,7 +9,7 @@ import { bake } from './models.js';
 export const GRID = { x0: -56, z0: -52, w: 112, h: 106 };
 export const WATER_Y = -.32;
 
-const REGION_TOP = { farm: '#7cc35b', woodland: '#62ab4f', quarry: '#a3b48c', meadow: '#a9cb5b', lake: '#79c467', clouds: '#b2a8e2' };
+const REGION_TOP = { farm: '#7cc35b', woodland: '#62ab4f', quarry: '#a3b48c', meadow: '#a9cb5b', lake: '#79c467', clouds: '#b2a8e2', lavender: '#a893d8' };
 const HILL_TOP = '#6db352';
 
 // Farm trails (former curved path meshes) — rasterised into dirt-path cells.
@@ -19,6 +19,7 @@ const FARM_TRAILS = [
   [[[-7, -4.3], [-7.1, -1.8], [-5, .5], [-3.5, 1.4]], 1.3],
   [[[0, 2.7], [2, .1], [4, -2.7], [6.3, -4.2]], 1.5],
   [[[-.1, 7], [-2.5, 7.7], [-3.3, 8]], 1.3],
+  [[[-2.5, 7.7], [-5.2, 7.8], [-8.6, 8.6]], 1.4],
   [[[-7, 1], [-9, 0], [-13.5, 0]], 1.5],
   [[[0, 1], [1, -3], [0, -6], [0, -11.5]], 1.4],
   [[[6, -3.3], [9, -3], [13.5, -3]], 1.4],
@@ -31,9 +32,10 @@ const REGION_PATHS = [
   ['meadow', 0, -2, 20, 1.5, 0], ['meadow', -2, 0, 1.4, 5, 0], ['meadow', 2, -2.3, 4, 1.6, 0],
   ['lake', 0, -4, 1.5, 9, 0], ['lake', -2, 1, 7, 1.5, 0],
   ['clouds', -3.2, 3.2, 11, 1.5, Math.PI / 4], ['clouds', 0, 0, 1.5, 6, 0],
+  ['lavender', 3.2, -3.2, 11, 1.5, -Math.PI / 4], ['lavender', 0, 0, 1.5, 6, 0],
 ];
 // Rivers under every bridge.
-const CORRIDORS = [[-12, 0, -21, 0], [0, -10, 0, -21], [11.8, -3, 22, -3], [0, 10, 0, 21], [8, -8, 22, -22]];
+const CORRIDORS = [[-12, 0, -21, 0], [0, -10, 0, -21], [11.8, -3, 22, -3], [0, 10, 0, 21], [8, -8, 22, -22], [-8, 8, -22, 22]];
 // Ponds carved into the plateaus.
 export const PONDS = [{ x: 1.9, z: -7.8, rx: 2.7, rz: 1.7 }, { x: 2.5, z: 33.2, rx: 5, rz: 4.6 }];
 
